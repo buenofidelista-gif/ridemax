@@ -1274,6 +1274,40 @@ body.fit-lock #finBox:has(.fin-dre){display:block;overflow:visible}
   .rec-stats{order:2}
   .rec-main{order:1}
 }
+/* ---------- CELULAR — FASE 4: tabelas em cartões ---------- */
+@media(max-width:860px){
+  .tblwrap.f4-wrap{overflow:visible!important;border:0!important;background:transparent!important}
+  table.f4-cartoes{display:block;width:100%!important;min-width:0!important;border:0;background:transparent}
+  table.f4-cartoes tbody,table.f4-cartoes tfoot{display:block}
+  table.f4-cartoes thead,table.f4-cartoes tr.f4-cab{display:none!important}
+  table.f4-cartoes tr{display:block;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;margin:0 0 8px;cursor:inherit}
+  table.f4-cartoes tr[data-id],table.f4-cartoes tr[onclick]{cursor:pointer}
+  table.f4-cartoes tr.sel,table.f4-cartoes tr.selected,table.f4-cartoes tr.on{border-color:var(--blue);background:color-mix(in srgb,var(--accent) 35%,var(--card))}
+  table.tbl.f4-cartoes td,table.tbl.f4-cartoes th,table.f4-cartoes td,table.f4-cartoes th{display:flex!important;justify-content:space-between;align-items:center;gap:12px;padding:5px 0!important;border:0!important;text-align:right!important;font-size:15px!important;white-space:normal!important;min-height:0;width:auto!important;max-width:none!important}
+  table.f4-cartoes td[data-f4]::before,table.f4-cartoes th[data-f4]::before{content:attr(data-f4);color:var(--muted);font-size:14px;font-weight:400;text-align:left;flex-shrink:0;max-width:55%}
+  table.f4-cartoes td.f4-tit,table.f4-cartoes th.f4-tit{justify-content:flex-start;text-align:left!important;font-weight:700;font-size:16px!important;padding-bottom:6px!important;border-bottom:1px solid var(--border)!important;margin-bottom:2px}
+  table.f4-cartoes td.f4-larga{display:block!important;text-align:left!important}
+  table.f4-cartoes td.f4-vazia{display:none!important}
+  table.f4-cartoes tr.f4-rod{background:var(--input)}
+  #viewCtn .toolbar{flex-wrap:wrap}
+  table.f4-compacto td:has(input:not([type=checkbox]):not([type=color]):not([type=radio])){flex-basis:100%}
+  table.f4-compacto td input:not([type=checkbox]):not([type=color]):not([type=radio]){flex:1;max-width:none!important;min-width:0}
+  .hmwrap::before{content:"↔ arraste para o lado para ver todas as horas";display:block;position:sticky;left:0;font-size:12px;color:var(--muted);margin-bottom:6px}
+  .f4-sec{scroll-margin-top:72px}
+  .f4-sec>h3{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;margin:0}
+  .f4-sec>h3::after{content:"▾";margin-left:auto;color:var(--muted)}
+  .f4-sec.fechado>h3::after{content:"▸"}
+  .f4-sec.fechado>:not(h3){display:none!important}
+  /* tabelas longas: cartão compacto de duas linhas (título + valores lado a lado) */
+  table.f4-compacto tr{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 14px;padding:8px 12px;margin-bottom:6px}
+  table.f4-compacto td.f4-tit{flex-basis:100%;border-bottom:0!important;padding-bottom:0!important;margin:0;font-size:15px!important}
+  table.tbl.f4-compacto td,table.f4-compacto td{display:inline-flex!important;gap:5px;padding:2px 0!important;font-size:14px!important;justify-content:flex-start}
+  table.f4-compacto td[data-f4]::before{font-size:12px;max-width:none}
+  table.f4-compacto td.f4-vazia{display:none!important}
+  table.f4-cartoes td .btn,table.f4-cartoes td button{min-height:40px}
+  table.f4-cartoes td select,table.f4-cartoes td input:not([type=checkbox]):not([type=color]){max-width:60%}
+}
+#man-topo a{color:var(--blue)}
 @media(min-width:861px){ #mbar,#navBk,#mSyncBtn{display:none!important} }
 @media print{ #mbar,#navBk,#mSyncBtn{display:none!important} }
 </style>
@@ -7400,7 +7434,7 @@ function rManual(){
     {t:"Data de corte e saldo inicial",ps:["Cada conta tem uma data de corte, que é a data do saldo inicial. O saldo só conta movimento dessa data em diante.","Baixa e transferência com data anterior ao corte são bloqueadas.","Corrida em dinheiro com data anterior ao corte é permitida, porque pode ser carga histórica — mas o app avisa na hora e deixa um indicador na conta, dizendo quantos movimentos estão fora do saldo e quanto somam. Se isso aparecer sem você esperar, provavelmente a data está errada."]},
     {t:"Previsto, realizado e os 90 dias",ps:["O fluxo de caixa mostra lado a lado o que já aconteceu e o que está previsto, nunca somados.","O previsto usa o vencimento para o que é a pagar, e a data ESTIMADA do repasse para o que é a receber. Essa data sai da média dos repasses anteriores daquela plataforma; sem pelo menos dois repasses conciliados, não há estimativa e o valor aparece à parte, sem data.","A projeção de 90 dias mostra o menor saldo do período e em que dia ele cai. É o indicador mais útil do app: é ele que avisa que a conta vai faltar antes de faltar."]},
     {t:"Backup, descartes e limpeza",ps:["Exportar baixa tudo num arquivo. Importar SUBSTITUI a base, e antes disso o app baixa sozinho um backup do estado anterior.","Backup automático (Configurações › Backup): no celular, Enviar backup abre o compartilhar — mande para o Google Drive ou para você mesmo no WhatsApp/e-mail. No computador (Chrome/Edge), escolha uma pasta de backup, de preferência sincronizada com Drive ou OneDrive, e o app grava o arquivo do dia sozinho a cada lançamento, guardando os 30 últimos. Se o navegador pedir permissão de novo, um toque em Reativar resolve.","Cópias diárias: o app também guarda sozinho, neste aparelho, uma cópia por dia (7 dias + 4 semanas), com Restaurar e Baixar. Serve para desfazer um erro; não substitui o backup, porque some junto se o celular sumir ou o navegador for limpo. Restaurar guarda antes o estado atual como Antes da última restauração.","Se o arquivo tiver registro inválido, ele é descartado e RELATADO, com indicação do que foi. Se um título perder uma baixa inválida e voltar a ficar em aberto, isso aparece em destaque — não é perda silenciosa.","A limpeza da base apaga o movimento e preserva os cadastros. Ela pede backup, data de corte e confirmação digitada. Atenção: as séries são cadastro e NÃO são apagadas.","Os dados ficam no banco do navegador (IndexedDB), com espaço de centenas de MB. Cada navegador, aparelho e endereço tem a sua base: o arquivo aberto do disco e o site publicado são bases diferentes, ligadas só pelo backup. Limpar os dados do site ou desinstalar o app apaga a base daquele aparelho.","Configurações › Backup mostra o espaço usado e o Diagnóstico: a contagem de erros internos da sessão e o botão para baixar o log. O esperado é zero.","Se a base salva estiver danificada, o app guarda uma cópia antes de abrir uma nova; sem espaço para a cópia, ele bloqueia a gravação até você baixar os dados brutos. Nada é apagado às cegas."]},
-    {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu (no celular, em Mais), ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","No celular, a barra de baixo tem Início, Corridas (histórico), o + verde do meio (corrida rápida), Dinheiro (resumo financeiro) e Mais, que abre o menu completo; o voltar do celular fecha o menu. O botão de sincronizar fica no topo, ao lado do título.","No celular, o Início abre com o painel do dia: ganho do dia de trabalho, barra da meta diária, R$ por hora, por corrida, km, turno aberto e os últimos 7 dias. O Histórico mostra as corridas em cartões agrupados por dia, com o total de cada dia; toque numa corrida para Editar ou Excluir. O aviso de backup tem um × que adia até amanhã.","Formulários no celular: Nova corrida, Recarga e Despesa mostram primeiro o essencial — plataforma ou categoria em botões, valor grande — e guardam o resto em Mais detalhes. Na Nova corrida o início já vem com a hora atual e o preço do passageiro só aparece com Pago em dinheiro. O botão Salvar fica preso embaixo da tela.","O + verde (no computador, o botão + Corrida no canto de baixo ou a tecla N) lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Backup, armazenamento e lembretes, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
+    {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu (no celular, em Mais), ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","No celular, a barra de baixo tem Início, Corridas (histórico), o + verde do meio (corrida rápida), Dinheiro (resumo financeiro) e Mais, que abre o menu completo; o voltar do celular fecha o menu. O botão de sincronizar fica no topo, ao lado do título.","No celular, o Início abre com o painel do dia: ganho do dia de trabalho, barra da meta diária, R$ por hora, por corrida, km, turno aberto e os últimos 7 dias. O Histórico mostra as corridas em cartões agrupados por dia, com o total de cada dia; toque numa corrida para Editar ou Excluir. O aviso de backup tem um × que adia até amanhã.","Formulários no celular: Nova corrida, Recarga e Despesa mostram primeiro o essencial — plataforma ou categoria em botões, valor grande — e guardam o resto em Mais detalhes. Na Nova corrida o início já vem com a hora atual e o preço do passageiro só aparece com Pago em dinheiro. O botão Salvar fica preso embaixo da tela.","Tabelas no celular: as que não cabem na tela (Contas a pagar, Lotes, Saldos, Manutenção, Categorias, Top 10 da Previsão) viram cartões, com a primeira coluna como título e as outras como rótulo e valor; os botões de cada linha continuam no cartão. Neste manual, toque no título de uma seção para abrir ou fechar.","O + verde (no computador, o botão + Corrida no canto de baixo ou a tecla N) lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Backup, armazenamento e lembretes, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
     {t:"Celular e computador juntos",ps:["Configurações › Backup, armazenamento e lembretes › Sincronizar. Os dois aparelhos usam a mesma conta Google; os dados ficam numa pasta privada do app no seu Drive. A primeira configuração (ID do cliente) está no manual, seção 7.6.","Toque em Sincronizar (no topo do menu) ao começar e ao terminar o dia. A junção é por lançamento: o que foi incluído, editado ou apagado em cada aparelho é respeitado. Se o mesmo campo foi editado nos dois, fica a versão do aparelho que sincronizou por último.","Aparelho novo, sem lançamentos, recebe tudo da nuvem. Se os dois já têm lançamentos e nunca sincronizaram, o app pergunta o que fazer. Antes de aplicar a junção, o app guarda uma cópia em Antes da última restauração."]},
     {t:"Comprovante de renda",ps:["Para alugar imóvel, financiar ou pedir crédito: Financeiro › DRE › Comprovante de renda (PDF), ou Configurações › MEI e DAS. Escolha 3, 6 ou 12 meses; o mês atual entra só se você marcar, e sai como parcial.","O PDF traz, mês a mês, corridas, receita bruta, despesas do trabalho e rendimento líquido, mais o total por plataforma e as médias mensais (calculadas só sobre os meses com movimento). Os números são os do DRE por competência, no centro de custo do trabalho.","É uma declaração sua, assinada por você: o próprio PDF diz isso e indica os extratos das plataformas como prova. Lançamentos faltando = renda menor no papel, então confira antes de entregar. Nome, CPF, CNPJ e cidade ficam guardados para a próxima vez."]},
     {t:"Imposto de renda (IRPF)",ps:["Financeiro › DRE › Relatório IRPF (PDF), ou Configurações › MEI e DAS. Escolha o ano-calendário e a forma de trabalho. O PDF junta o que a declaração pede e o app já sabe: corridas mês a mês, bens em 31/12 pelo custo, proventos pagos no ano e vendas em bolsa.","Autônomo, sem CNPJ: 60% da receita bruta das corridas é tributável (regra do transporte de passageiros) e entra pelo Carnê-Leão, mês a mês; os outros 40% vão como não tributáveis. MEI: 16% da receita bruta é a parcela isenta presumida, limitada ao lucro; o lucro acima disso é tributável.","É relatório de apoio: não calcula o imposto e não substitui o contador. Os números oficiais são os dos informes das plataformas, bancos e corretoras — mês sem lançamento no app sai zerado no relatório."]},
@@ -12819,6 +12853,62 @@ try{
   var _f3mud=function(){ try{ show(current); }catch(e){} };
   if(_f3mq.addEventListener) _f3mq.addEventListener("change",_f3mud); else if(_f3mq.addListener) _f3mq.addListener(_f3mud);
 }catch(e){ rmLogErr(e,"f3-init"); }
+
+/* ---------- CELULAR — FASE 4: tabelas viram cartões ----------
+   No celular, cada linha de tabela com 4+ colunas vira um cartão: a 1ª coluna é o
+   título e as outras aparecem como "rótulo  valor" (rótulo = cabeçalho da coluna).
+   Só CSS + um atributo por célula: cliques, seleção e paginação continuam iguais.
+   Tabelas pequenas (até 3 colunas) e o mapa de calor ficam como estão. */
+function f4Cabecalhos(t){
+  var lin=null;
+  if(t.tHead&&t.tHead.rows.length) lin=t.tHead.rows[t.tHead.rows.length-1];
+  else { for(var i=0;i<t.rows.length;i++){ if(t.rows[i].querySelector("th")&&!t.rows[i].querySelector("td")){ lin=t.rows[i]; break; } } }
+  if(!lin) return null;
+  var out=[]; Array.prototype.forEach.call(lin.cells,function(c){ var n=c.colSpan||1; var tx=(c.textContent||"").replace(/\s+/g," ").trim(); for(var k=0;k<n;k++) out.push(tx); });
+  return {linha:lin,nomes:out};
+}
+function f4Tabelas(){
+  if(!(typeof mbarMovel==="function"&&mbarMovel())) return;
+  var vc=document.getElementById("viewCtn"); if(!vc) return;
+  vc.querySelectorAll("table").forEach(function(t){
+    if(t.closest(".hm")||t.classList.contains("hm")||t.classList.contains("dtbl")||t.dataset.f4==="nao") return;
+    var cab=f4Cabecalhos(t); if(!cab||cab.nomes.length<4){ t.dataset.f4="nao"; return; }
+    if(!t.classList.contains("f4-cartoes")){
+      /* só converte se a tabela vaza da tela ou esconde colunas no celular; escondida (aba fechada): decide depois */
+      var _w=t.closest(".tblwrap")||t.parentNode; if(!t.offsetWidth||!_w||!_w.clientWidth) return;
+      var _vaza=t.scrollWidth>_w.clientWidth+4, _esconde=!!t.querySelector(".mhide");
+      if(!_vaza&&!_esconde){ t.dataset.f4="nao"; return; }
+      var _nl=0; Array.prototype.forEach.call(t.tBodies,function(b){ _nl+=b.rows.length; }); if(!t.tBodies.length) _nl=t.rows.length-1;
+      if(_nl>6) t.classList.add("f4-compacto"); t.classList.add("f4-cartoes"); cab.linha.classList.add("f4-cab"); var w=t.closest(".tblwrap"); if(w) w.classList.add("f4-wrap"); }
+    Array.prototype.forEach.call(t.rows,function(r){
+      if(r===cab.linha||r.dataset.f4l) return;
+      r.dataset.f4l="1";
+      var col=0, vazias=0;
+      Array.prototype.forEach.call(r.cells,function(c,i){
+        var n=c.colSpan||1;
+        if(n>=cab.nomes.length-1){ c.classList.add("f4-larga"); }
+        else if(i===0){ c.classList.add("f4-tit"); }
+        else { var nome=cab.nomes[col]||""; if(nome) c.setAttribute("data-f4",nome); }
+        if(!(c.textContent||"").trim()&&!c.querySelector("input,select,button,canvas,img,svg")){ c.classList.add("f4-vazia"); vazias++; }
+        col+=n;
+      });
+      if(r.parentNode&&r.parentNode.tagName==="TFOOT") r.classList.add("f4-rod");
+    });
+  });
+}
+/* Manual no celular: seções recolhidas (só o título); o índice abre a seção e rola até ela */
+function f4Manual(){
+  if(!(typeof mbarMovel==="function"&&mbarMovel())) return;
+  var s1=document.getElementById("man-s1"); if(!s1||s1.dataset.f4m) return;
+  var secs=document.querySelectorAll("#viewCtn [id^=man-s]");
+  secs.forEach(function(c){ c.dataset.f4m="1"; c.classList.add("f4-sec","fechado"); var h=c.querySelector("h3"); if(h){ h.setAttribute("role","button"); h.setAttribute("tabindex","0"); h.setAttribute("aria-expanded","false"); var tg=function(){ var f=c.classList.toggle("fechado"); h.setAttribute("aria-expanded",f?"false":"true"); }; h.onclick=tg; h.onkeydown=function(ev){ if(ev.key==="Enter"||ev.key===" "){ ev.preventDefault(); tg(); } }; } });
+  document.querySelectorAll("#viewCtn [data-mangoto]").forEach(function(a){ a.addEventListener("click",function(){ var id=String(a.getAttribute("data-mangoto")||"").slice(1); var el=document.getElementById(id); if(el&&el.classList.contains("fechado")){ el.classList.remove("fechado"); var h=el.querySelector("h3"); if(h) h.setAttribute("aria-expanded","true"); } },true); });
+}
+try{
+  var _f4obs=new MutationObserver(function(){ try{ f4Tabelas(); f4Manual(); }catch(e){ rmLogErr(e,"f4"); } });
+  _f4obs.observe(document.getElementById("viewCtn"),{childList:true,subtree:true});
+  f4Tabelas();
+}catch(e){ rmLogErr(e,"f4-init"); }
 
 } /* fim rmApp */
 })();
