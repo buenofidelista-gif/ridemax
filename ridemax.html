@@ -1319,6 +1319,26 @@ body.fit-lock #finBox:has(.fin-dre){display:block;overflow:visible}
   .infoBtn,.hbtn{position:relative}
   .infoBtn::after,.hbtn::after{content:"";position:absolute;inset:-8px}
 }
+/* ---------- CORRIDA COM CRONÔMETRO ---------- */
+#cronBar{position:fixed;left:8px;right:8px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:55;display:flex;align-items:center;gap:8px;padding:8px 8px 8px 14px;border-radius:14px;background:color-mix(in srgb,var(--green) 22%,var(--panel));border:1px solid var(--green);box-shadow:0 6px 20px rgba(0,0,0,.45);color:var(--text);font-size:15px}
+#cronBar[hidden]{display:none}
+#cronBar.fim{background:color-mix(in srgb,var(--yellow) 20%,var(--panel));border-color:var(--yellow)}
+#cronBar .ponto{width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0;animation:cronPisca 1.2s infinite}
+#cronBar.fim .ponto{background:var(--yellow);animation:none}
+#cronBar .tx{flex:1;min-width:0;line-height:1.3}
+#cronBar #cronT{font-size:20px;font-variant-numeric:tabular-nums}
+#cronBar .btn{min-height:44px;white-space:nowrap}
+#cronBar .cron-x{background:none;border:0;color:var(--muted);font-size:24px;min-width:40px;min-height:44px;cursor:pointer}
+@keyframes cronPisca{50%{opacity:.25}}
+@media(min-width:861px){ #cronBar{left:auto;right:24px;bottom:96px;width:420px} }
+body.cron-on #main{padding-bottom:calc(150px + env(safe-area-inset-bottom))}
+body.cron-on .f3-fixo{bottom:calc(140px + env(safe-area-inset-bottom))}
+.cron-hero{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;min-height:56px;margin-top:12px;border:0;border-radius:var(--r);background:var(--green);color:#0f1116;font:inherit;font-size:18px;font-weight:800;cursor:pointer}
+.cron-hero small{font-size:12px;font-weight:600;opacity:.8}
+.cron-hero[hidden]{display:none}
+.qr-cron{background:var(--input);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;margin:0 0 10px;font-size:14px;color:var(--text)}
+.qr-cronini{display:block;width:100%;min-height:44px;margin:0 0 10px;border:1px dashed var(--green);background:transparent;color:var(--green);border-radius:var(--r);font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+@media print{ #cronBar{display:none!important} }
 #man-topo a{color:var(--blue)}
 @media(min-width:861px){ #mbar,#navBk,#mSyncBtn{display:none!important} }
 @media print{ #mbar,#navBk,#mSyncBtn{display:none!important} }
@@ -7446,7 +7466,7 @@ function rManual(){
     {t:"Data de corte e saldo inicial",ps:["Cada conta tem uma data de corte, que é a data do saldo inicial. O saldo só conta movimento dessa data em diante.","Baixa e transferência com data anterior ao corte são bloqueadas.","Corrida em dinheiro com data anterior ao corte é permitida, porque pode ser carga histórica — mas o app avisa na hora e deixa um indicador na conta, dizendo quantos movimentos estão fora do saldo e quanto somam. Se isso aparecer sem você esperar, provavelmente a data está errada."]},
     {t:"Previsto, realizado e os 90 dias",ps:["O fluxo de caixa mostra lado a lado o que já aconteceu e o que está previsto, nunca somados.","O previsto usa o vencimento para o que é a pagar, e a data ESTIMADA do repasse para o que é a receber. Essa data sai da média dos repasses anteriores daquela plataforma; sem pelo menos dois repasses conciliados, não há estimativa e o valor aparece à parte, sem data.","A projeção de 90 dias mostra o menor saldo do período e em que dia ele cai. É o indicador mais útil do app: é ele que avisa que a conta vai faltar antes de faltar."]},
     {t:"Backup, descartes e limpeza",ps:["Exportar baixa tudo num arquivo. Importar SUBSTITUI a base, e antes disso o app baixa sozinho um backup do estado anterior.","Backup automático (Configurações › Backup): no celular, Enviar backup abre o compartilhar — mande para o Google Drive ou para você mesmo no WhatsApp/e-mail. No computador (Chrome/Edge), escolha uma pasta de backup, de preferência sincronizada com Drive ou OneDrive, e o app grava o arquivo do dia sozinho a cada lançamento, guardando os 30 últimos. Se o navegador pedir permissão de novo, um toque em Reativar resolve.","Cópias diárias: o app também guarda sozinho, neste aparelho, uma cópia por dia (7 dias + 4 semanas), com Restaurar e Baixar. Serve para desfazer um erro; não substitui o backup, porque some junto se o celular sumir ou o navegador for limpo. Restaurar guarda antes o estado atual como Antes da última restauração.","Se o arquivo tiver registro inválido, ele é descartado e RELATADO, com indicação do que foi. Se um título perder uma baixa inválida e voltar a ficar em aberto, isso aparece em destaque — não é perda silenciosa.","A limpeza da base apaga o movimento e preserva os cadastros. Ela pede backup, data de corte e confirmação digitada. Atenção: as séries são cadastro e NÃO são apagadas.","Os dados ficam no banco do navegador (IndexedDB), com espaço de centenas de MB. Cada navegador, aparelho e endereço tem a sua base: o arquivo aberto do disco e o site publicado são bases diferentes, ligadas só pelo backup. Limpar os dados do site ou desinstalar o app apaga a base daquele aparelho.","Configurações › Backup mostra o espaço usado e o Diagnóstico: a contagem de erros internos da sessão e o botão para baixar o log. O esperado é zero.","Se a base salva estiver danificada, o app guarda uma cópia antes de abrir uma nova; sem espaço para a cópia, ele bloqueia a gravação até você baixar os dados brutos. Nada é apagado às cegas."]},
-    {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu (no celular, em Mais), ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","No celular, a barra de baixo tem Início, Corridas (histórico), o + verde do meio (corrida rápida), Dinheiro (resumo financeiro) e Mais, que abre o menu completo; o voltar do celular fecha o menu. O botão de sincronizar fica no topo, ao lado do título.","No celular, o Início abre com o painel do dia: ganho do dia de trabalho, barra da meta diária, R$ por hora, por corrida, km, turno aberto e os últimos 7 dias. O Histórico mostra as corridas em cartões agrupados por dia, com o total de cada dia; toque numa corrida para Editar ou Excluir. O aviso de backup tem um × que adia até amanhã.","Formulários no celular: Nova corrida, Recarga e Despesa mostram primeiro o essencial — plataforma ou categoria em botões, valor grande — e guardam o resto em Mais detalhes. Na Nova corrida o início já vem com a hora atual e o preço do passageiro só aparece com Pago em dinheiro. O botão Salvar fica preso embaixo da tela.","Tabelas no celular: as que não cabem na tela (Contas a pagar, Lotes, Saldos, Manutenção, Categorias, Top 10 da Previsão) viram cartões, com a primeira coluna como título e as outras como rótulo e valor; os botões de cada linha continuam no cartão. Neste manual, toque no título de uma seção para abrir ou fechar.","Telas longas no celular (Início, Financeiro, Recarga, Previsão): os 2 primeiros blocos vêm abertos e os outros recolhidos; toque no título do bloco para abrir ou fechar — o app lembra a sua escolha neste aparelho.","O + verde (no computador, o botão + Corrida no canto de baixo ou a tecla N) lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Backup, armazenamento e lembretes, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
+    {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu (no celular, em Mais), ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","No celular, a barra de baixo tem Início, Corridas (histórico), o + verde do meio (corrida rápida), Dinheiro (resumo financeiro) e Mais, que abre o menu completo; o voltar do celular fecha o menu. O botão de sincronizar fica no topo, ao lado do título.","No celular, o Início abre com o painel do dia: ganho do dia de trabalho, barra da meta diária, R$ por hora, por corrida, km, turno aberto e os últimos 7 dias. O Histórico mostra as corridas em cartões agrupados por dia, com o total de cada dia; toque numa corrida para Editar ou Excluir. O aviso de backup tem um × que adia até amanhã.","Formulários no celular: Nova corrida, Recarga e Despesa mostram primeiro o essencial — plataforma ou categoria em botões, valor grande — e guardam o resto em Mais detalhes. Na Nova corrida o início já vem com a hora atual e o preço do passageiro só aparece com Pago em dinheiro. O botão Salvar fica preso embaixo da tela.","Tabelas no celular: as que não cabem na tela (Contas a pagar, Lotes, Saldos, Manutenção, Categorias, Top 10 da Previsão) viram cartões, com a primeira coluna como título e as outras como rótulo e valor; os botões de cada linha continuam no cartão. Neste manual, toque no título de uma seção para abrir ou fechar.","Telas longas no celular (Início, Financeiro, Recarga, Previsão): os 2 primeiros blocos vêm abertos e os outros recolhidos; toque no título do bloco para abrir ou fechar — o app lembra a sua escolha neste aparelho.","O + verde (no computador, o botão + Corrida no canto de baixo ou a tecla N) lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Corrida com cronômetro: no Início toque em Iniciar corrida (ou, na corrida rápida, Iniciar com cronômetro). Uma faixa mostra o tempo e os km; toque em Encerrar e a corrida rápida abre com início, fim e km preenchidos — só falta o valor. Os km vêm do GPS, mas o celular só entrega a posição com o RideMax na tela: se você usar o app da Uber/99 na frente, o trecho perdido entra em linha reta e o km aparece como estimado. Se o app fechar no meio, a corrida continua de onde estava.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Backup, armazenamento e lembretes, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
     {t:"Celular e computador juntos",ps:["Configurações › Backup, armazenamento e lembretes › Sincronizar. Os dois aparelhos usam a mesma conta Google; os dados ficam numa pasta privada do app no seu Drive. A primeira configuração (ID do cliente) está no manual, seção 7.6.","Toque em Sincronizar (no topo do menu) ao começar e ao terminar o dia. A junção é por lançamento: o que foi incluído, editado ou apagado em cada aparelho é respeitado. Se o mesmo campo foi editado nos dois, fica a versão do aparelho que sincronizou por último.","Aparelho novo, sem lançamentos, recebe tudo da nuvem. Se os dois já têm lançamentos e nunca sincronizaram, o app pergunta o que fazer. Antes de aplicar a junção, o app guarda uma cópia em Antes da última restauração."]},
     {t:"Comprovante de renda",ps:["Para alugar imóvel, financiar ou pedir crédito: Financeiro › DRE › Comprovante de renda (PDF), ou Configurações › MEI e DAS. Escolha 3, 6 ou 12 meses; o mês atual entra só se você marcar, e sai como parcial.","O PDF traz, mês a mês, corridas, receita bruta, despesas do trabalho e rendimento líquido, mais o total por plataforma e as médias mensais (calculadas só sobre os meses com movimento). Os números são os do DRE por competência, no centro de custo do trabalho.","É uma declaração sua, assinada por você: o próprio PDF diz isso e indica os extratos das plataformas como prova. Lançamentos faltando = renda menor no papel, então confira antes de entregar. Nome, CPF, CNPJ e cidade ficam guardados para a próxima vez."]},
     {t:"Imposto de renda (IRPF)",ps:["Financeiro › DRE › Relatório IRPF (PDF), ou Configurações › MEI e DAS. Escolha o ano-calendário e a forma de trabalho. O PDF junta o que a declaração pede e o app já sabe: corridas mês a mês, bens em 31/12 pelo custo, proventos pagos no ano e vendas em bolsa.","Autônomo, sem CNPJ: 60% da receita bruta das corridas é tributável (regra do transporte de passageiros) e entra pelo Carnê-Leão, mês a mês; os outros 40% vão como não tributáveis. MEI: 16% da receita bruta é a parcela isenta presumida, limitada ao lucro; o lucro acima disso é tributável.","É relatório de apoio: não calcula o imposto e não substitui o contador. Os números oficiais são os dos informes das plataformas, bancos e corretoras — mês sem lançamento no app sai zerado no relatório."]},
@@ -11367,16 +11387,17 @@ function qrRender(pref){
   var ps=qrActivePlats();
   if(!qrPlat||!ps.some(function(p){ return p.id===qrPlat; })) qrPlat=qrDefaultPlat();
   var wd=workdayISO(new Date());
-  var h='<h3 id="qrTitle">⚡ Corrida rápida<button type="button" class="qrx" id="qrX" aria-label="Fechar">×</button></h3>';
+  var h='<h3 id="qrTitle">'+esc(pref.titulo||"⚡ Corrida rápida")+'<button type="button" class="qrx" id="qrX" aria-label="Fechar">×</button></h3>';
   h+='<div class="qr-chips" role="radiogroup" aria-label="Plataforma">';
   ps.forEach(function(p){ var on=(p.id===qrPlat); h+='<button type="button" class="qr-chip'+(on?" on":"")+'" role="radio" aria-checked="'+(on?"true":"false")+'" data-qrp="'+esc(p.id)+'"><span class="dot" style="background:'+validColor(p.color)+'"></span>'+esc(p.name)+'</button>'; });
   h+='</div>';
+  h+=(pref.end?('<div class="qr-cron">'+esc(pref.resumo||"")+'</div><input type="hidden" id="qrEnd" value="'+esc(pref.end)+'">'):((typeof cronLer==="function"&&!cronLer())?'<button type="button" class="qr-cronini" id="qrCronIni">▶ Iniciar com cronômetro (o valor vai no fim)</button>':''));
   h+='<input id="qrVal" inputmode="decimal" autocomplete="off" placeholder="R$ 0,00" aria-label="Valor da corrida em reais" value="'+esc(pref.val||"")+'">';
   h+='<label class="qr-tog"><input type="checkbox" id="qrCash"'+(pref.cash?" checked":"")+'> Pago em dinheiro</label>';
   h+='<div class="qr-row" id="qrFareRow"'+(pref.cash?"":" hidden")+'><label>Preço pago pelo passageiro (R$)<input id="qrFare" inputmode="decimal" value="'+esc(pref.fare||"")+'"></label></div>';
   h+='<button type="button" class="qr-more" id="qrMore" aria-expanded="'+(qrMoreOpen?"true":"false")+'">'+qrMoreLabel()+'</button>';
   h+='<div id="qrMoreBox"'+(qrMoreOpen?"":" hidden")+'><div class="qr-row"><label>Distância (km)<input id="qrDist" inputmode="decimal" placeholder="opcional" value="'+esc(pref.dist||"")+'"></label><label>Gorjeta (R$)<input id="qrTip" inputmode="decimal" placeholder="opcional"></label></div>';
-  h+='<div class="qr-row"><label>Data (DD/MM/AAAA)<input id="qrDate" inputmode="numeric" value="'+esc(isoToBR(wd))+'"></label><label>Início (HH:MM)<input id="qrStart" inputmode="numeric" value="'+esc(nowHM())+'"></label></div></div>';
+  h+='<div class="qr-row"><label>Data (DD/MM/AAAA)<input id="qrDate" inputmode="numeric" value="'+esc(isoToBR(pref.date||wd))+'"></label><label>Início (HH:MM)<input id="qrStart" inputmode="numeric" value="'+esc(pref.start||nowHM())+'"></label></div></div>';
   var lr=qrLastRide();
   if(lr){ h+='<div class="qr-last">Última: '+esc(BRL(Number(lr.earnings)||0))+' · '+esc(platName(lr.platform_id))+' · '+esc(isoToBR(lr.date))+' '+esc(lr.start_time||"")+' <button type="button" id="qrRepeat">Repetir</button></div>'; }
   h+='<div class="qr-err" id="qrErr" aria-live="polite"></div>';
@@ -11398,12 +11419,13 @@ function qrRender(pref){
   document.getElementById("qrSaveAgain").onclick=function(){ qrSubmit(true); };
   setTimeout(function(){ try{ var v=document.getElementById("qrVal"); v.focus(); v.select(); }catch(e){} },30);
 }
-function qrOpen(){
+function qrOpen(pref){
+  if(pref&&!pref.titulo&&!pref.end) pref=null; /* chamada por clique: o evento não é preferência */
   qrEnsureDom();
   if(DB_LOAD_BLOCKED!=null){ try{ showLoadBlockedModal(); }catch(e){ rmLogErr(e); } return; }
   if(!qrActivePlats().length){ customAlert("Cadastre ou ative uma plataforma antes (Configurações › Plataformas).","Corrida rápida"); return; }
-  qrMoreOpen=false; qrPlat=qrDefaultPlat();
-  qrRender({});
+  if(!(pref&&pref.end)) qrMoreOpen=false; qrPlat=qrDefaultPlat();
+  qrRender(pref||{});
   document.getElementById("qrBk").hidden=false;
   try{ document.body.style.overflow="hidden"; }catch(e){}
 }
@@ -11430,9 +11452,10 @@ async function qrSubmit(again){
     if(isFuturo(iso)){ fail("Data no futuro não é aceita.","qrDate"); return; }
     var st=(document.getElementById("qrStart").value||"").trim();
     if(!/^\d{2}:\d{2}$/.test(st)||Number(st.slice(0,2))>23||Number(st.slice(3))>59){ fail("Início inválido. Use HH:MM.","qrStart"); return; }
+    var en=((document.getElementById("qrEnd")||{}).value||"").trim(); if(!/^\d{2}:\d{2}$/.test(en)) en="";
     if(!(await confirmIfAbsurd("ride",earn))) return;
     if(tip>0&&!(await confirmIfAbsurd("ride",tip))) return;
-    var ride={id:uid(),platform_id:pid,date:iso,start_time:st,end_time:null,earnings:earn,tip:tip,fare:fare,cash:cash,distance:dist,notes:""};
+    var ride={id:uid(),platform_id:pid,date:iso,start_time:st,end_time:en||null,earnings:earn,tip:tip,fare:fare,cash:cash,distance:dist,notes:""};
     DB.rides.push(ride);
     var tit=null;
     if(!cash){ tit=criarTituloDeCorrida(ride); }
@@ -11443,6 +11466,7 @@ async function qrSubmit(again){
     if(!cash&&!tit) msg+=" · ⚠️ sem centro Uber: recebível não criado";
     if(cash){ try{ var cc=contaById(carteiraCreditoContaId()); if(cc&&iso<cc.dataSaldoInicial){ msg+=" · ⚠️ data antes do saldo inicial da conta "+cc.nome+": não entra no saldo"; } }catch(e){ rmLogErr(e); } }
     qrToast(msg,4500);
+    try{ if(en&&typeof cronAposSalvar==="function") cronAposSalvar(); }catch(_eC){ rmLogErr(_eC); }
     try{ if(current!=="nova") show(current); }catch(e){ rmLogErr(e,"qr-rerender"); }
     if(again){ qrRender({}); } else { qrClose(); }
   }catch(e){ rmLogErr(e,"qr-salvar"); try{ document.getElementById("qrErr").textContent="Erro ao salvar: "+String((e&&e.message)||e); }catch(_){} }
@@ -12732,6 +12756,7 @@ function dashHeroHTML(){
     var gW=Number(DB.goals&&DB.goals.weekly)||0, sw=statsPeriod(7);
     h+='<div class="dh-sem">Últimos 7 dias: <b>'+esc(BRL(liq?sw.e-expensesTotal(7):sw.e))+'</b>'+(gW>0?(' de '+esc(BRL(gW))+' na meta semanal'):'')+'</div>';
   }catch(e){}
+  try{ h+=cronHeroHTML(); }catch(_eC){}
   h+='</div>';
   return h;
 }
@@ -12959,6 +12984,102 @@ try{
   var _f5obs=new MutationObserver(function(){ try{ f5Blocos(); }catch(e){ rmLogErr(e,"f5"); } });
   _f5obs.observe(document.getElementById("viewCtn"),{childList:true,subtree:true});
 }catch(e){ rmLogErr(e,"f5-init"); }
+
+/* ---------- CORRIDA COM CRONÔMETRO (+ km pelo GPS) ----------
+   Iniciar → o app marca a hora e, com permissão, soma a distância pelo GPS.
+   Encerrar → abre a corrida rápida já com início, fim e km; você só digita o valor.
+   O estado fica salvo neste aparelho (sobrevive a fechar o app).
+   LIMITE HONESTO: o navegador só entrega posições com o RideMax na tela. Com outro
+   app na frente (Uber/99), o trecho perdido entra em LINHA RETA quando o RideMax
+   volta — por isso o km é marcado como estimado quando houve intervalo. */
+var CRON_KEY="rm_corrida_ativa", cronWatch=null, cronTick=null, cronUltGrav=0;
+function cronLer(){ try{ var o=JSON.parse(localStorage.getItem(CRON_KEY)||"null"); return (o&&o.ini)?o:null; }catch(e){ return null; } }
+function cronGrava(o){ try{ if(o) localStorage.setItem(CRON_KEY,JSON.stringify(o)); else localStorage.removeItem(CRON_KEY); }catch(e){} }
+function cronHM(ms){ var d=new Date(ms); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
+function cronDur(ms){ var s=Math.max(0,Math.floor(ms/1000)), h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60; return (h?h+":"+String(m).padStart(2,"0"):String(m))+":"+String(x).padStart(2,"0"); }
+function cronDist(a,b){ var R=6371, r=Math.PI/180, dLa=(b.lat-a.lat)*r, dLo=(b.lon-a.lon)*r; var x=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)*Math.sin(dLo/2); return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); }
+function cronPos(p){
+  var o=cronLer(); if(!o||o.fim) return;
+  var c=p&&p.coords; if(!c) return;
+  var pt={lat:c.latitude,lon:c.longitude,t:p.timestamp||Date.now(),acc:c.accuracy||999};
+  if(!o.ult){ if(pt.acc<=150){ o.ult=pt; o.gps="ok"; cronGrava(o); cronPintar(); } return; }
+  if(pt.acc>60) return; /* leitura imprecisa: ignora */
+  var d=cronDist(o.ult,pt), dt=Math.max(1,(pt.t-o.ult.t)/1000);
+  if(d*1000<Math.max(15,pt.acc*0.8)) return; /* parado / ruído: espera mover */
+  if(d/(dt/3600)>180) return; /* salto impossível (>180 km/h) */
+  if(dt>90){ o.gapMin=(o.gapMin||0)+dt/60; } /* ficou sem posição (app em 2º plano): trecho em linha reta */
+  o.km=(o.km||0)+d; o.ult=pt; o.gps="ok";
+  var agora=Date.now(); if(agora-cronUltGrav>5000){ cronUltGrav=agora; } cronGrava(o); cronPintar();
+}
+function cronGpsLigar(){
+  var o=cronLer(); if(!o||o.fim||o.gps==="desligado") return;
+  if(!("geolocation" in navigator)){ o.gps="sem"; cronGrava(o); return; }
+  if(cronWatch!=null) return;
+  try{
+    cronWatch=navigator.geolocation.watchPosition(cronPos,function(err){
+      var x=cronLer(); if(!x) return;
+      if(err&&err.code===1){ x.gps="negado"; cronGrava(x); cronGpsDesligar(); cronPintar(); }
+    },{enableHighAccuracy:true,maximumAge:3000,timeout:30000});
+  }catch(e){ rmLogErr(e,"cron-gps"); }
+}
+function cronGpsDesligar(){ try{ if(cronWatch!=null) navigator.geolocation.clearWatch(cronWatch); }catch(e){} cronWatch=null; }
+function cronIniciar(){
+  if(cronLer()){ cronPintar(); return; }
+  var o={ini:Date.now(),fim:null,km:0,ult:null,gps:"aguardando",gapMin:0};
+  cronGrava(o); cronGpsLigar(); cronPintar();
+  try{ if(navigator.vibrate) navigator.vibrate(40); }catch(e){}
+}
+function cronEncerrar(){
+  var o=cronLer(); if(!o) return;
+  var fechar=function(){
+    var x=cronLer(); if(!x) return;
+    if(!x.fim){ x.fim=Date.now(); cronGrava(x); }
+    cronGpsDesligar(); cronPintar(); cronAbrirValor();
+  };
+  /* uma última posição para fechar o trecho final (até 6 s) */
+  if(o.gps==="ok"&&("geolocation" in navigator)&&!o.fim){
+    var feito=false; var t=setTimeout(function(){ if(!feito){ feito=true; fechar(); } },6000);
+    try{ navigator.geolocation.getCurrentPosition(function(p){ if(feito) return; feito=true; clearTimeout(t); cronPos(p); fechar(); },function(){ if(!feito){ feito=true; clearTimeout(t); fechar(); } },{enableHighAccuracy:true,maximumAge:5000,timeout:6000}); }catch(e){ if(!feito){ feito=true; clearTimeout(t); fechar(); } }
+  } else fechar();
+}
+function cronResumo(o){
+  var fim=o.fim||Date.now(), dur=fim-o.ini, km=o.km||0;
+  var _mn=Math.max(1,Math.round(dur/60000));
+  var t="⏱ "+cronHM(o.ini)+"–"+cronHM(fim)+" · "+(_mn>=60?(Math.floor(_mn/60)+"h"+String(_mn%60).padStart(2,"0")):(_mn+" min"))+(km>0.05?(" · "+brDec(km,1)+" km pelo GPS"+((o.gapMin||0)>=1?" (estimado: "+Math.round(o.gapMin)+" min sem sinal do app)":"")):"");
+  if(o.gps==="negado") t+=" · GPS não permitido";
+  return t;
+}
+function cronAbrirValor(){
+  var o=cronLer(); if(!o||!o.fim) return;
+  var dIni=new Date(o.ini), data;
+  try{ data=workdayISO(dIni); }catch(e){ data=todayISO(); }
+  qrMoreOpen=(o.km||0)>0.05;
+  qrOpen({titulo:"🏁 Corrida encerrada — informe o valor",date:data,start:cronHM(o.ini),end:cronHM(o.fim),dist:(o.km||0)>0.05?brDec(Math.round(o.km*10)/10,1):"",resumo:cronResumo(o)});
+}
+function cronDescartar(){ cronGpsDesligar(); cronGrava(null); cronPintar(); }
+function cronAposSalvar(){ var o=cronLer(); if(o&&o.fim){ cronGrava(null); cronPintar(); } }
+/* ---- tela: faixa fixa (todas as telas, celular) + botão no painel do dia ---- */
+function cronPintar(){
+  var o=cronLer(), f=document.getElementById("cronBar");
+  if(!o){ if(f) f.hidden=true; document.body.classList.remove("cron-on"); if(cronTick){ clearInterval(cronTick); cronTick=null; } try{ var hb=document.getElementById("cronHeroBtn"); if(hb) hb.hidden=false; }catch(e){} return; }
+  if(!f){ f=document.createElement("div"); f.id="cronBar"; f.setAttribute("role","status"); (document.getElementById("app")||document.body).appendChild(f);
+    f.addEventListener("click",function(ev){ var b=ev.target.closest?ev.target.closest("button"):null; if(!b) return; var a=b.dataset.cron;
+      if(a==="fim") cronEncerrar(); else if(a==="valor") cronAbrirValor();
+      else if(a==="cancelar"){ var oo=cronLer(); customConfirm(oo&&oo.fim?"Descartar esta corrida? Nada foi salvo ainda.":"Cancelar a corrida em andamento? Nada é salvo.","Corrida","Descartar").then(function(ok){ if(ok) cronDescartar(); }); } }); }
+  f.hidden=false; document.body.classList.add("cron-on");
+  var gpsTx=o.gps==="ok"?(brDec(o.km||0,1)+" km"):(o.gps==="negado"?"sem GPS":(o.gps==="sem"?"sem GPS":"GPS…"));
+  if(o.fim){ f.className="fim"; f.innerHTML='<span class="ponto"></span><span class="tx"><b>Corrida encerrada</b> · '+esc(cronDur(o.fim-o.ini))+' · '+esc(gpsTx)+' — falta o valor</span><button type="button" data-cron="valor" class="btn sm green">Informar valor</button><button type="button" data-cron="cancelar" class="cron-x" aria-label="Descartar">×</button>'; }
+  else { f.className=""; f.innerHTML='<span class="ponto"></span><span class="tx"><b id="cronT">'+esc(cronDur(Date.now()-o.ini))+'</b> · <span id="cronKm">'+esc(gpsTx)+'</span></span><button type="button" data-cron="fim" class="btn sm red">■ Encerrar</button><button type="button" data-cron="cancelar" class="cron-x" aria-label="Cancelar corrida">×</button>'; }
+  try{ var hb2=document.getElementById("cronHeroBtn"); if(hb2) hb2.hidden=true; }catch(e){}
+  if(!o.fim&&!cronTick){ cronTick=setInterval(function(){ var x=cronLer(); if(!x||x.fim){ clearInterval(cronTick); cronTick=null; return; } if(document.hidden) return; var t=document.getElementById("cronT"); if(t) t.textContent=cronDur(Date.now()-x.ini); },1000); }
+}
+function cronHeroHTML(){ return '<button type="button" id="cronHeroBtn" class="cron-hero"'+(cronLer()?" hidden":"")+'>▶ Iniciar corrida <small>cronômetro + km pelo GPS</small></button>'; }
+try{
+  document.addEventListener("click",function(ev){ var b=ev.target&&ev.target.closest?ev.target.closest("#cronHeroBtn,#qrCronIni"):null; if(!b) return; if(b.id==="qrCronIni"){ try{ qrClose(); }catch(e){} } cronIniciar(); });
+  document.addEventListener("visibilitychange",function(){ if(!document.hidden){ var o=cronLer(); if(o&&!o.fim){ cronGpsDesligar(); cronGpsLigar(); } cronPintar(); } });
+  var _c0=cronLer(); if(_c0){ if(!_c0.fim) cronGpsLigar(); cronPintar(); }
+}catch(e){ rmLogErr(e,"cron-init"); }
+try{ window.RM.cronIniciar=cronIniciar; window.RM.cronEncerrar=cronEncerrar; window.RM.cronLer=cronLer; window.RM.cronPos=cronPos; }catch(e){ rmLogErr(e); }
 
 } /* fim rmApp */
 })();
