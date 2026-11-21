@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#15181f">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1087,7 +1087,7 @@ body.fit-lock #finBox:has(.fin-dre){display:block;overflow:visible}
 }
 
 /* ---------- APP INSTALÁVEL + CORRIDA RÁPIDA ---------- */
-#instBtn{display:block;margin:var(--s2) var(--s4) 0;width:calc(100% - 2*var(--s4));background:var(--accent);border:1px solid var(--border);color:var(--text);border-radius:var(--r-sm);padding:var(--s2);font-size:var(--f-sm);font-weight:700;cursor:pointer}
+#instBtn{display:block;margin:0 var(--s4) var(--s2);width:calc(100% - 2*var(--s4));background:var(--accent);border:1px solid var(--border);color:var(--text);border-radius:var(--r-sm);padding:var(--s2);font-size:var(--f-sm);font-weight:700;cursor:pointer}
 #instBtn[hidden]{display:none}
 #qrFab{position:fixed;right:calc(16px + env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));z-index:80;border:0;border-radius:999px;background:var(--green);color:#0f1116;font-weight:800;font-size:16px;padding:14px 20px;box-shadow:0 6px 20px rgba(0,0,0,.45);cursor:pointer;display:flex;align-items:center;gap:6px}
 #qrFab:hover{filter:brightness(1.08)}
@@ -10978,17 +10978,19 @@ function pwaIsIOS(){ try{ return /iphone|ipad|ipod/i.test(navigator.userAgent)||
 function pwaInstBtn(){
   var b=document.getElementById("instBtn");
   if(!b){
-    var host=document.querySelector(".sidebtns"); if(!host||!host.parentNode) return null;
+    /* logo abaixo do logo: no celular o menu vira uma caixa com rolagem e o fim dela fica escondido */
+    var host=document.querySelector("#sidebar .logo"); if(!host||!host.parentNode) return null;
     b=document.createElement("button"); b.id="instBtn"; b.type="button"; b.hidden=true; b.textContent="📲 Instalar app";
     host.parentNode.insertBefore(b,host.nextSibling);
     b.onclick=function(){
       if(pwaPrompt){ var p=pwaPrompt; pwaPrompt=null; try{ p.prompt(); p.userChoice.then(function(){ pwaRefreshInst(); }).catch(function(){}); }catch(e){ rmLogErr(e,"pwa-prompt"); } return; }
-      if(pwaIsIOS()){ customAlert("No iPhone/iPad (Safari):\n\n1. Toque em Compartilhar (quadrado com seta).\n2. Escolha “Adicionar à Tela de Início”.\n3. Toque em Adicionar.","Instalar app"); }
+      if(pwaIsIOS()){ customAlert("No iPhone/iPad (Safari):\n\n1. Toque em Compartilhar (quadrado com seta).\n2. Escolha “Adicionar à Tela de Início”.\n3. Toque em Adicionar.","Instalar app"); return; }
+      customAlert("Pelo menu do navegador:\n\n• Chrome: toque nos ⋮ (canto de cima) › “Instalar app” ou “Adicionar à tela inicial”.\n• Samsung Internet: toque em ≡ › “Adicionar página a” › “Tela inicial”.\n\nSe a opção não aparecer, recarregue a página uma vez e tente de novo.","Instalar app");
     };
   }
   return b;
 }
-function pwaRefreshInst(){ try{ var b=pwaInstBtn(); if(!b) return; b.hidden=pwaStandalone()||!(pwaPrompt||(pwaIsIOS()&&/^https?:$/.test(location.protocol))); }catch(e){ rmLogErr(e,"pwa-btn"); } }
+function pwaRefreshInst(){ try{ var b=pwaInstBtn(); if(!b) return; var web=/^https?:$/.test(location.protocol), movel=false; try{ movel=pwaIsIOS()||/android|mobile/i.test(navigator.userAgent)||(window.matchMedia&&window.matchMedia("(pointer:coarse)").matches); }catch(_m){ movel=false; } b.hidden=pwaStandalone()||!web||!(pwaPrompt||movel); }catch(e){ rmLogErr(e,"pwa-btn"); } }
 try{
   window.addEventListener("beforeinstallprompt",function(ev){ try{ ev.preventDefault(); }catch(e){} pwaPrompt=ev; pwaRefreshInst(); });
   window.addEventListener("appinstalled",function(){ pwaPrompt=null; pwaRefreshInst(); });

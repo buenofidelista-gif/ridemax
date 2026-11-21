@@ -3,8 +3,8 @@
    Ícones/manifesto: cópia guardada primeiro.
    Nada de outros sites (ex.: clima) passa por aqui, e os DADOS não ficam neste cache
    (eles ficam no IndexedDB do app). Ao publicar uma versão nova, aumente VERSAO. */
-var VERSAO = "ridemax-v1";
-var ARQUIVOS = ["./ridemax.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-maskable-512.png", "./icons/apple-touch-icon.png"];
+var VERSAO = "ridemax-v2";
+var ARQUIVOS = ["./ridemax.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", function (ev) {
   ev.waitUntil(caches.open(VERSAO).then(function (c) { return c.addAll(ARQUIVOS); }).then(function () { return self.skipWaiting(); }));
