@@ -1183,6 +1183,62 @@ body.fit-lock #finBox:has(.fin-dre){display:block;overflow:visible}
 }
 /* cartões com linhas de rótulo + valor: em 2 colunas, o texto maior quebrava palavras no meio */
 @media(max-width:560px){ .cards:has(.kv),.cards:has(.krow){grid-template-columns:1fr!important} }
+/* ---------- CELULAR — FASE 2: painel do dia, aviso compacto, histórico em cartões ---------- */
+.dash-hero,#hCards{display:none}
+@media(max-width:860px){
+  .dash-hero{display:block;padding:16px 16px 14px;margin-bottom:12px;background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 55%,var(--card)),var(--card) 70%);border:1px solid var(--border)}
+  .dh-top{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:14px}
+  .dh-lbl{font-weight:700;color:var(--text);text-transform:none}
+  .dh-val{font-size:40px;font-weight:800;line-height:1.1;margin:6px 0 10px;letter-spacing:-.5px}
+  .dh-bar{height:10px;border-radius:5px;background:var(--input);overflow:hidden;border:1px solid var(--border)}
+  .dh-bar i{display:block;height:100%;background:var(--green);border-radius:5px;transition:width .4s}
+  .dh-meta{font-size:14px;color:var(--muted);margin-top:6px}
+  .dh-meta b{color:var(--text)}
+  .dh-link{background:none;border:0;color:var(--blue);font:inherit;font-size:15px;padding:6px 0;min-height:40px;cursor:pointer}
+  .dh-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+  .dh-mini div{background:var(--input);border:1px solid var(--border);border-radius:var(--r);padding:8px 6px;text-align:center;min-width:0}
+  .dh-mini b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dh-mini span{font-size:12px;color:var(--muted)}
+  .dh-turno{display:flex;align-items:center;gap:8px;width:100%;margin-top:10px;min-height:44px;padding:8px 12px;border-radius:var(--r);border:1px solid var(--green);background:color-mix(in srgb,var(--green) 12%,transparent);color:var(--text);font:inherit;font-size:14px;text-align:left;cursor:pointer}
+  .dh-turno .dot{width:9px;height:9px;border-radius:50%;background:var(--green);flex-shrink:0;box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 30%,transparent)}
+  .dh-turno .chev{margin-left:auto;color:var(--muted);font-size:20px}
+  .dh-sem{font-size:14px;color:var(--muted);margin-top:10px}
+  .dh-sem b{color:var(--text)}
+  /* aviso de backup compacto */
+  .bkp-alert{padding:10px 12px!important;margin-bottom:12px}
+  .bkp-alert h3{font-size:15px!important;margin:0 32px 6px 0!important}
+  .bkp-alert .sub{display:none}
+  .bkp-alert .btnrow{margin-top:4px;gap:8px}
+  .bkp-alert .btnrow .btn{flex:1 1 0;min-width:0;padding:8px 6px;font-size:14px}
+  /* histórico em cartões */
+  .hist-list-card .tblwrap{display:none}
+  .hist-list-card{padding:8px!important;background:transparent!important;border:0!important}
+  #hCards{display:block}
+  .hist-bar #hEdit,.hist-bar #hDel{display:none}
+  .toolbar.hist-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .hist-bar select{flex:1 1 auto}
+  .hist-bar #hTot{flex-basis:100%;order:5;font-size:13px}
+  .hist-bar #hImp,.hist-bar #hCsv{order:6;flex:1 1 0;font-size:14px}
+  .hist-bar>span[style*="flex:1"]{display:none}
+  .hc-acoes .hc-del{background:var(--neg-solid);color:#fff}
+  .dh-turno .tx{flex:1;min-width:0}
+  .hc-dia{margin-bottom:14px}
+  .hc-cab{display:flex;justify-content:space-between;align-items:baseline;padding:4px 4px 6px;color:var(--muted);font-size:14px;position:sticky;top:61px;background:var(--bg);z-index:2}
+  .hc-cab span:first-child{color:var(--text);font-weight:700}
+  .hc-cab b{color:var(--green)}
+  .hc{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:6px;min-height:56px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .hc.on{border-color:var(--blue);background:color-mix(in srgb,var(--accent) 35%,var(--card))}
+  .hc-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .hc-m{flex:1;min-width:0}
+  .hc-m b{display:block;font-size:15px}
+  .hc-m span{font-size:13px;color:var(--muted)}
+  .hc-v{text-align:right}
+  .hc-v b{font-size:17px;white-space:nowrap}
+  .hc-v span{display:block;font-size:12px;color:var(--muted)}
+  .hc-acoes{flex-basis:100%;display:flex;gap:8px;flex-wrap:wrap;padding-top:6px;border-top:1px solid var(--border)}
+  .hc-acoes .btn{flex:1}
+  .hc-obs{flex-basis:100%;font-size:14px;color:var(--muted);white-space:pre-wrap}
+}
 @media(min-width:861px){ #mbar,#navBk,#mSyncBtn{display:none!important} }
 @media print{ #mbar,#navBk,#mSyncBtn{display:none!important} }
 </style>
@@ -4019,6 +4075,7 @@ function wireCorruptBanner(){
 }
 function backupBanner(){
   var st=DB.settings; if(!st) return "";
+  try{ if(f2BkpAdiado()) return ""; }catch(_eA){}
   var days=st.backupDays||7;
   var inner="";
   if(st.lastBackup){
@@ -4029,7 +4086,7 @@ function backupBanner(){
   } else {
     inner='Você ainda não fez nenhum backup. Seus dados vivem só neste navegador.';
   }
-  return '<div class="card warn"><h3>Proteja seus dados — faça backup</h3><div class="sub">'+inner+'</div><div class="btnrow"><button class="btn sm accent" id="bNow">Fazer backup agora</button>'+(bkpPodeEnviar()?'<button class="btn sm green" id="bkpEnviar" type="button">Enviar para o Drive/WhatsApp</button>':'')+'</div></div>';
+  return '<div class="card warn bkp-alert" style="position:relative"><button type="button" id="bkpAdiar" aria-label="Lembrar amanhã" title="Lembrar amanhã" style="position:absolute;top:4px;right:6px;background:none;border:0;color:var(--muted);font-size:22px;min-width:40px;min-height:40px;cursor:pointer">×</button><h3>Proteja seus dados — faça backup</h3><div class="sub">'+inner+'</div><div class="btnrow"><button class="btn sm accent" id="bNow">Fazer backup agora</button>'+(bkpPodeEnviar()?'<button class="btn sm green" id="bkpEnviar" type="button">Enviar para o Drive/WhatsApp</button>':'')+'</div></div>';
 }
 /* ---------- FASE 6A — DASHBOARD HOJE + SEMANA (só leitura) ----------
    O dashboard LÊ o que já existe; não recalcula, não grava, não altera.
@@ -4313,7 +4370,8 @@ function dashPatrimonioHTML(){
 }
 function rDash(){
   try{ document.body.classList.add("fit-lock"); }catch(e){rmLogErr(e)}
-  var html=corruptBanner()+backupBanner()+bkpBannerPasta();
+  var html=""; try{ html+=dashHeroHTML(); }catch(_eH){ rmLogErr(_eH,"hero"); }
+  html+=corruptBanner()+backupBanner()+bkpBannerPasta();
   html+='<div class="fit-screen dash-screen"><div class="dash-grid">';
   /* ============ BLOCO 1 — HOJE ============ */
   var contas=(DB.contas||[]).filter(function(c){ return c.ativa; }).sort(finSortNome);
@@ -4711,7 +4769,7 @@ function rHist(){
   if(tab===1) renderShifts(box); else renderRides(box);
 }
 function renderRides(box){
-  box.innerHTML='<div class="toolbar hist-bar"><span>Per\u00EDodo:</span><select id="hF"><option>7 dias</option><option selected>30 dias</option><option>90 dias</option><option>Todos</option></select><span id="hTot" style="color:var(--muted)"></span><span style="flex:1"></span><button class="btn teal sm" id="hImp">\u2B06 Importar CSV</button><button class="btn accent sm" id="hCsv">\u2B07 Exportar CSV</button><button class="btn yellow sm" id="hEdit">\u270F\uFE0F Editar</button><button class="btn sm hist-del" id="hDel">Excluir</button></div><div class="card hist-list-card"><div class="tblwrap"><table class="tbl"><thead><tr><th class="l">Plataforma</th><th class="l">Data/Hora</th><th>Valor</th><th>Gorjeta</th><th>Taxa</th><th class="hist-c">Pagto</th><th class="hist-d">Dist.</th><th class="hist-c">Obs.</th></tr></thead><tbody id="hBody"></tbody></table></div><div id="hPager"></div></div>';
+  box.innerHTML='<div class="toolbar hist-bar"><span>Per\u00EDodo:</span><select id="hF"><option>7 dias</option><option selected>30 dias</option><option>90 dias</option><option>Todos</option></select><span id="hTot" style="color:var(--muted)"></span><span style="flex:1"></span><button class="btn teal sm" id="hImp">\u2B06 Importar CSV</button><button class="btn accent sm" id="hCsv">\u2B07 Exportar CSV</button><button class="btn yellow sm" id="hEdit">\u270F\uFE0F Editar</button><button class="btn sm hist-del" id="hDel">Excluir</button></div><div class="card hist-list-card"><div id="hCards"></div><div class="tblwrap"><table class="tbl"><thead><tr><th class="l">Plataforma</th><th class="l">Data/Hora</th><th>Valor</th><th>Gorjeta</th><th>Taxa</th><th class="hist-c">Pagto</th><th class="hist-d">Dist.</th><th class="hist-c">Obs.</th></tr></thead><tbody id="hBody"></tbody></table></div><div id="hPager"></div></div>';
   var sel=document.getElementById("hF"); sel.value=histFilter;
   var selected=null;
   function refresh(){
@@ -4730,8 +4788,9 @@ function renderRides(box){
     slice.forEach(function(r){ var _fr=0; try{ _fr=isFuturo(r.date)?1:0; }catch(_e){ _fr=0; } var _tip=Number(r.tip)||0, _cash=isCashRide(r), _fee=_cash?cashFeeOf(r):0, _fare=(r.fare!=null&&isFinite(Number(r.fare)))?Number(r.fare):null; var _dtTxt=isoToBR(r.date)+" "+r.start_time+(r.end_time?"\u2013"+r.end_time:""); var _tipTxt=_tip>0?BRL(_tip):"\u2013", _feeTxt=_cash?BRL(_fee):"\u2013"; var _pay=_cash?'<span title="Dinheiro \u00B7 pre\u00E7o passageiro '+(_fare!=null?BRL(_fare):"\u2013")+'">\uD83D\uDCB5</span>':'<span title="Receb\u00EDvel no app" style="color:var(--muted)">\u2013</span>'; var _obs=(r.notes||""), _obsH=_obs?'<span class="hist-obsdot" title="'+esc(_obs)+'"></span>':""; html+='<tr data-id="'+esc(r.id)+'" style="cursor:pointer'+(selected===r.id?';background:var(--accent)':'')+'"><td class="l" title="'+esc(platName(r.platform_id))+'">'+esc(platName(r.platform_id))+'</td><td class="l" title="'+esc(_dtTxt)+(_fr?" \u2014 data futura, confira a data":"")+'">'+esc(_dtTxt)+(_fr?' <span title="Data futura \u2014 confira a data">\u26A0</span>':"")+'</td><td title="Total (ganho + gorjeta)">'+BRL(rideTotal(r))+'</td>'+(_hasTip?'<td title="'+(_tip>0?esc("Gorjeta "+BRL(_tip)):esc("Sem gorjeta"))+'">'+_tipTxt+'</td>':'')+(_hasFee?'<td title="'+(_cash?esc("Taxa "+BRL(_fee)+(_fare!=null?(" \u00B7 pre\u00E7o passageiro "+BRL(_fare)+" \u2212 ganho "+BRL(Number(r.earnings)||0)):"")):esc("Sem taxa (receb\u00EDvel no app)"))+'">'+_feeTxt+'</td>':'')+'<td class="hist-c">'+_pay+'</td><td class="hist-d">'+(r.distance!=null?Number(r.distance).toFixed(1):"\u2013")+'</td>'+(_hasObs?'<td class="hist-c">'+_obsH+'</td>':'')+'</tr>'; });
     var _colN=5+(_hasTip?1:0)+(_hasFee?1:0)+(_hasObs?1:0);
     document.getElementById("hBody").innerHTML=html||'<tr><td colspan="'+esc(_colN)+'" style="color:var(--muted)">Nenhuma corrida no per\u00EDodo.</td></tr>';
+    try{ histCardsRender(rows,slice,selected,function(id,ac){ selected=id; if(ac==='ed') document.getElementById('hEdit').click(); else if(ac==='del') document.getElementById('hDel').click(); else refresh(); }); }catch(_eHc){ rmLogErr(_eHc,'hist-cards'); }
     var kmT=rows.reduce(function(s,r){return s+(Number(r.distance)||0);},0);
-    document.getElementById("hTot").textContent="Total: "+BRL(tot)+" \u00B7 "+rows.length+" corridas \u00B7 ticket "+BRL(rows.length?tot/rows.length:0)+" \u00B7 "+kmT.toFixed(0)+" km (clique p/ selecionar)";
+    document.getElementById("hTot").textContent="Total: "+BRL(tot)+" \u00B7 "+rows.length+" corridas \u00B7 ticket "+BRL(rows.length?tot/rows.length:0)+" \u00B7 "+kmT.toFixed(0)+" km"+((typeof mbarMovel==="function"&&mbarMovel())?"":" (clique p/ selecionar)");
     document.getElementById("hPager").innerHTML=pagerHTML(histPage,pages,rows.length);
     wirePager(document.getElementById("hPager"),function(d){ histPage+=d; refresh(); });
     document.getElementById("hBody").querySelectorAll("tr[data-id]").forEach(function(tr){ tr.onclick=function(){ selected=tr.dataset.id; refresh(); }; });
@@ -7306,7 +7365,7 @@ function rManual(){
     {t:"Data de corte e saldo inicial",ps:["Cada conta tem uma data de corte, que é a data do saldo inicial. O saldo só conta movimento dessa data em diante.","Baixa e transferência com data anterior ao corte são bloqueadas.","Corrida em dinheiro com data anterior ao corte é permitida, porque pode ser carga histórica — mas o app avisa na hora e deixa um indicador na conta, dizendo quantos movimentos estão fora do saldo e quanto somam. Se isso aparecer sem você esperar, provavelmente a data está errada."]},
     {t:"Previsto, realizado e os 90 dias",ps:["O fluxo de caixa mostra lado a lado o que já aconteceu e o que está previsto, nunca somados.","O previsto usa o vencimento para o que é a pagar, e a data ESTIMADA do repasse para o que é a receber. Essa data sai da média dos repasses anteriores daquela plataforma; sem pelo menos dois repasses conciliados, não há estimativa e o valor aparece à parte, sem data.","A projeção de 90 dias mostra o menor saldo do período e em que dia ele cai. É o indicador mais útil do app: é ele que avisa que a conta vai faltar antes de faltar."]},
     {t:"Backup, descartes e limpeza",ps:["Exportar baixa tudo num arquivo. Importar SUBSTITUI a base, e antes disso o app baixa sozinho um backup do estado anterior.","Backup automático (Configurações › Backup): no celular, Enviar backup abre o compartilhar — mande para o Google Drive ou para você mesmo no WhatsApp/e-mail. No computador (Chrome/Edge), escolha uma pasta de backup, de preferência sincronizada com Drive ou OneDrive, e o app grava o arquivo do dia sozinho a cada lançamento, guardando os 30 últimos. Se o navegador pedir permissão de novo, um toque em Reativar resolve.","Cópias diárias: o app também guarda sozinho, neste aparelho, uma cópia por dia (7 dias + 4 semanas), com Restaurar e Baixar. Serve para desfazer um erro; não substitui o backup, porque some junto se o celular sumir ou o navegador for limpo. Restaurar guarda antes o estado atual como Antes da última restauração.","Se o arquivo tiver registro inválido, ele é descartado e RELATADO, com indicação do que foi. Se um título perder uma baixa inválida e voltar a ficar em aberto, isso aparece em destaque — não é perda silenciosa.","A limpeza da base apaga o movimento e preserva os cadastros. Ela pede backup, data de corte e confirmação digitada. Atenção: as séries são cadastro e NÃO são apagadas.","Os dados ficam no banco do navegador (IndexedDB), com espaço de centenas de MB. Cada navegador, aparelho e endereço tem a sua base: o arquivo aberto do disco e o site publicado são bases diferentes, ligadas só pelo backup. Limpar os dados do site ou desinstalar o app apaga a base daquele aparelho.","Configurações › Backup mostra o espaço usado e o Diagnóstico: a contagem de erros internos da sessão e o botão para baixar o log. O esperado é zero.","Se a base salva estiver danificada, o app guarda uma cópia antes de abrir uma nova; sem espaço para a cópia, ele bloqueia a gravação até você baixar os dados brutos. Nada é apagado às cegas."]},
-    {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu (no celular, em Mais), ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","No celular, a barra de baixo tem Início, Corridas (histórico), o + verde do meio (corrida rápida), Dinheiro (resumo financeiro) e Mais, que abre o menu completo; o voltar do celular fecha o menu. O botão de sincronizar fica no topo, ao lado do título.","O + verde (no computador, o botão + Corrida no canto de baixo ou a tecla N) lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Backup, armazenamento e lembretes, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
+    {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu (no celular, em Mais), ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","No celular, a barra de baixo tem Início, Corridas (histórico), o + verde do meio (corrida rápida), Dinheiro (resumo financeiro) e Mais, que abre o menu completo; o voltar do celular fecha o menu. O botão de sincronizar fica no topo, ao lado do título.","No celular, o Início abre com o painel do dia: ganho do dia de trabalho, barra da meta diária, R$ por hora, por corrida, km, turno aberto e os últimos 7 dias. O Histórico mostra as corridas em cartões agrupados por dia, com o total de cada dia; toque numa corrida para Editar ou Excluir. O aviso de backup tem um × que adia até amanhã.","O + verde (no computador, o botão + Corrida no canto de baixo ou a tecla N) lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Backup, armazenamento e lembretes, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
     {t:"Celular e computador juntos",ps:["Configurações › Backup, armazenamento e lembretes › Sincronizar. Os dois aparelhos usam a mesma conta Google; os dados ficam numa pasta privada do app no seu Drive. A primeira configuração (ID do cliente) está no manual, seção 7.6.","Toque em Sincronizar (no topo do menu) ao começar e ao terminar o dia. A junção é por lançamento: o que foi incluído, editado ou apagado em cada aparelho é respeitado. Se o mesmo campo foi editado nos dois, fica a versão do aparelho que sincronizou por último.","Aparelho novo, sem lançamentos, recebe tudo da nuvem. Se os dois já têm lançamentos e nunca sincronizaram, o app pergunta o que fazer. Antes de aplicar a junção, o app guarda uma cópia em Antes da última restauração."]},
     {t:"Comprovante de renda",ps:["Para alugar imóvel, financiar ou pedir crédito: Financeiro › DRE › Comprovante de renda (PDF), ou Configurações › MEI e DAS. Escolha 3, 6 ou 12 meses; o mês atual entra só se você marcar, e sai como parcial.","O PDF traz, mês a mês, corridas, receita bruta, despesas do trabalho e rendimento líquido, mais o total por plataforma e as médias mensais (calculadas só sobre os meses com movimento). Os números são os do DRE por competência, no centro de custo do trabalho.","É uma declaração sua, assinada por você: o próprio PDF diz isso e indica os extratos das plataformas como prova. Lançamentos faltando = renda menor no papel, então confira antes de entregar. Nome, CPF, CNPJ e cidade ficam guardados para a próxima vez."]},
     {t:"Imposto de renda (IRPF)",ps:["Financeiro › DRE › Relatório IRPF (PDF), ou Configurações › MEI e DAS. Escolha o ano-calendário e a forma de trabalho. O PDF junta o que a declaração pede e o app já sabe: corridas mês a mês, bens em 31/12 pelo custo, proventos pagos no ano e vendas em bolsa.","Autônomo, sem CNPJ: 60% da receita bruta das corridas é tributável (regra do transporte de passageiros) e entra pelo Carnê-Leão, mês a mês; os outros 40% vão como não tributáveis. MEI: 16% da receita bruta é a parcela isenta presumida, limitada ao lucro; o lucro acima disso é tributável.","É relatório de apoio: não calcula o imposto e não substitui o contador. Os números oficiais são os dos informes das plataformas, bancos e corretoras — mês sem lançamento no app sai zerado no relatório."]},
@@ -12559,6 +12618,75 @@ function mbarSync(){
 }
 try{ mbarIni(); }catch(e){ rmLogErr(e,"mbar-ini"); }
 try{ window.RM.navAbrir=navAbrir; window.RM.navFechar=navFechar; window.RM.telaAtual=function(){ return current; }; }catch(e){ rmLogErr(e); }
+
+/* ---------- CELULAR — FASE 2: painel do dia (Início) e histórico em cartões ---------- */
+var F2_DIAS=["domingo","segunda","terça","quarta","quinta","sexta","sábado"];
+function f2DiaNome(iso){ try{ var p=iso.split("-"), d=new Date(+p[0],+p[1]-1,+p[2]); var hoje=todayISO(); if(iso===hoje) return "Hoje"; if(iso===somaDiasISO(hoje,-1)) return "Ontem"; var n=F2_DIAS[d.getDay()]; return n.charAt(0).toUpperCase()+n.slice(1)+", "+isoToBR(iso).slice(0,5); }catch(e){ return isoToBR(iso); } }
+function dashHeroHTML(){
+  var wd=todayISO(); try{ wd=workdayISO(new Date()); }catch(e){}
+  var rides=(DB.rides||[]).filter(function(r){ return r&&r.date===wd; });
+  var ganho=0, km=0, minC=0, ganhoC=0;
+  rides.forEach(function(r){ var t=rideTotal(r); ganho+=t; km+=Number(r.distance)||0; if(r.end_time){ var m=rideMinutes(r); minC+=m; ganhoC+=t; } });
+  var liq=(DB.goalMode==="liquido");
+  var desp=0; try{ (DB.expenses||[]).forEach(function(x){ if(x&&x.date===wd) desp+=Number(x.amount)||0; }); }catch(e){}
+  var base=liq?ganho-desp:ganho;
+  var meta=0; try{ meta=Number(DB.goals&&DB.goals.daily)||0; }catch(e){}
+  var rh=minC>0?ganhoC/(minC/60):null;
+  var h='<div class="card dash-hero"><div class="dh-top"><span class="dh-lbl">'+esc(wd===todayISO()?"Hoje":("Dia de trabalho "+isoToBR(wd).slice(0,5)))+(liq?" · líquido":"")+'</span>';
+  h+='<span class="dh-n">'+rides.length+' corrida'+(rides.length===1?"":"s")+'</span></div>';
+  h+='<div class="dh-val">'+esc(BRL(base))+'</div>';
+  if(meta>0){
+    var pct=Math.max(0,Math.min(100,base/meta*100)), falta=meta-base;
+    h+='<div class="dh-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+Math.round(pct)+'"><i style="width:'+pct.toFixed(1)+'%"></i></div>';
+    h+='<div class="dh-meta">'+(falta>0.004?('Faltam <b>'+esc(BRL(falta))+'</b> para a meta de '+esc(BRL(meta))):('<b>Meta do dia batida</b> ('+esc(BRL(meta))+')'))+' · '+Math.round(base/meta*100)+'%</div>';
+  } else {
+    h+='<button type="button" class="dh-link" data-go-v="metas">Definir meta do dia ›</button>';
+  }
+  h+='<div class="dh-mini"><div><b>'+(rh!=null?esc(BRL(rh)):"—")+'</b><span>por hora</span></div><div><b>'+(rides.length?esc(BRL(ganho/rides.length)):"—")+'</b><span>por corrida</span></div><div><b>'+(km>0?esc(brGroup(String(Math.round(km))))+" km":"—")+'</b><span>rodados</span></div></div>';
+  try{
+    var op=openShift();
+    if(op){ var st=shiftStats(op), el=shiftElapsedMin(op); h+='<button type="button" class="dh-turno" data-go-v="historico" data-hist-tab="1"><span class="dot"></span><span class="tx">Turno aberto há <b>'+esc(fmtDur(el))+'</b> · '+esc(BRL(st.gain))+' no turno</span><span class="chev">›</span></button>'; }
+  }catch(e){ rmLogErr(e,"hero-turno"); }
+  try{
+    var gW=Number(DB.goals&&DB.goals.weekly)||0, sw=statsPeriod(7);
+    h+='<div class="dh-sem">Últimos 7 dias: <b>'+esc(BRL(liq?sw.e-expensesTotal(7):sw.e))+'</b>'+(gW>0?(' de '+esc(BRL(gW))+' na meta semanal'):'')+'</div>';
+  }catch(e){}
+  h+='</div>';
+  return h;
+}
+function histCardsRender(todas,pagina,sel,acao){
+  var box=document.getElementById("hCards"); if(!box) return;
+  if(!pagina.length){ box.innerHTML='<div class="empty">Nenhuma corrida no período.</div>'; return; }
+  var porDia={}; todas.forEach(function(r){ var d=porDia[r.date]||(porDia[r.date]={n:0,t:0}); d.n++; d.t+=rideTotal(r); });
+  var cores={}; (DB.platforms||[]).forEach(function(p){ cores[p.id]=p.color; });
+  var h="", dAtual=null;
+  pagina.forEach(function(r){
+    if(r.date!==dAtual){ if(dAtual!=null) h+='</div>'; dAtual=r.date; var D=porDia[r.date]||{n:0,t:0}; h+='<div class="hc-dia"><div class="hc-cab"><span>'+esc(f2DiaNome(r.date))+'</span><span>'+D.n+' · <b>'+esc(BRL(D.t))+'</b></span></div>'; }
+    var tip=Number(r.tip)||0, cash=false; try{ cash=isCashRide(r); }catch(e){}
+    var cor=validColor(cores[r.platform_id]||"")?cores[r.platform_id]:"#8f96a3";
+    var on=(sel===r.id);
+    h+='<div class="hc'+(on?" on":"")+'" data-hc="'+esc(r.id)+'" role="button" tabindex="0" aria-expanded="'+on+'">';
+    h+='<span class="hc-dot" style="background:'+esc(cor)+'"></span><div class="hc-m"><b>'+esc(platName(r.platform_id))+'</b><span>'+esc((r.start_time||"")+(r.end_time?"–"+r.end_time:""))+(r.distance?" · "+esc(brDec(Number(r.distance),1))+" km":"")+(cash?" · dinheiro":"")+(r.notes?" · 📝":"")+'</span></div>';
+    h+='<div class="hc-v"><b>'+esc(BRL(rideTotal(r)))+'</b>'+(tip>0?'<span>gorjeta '+esc(BRL(tip))+'</span>':'')+'</div>';
+    if(on) h+='<div class="hc-acoes">'+(r.notes?'<div class="hc-obs">'+esc(r.notes)+'</div>':'')+'<button type="button" class="btn sm yellow" data-hc-ac="ed">Editar</button><button type="button" class="btn sm hc-del" data-hc-ac="del">Excluir</button></div>';
+    h+='</div>';
+  });
+  h+='</div>';
+  box.innerHTML=h;
+  box.querySelectorAll("[data-hc]").forEach(function(c){
+    c.onclick=function(ev){ var b=ev.target.closest?ev.target.closest("[data-hc-ac]"):null; if(b){ ev.stopPropagation(); acao(c.dataset.hc,b.dataset.hcAc); return; } acao(sel===c.dataset.hc?null:c.dataset.hc,null); };
+    c.onkeydown=function(ev){ if(ev.key==="Enter"||ev.key===" "){ ev.preventDefault(); c.click(); } };
+  });
+}
+/* aviso de backup: "×" adia até amanhã (só neste aparelho) */
+function f2BkpAdiado(){ try{ return localStorage.getItem("rm_bkp_adiado")===todayISO(); }catch(e){ return false; } }
+try{
+  document.addEventListener("click",function(ev){ var t=ev&&ev.target; var b=t&&t.closest?t.closest("[data-go-v],#bkpAdiar"):null; if(!b) return;
+    if(b.id==="bkpAdiar"){ try{ localStorage.setItem("rm_bkp_adiado",todayISO()); }catch(e){} var c=b.closest(".card"); if(c) c.remove(); return; }
+    if(b.dataset.histTab!=null){ try{ window.__histTab=Number(b.dataset.histTab); }catch(e){} }
+    show(b.dataset.goV); });
+}catch(e){ rmLogErr(e,"f2-init"); }
+try{ window.RM.dashHeroHTML=dashHeroHTML; }catch(e){ rmLogErr(e); }
 
 } /* fim rmApp */
 })();
