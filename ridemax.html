@@ -1345,6 +1345,12 @@ body.cron-on .f3-fixo{bottom:calc(140px + env(safe-area-inset-bottom))}
   #mTelaBtn.on{background:var(--yellow);border-color:var(--yellow);color:#0f1116}
   #mTelaBtn + #mSyncBtn{margin-left:6px}
 }
+.turno-btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;margin-top:8px;border:1px solid var(--blue);border-radius:var(--r);background:transparent;color:var(--text);font:inherit;font-size:16px;font-weight:700;cursor:pointer}
+.turno-btn.fim{border-color:var(--red);color:var(--red)}
+.turno-row{display:flex;gap:8px}
+.turno-row .turno-btn{flex:1}
+.turno-btn.pausa{border-color:var(--yellow);color:var(--yellow)}
+.turno-btn.ret{border-color:var(--green);background:var(--green);color:#0f1116}
 #man-topo a{color:var(--blue)}
 @media(min-width:861px){ #mbar,#navBk,#mSyncBtn{display:none!important} }
 @media print{ #mbar,#navBk,#mSyncBtn{display:none!important} }
@@ -2128,7 +2134,7 @@ function sanitizeDB(d, rawBackup){
         if(!(os!=null&&isFinite(os)&&os>=0)) os=null;
         var oe=(s.odo_end==null||s.odo_end==="")?null:Number(s.odo_end);
         if(!(oe!=null&&isFinite(oe)&&oe>=0)) oe=null;
-        return {id:String(s.id||uid()),date:s.date,start_time:s.start_time,end_time:et,odo_start:os,odo_end:oe,notes:String(s.notes||"").slice(0,300)};
+        return {id:String(s.id||uid()),date:s.date,start_time:s.start_time,end_time:et,odo_start:os,odo_end:oe,notes:String(s.notes||"").slice(0,300),pausas:sanitizePausas(s.pausas)};
       });
     }
   }catch(e){
@@ -3562,15 +3568,15 @@ function isoAddDays(iso,n){ try{ var pp=String(iso).split("-"); var dd=new Date(
 function isoDays(iso){ var pp=String(iso||"").split("-"); return new Date(+pp[0],+pp[1]-1,+pp[2]).getTime()/86400000; }
 function shiftInterval(s){ try{ if(!s||!validISO(s.date)) return null; var sm=parseHM(s.start_time); if(sm==null) return null; var d0=isoDays(s.date); var start=d0*1440+sm; if(!s.end_time) return {start:start,end:null}; var em=parseHM(s.end_time); if(em==null) return {start:start,end:null}; var end=d0*1440+em; if(em<sm) end+=1440; else if(em===sm) end=start+1440; return {start:start,end:end}; }catch(e){ return null; } }
 function shiftDurationMin(s){ var iv=shiftInterval(s); if(!iv||iv.end==null) return null; return Math.max(0,iv.end-iv.start); }
-function shiftKmInfo(s){ var a=(s.odo_start==null||s.odo_start==="")?null:Number(s.odo_start); var b=(s.odo_end==null||s.odo_end==="")?null:Number(s.odo_end); if(a==null||!isFinite(a)) a=null; if(b==null||!isFinite(b)) b=null; if(a==null||b==null) return {km:null,invalid:false}; if(b<a) return {km:null,invalid:true}; return {km:b-a,invalid:false}; }
+function shiftKmInfo(s){ var a=(s.odo_start==null||s.odo_start==="")?null:Number(s.odo_start); var b=(s.odo_end==null||s.odo_end==="")?null:Number(s.odo_end); if(a==null||!isFinite(a)) a=null; if(b==null||!isFinite(b)) b=null; if(a==null||b==null) return {km:null,invalid:false,kmPess:0}; if(b<a) return {km:null,invalid:true,kmPess:0}; var _kp=0; try{ _kp=shiftKmPessoal(s); }catch(_e){} return {km:Math.max(0,b-a-_kp),invalid:false,kmPess:_kp,kmBruto:b-a}; }
 function openShift(){ for(var i=0;i<DB.shifts.length;i++){ var s=DB.shifts[i]; if(!s.end_time) return s; } return null; }
 function rideMin(r){ try{ var sm=parseHM(r.start_time); if(sm==null) return null; return isoDays(r.date)*1440+sm; }catch(e){ return null; } }
 function rideInShift(r,s){ try{ var iv=shiftInterval(s); if(!iv) return false; var rm=rideMin(r); if(rm==null) return false; if(iv.end==null) return rm>=iv.start; return rm>=iv.start&&rm<=iv.end; }catch(e){ return false; } }
 function shiftRides(s){ return DB.rides.filter(function(r){ return rideInShift(r,s); }); }
-function shiftStats(s){ var iv=shiftInterval(s); var durMin=(iv&&iv.end!=null)?(iv.end-iv.start):null; var durH=(durMin!=null)?durMin/60:0; var ki=shiftKmInfo(s); var rs=shiftRides(s); var gain=0, kmPass=0; rs.forEach(function(r){ gain+=rideTotal(r); kmPass+=Number(r.distance)||0; }); var perHour=(durH>0&&durMin!=null)?gain/durH:0; return {durMin:durMin,durH:durH,km:ki.km,kmInvalid:ki.invalid,rides:rs,n:rs.length,gain:gain,kmPass:kmPass,perHour:perHour}; }
+function shiftStats(s){ var iv=shiftInterval(s); var _pm=0; try{ _pm=(iv&&iv.end!=null)?shiftPausaMin(s,iv.end):0; }catch(_e){} var durMin=(iv&&iv.end!=null)?Math.max(0,iv.end-iv.start-_pm):null; var durH=(durMin!=null)?durMin/60:0; var ki=shiftKmInfo(s); var rs=shiftRides(s); var gain=0, kmPass=0; rs.forEach(function(r){ gain+=rideTotal(r); kmPass+=Number(r.distance)||0; }); var perHour=(durH>0&&durMin!=null)?gain/durH:0; return {pausaMin:_pm,durMin:durMin,durH:durH,km:ki.km,kmInvalid:ki.invalid,rides:rs,n:rs.length,gain:gain,kmPass:kmPass,perHour:perHour}; }
 function shiftsInRange(ini,fim){ return DB.shifts.filter(function(s){ return s.date>=ini&&s.date<=fim; }).sort(function(a,b){ return (a.date+a.start_time)<(b.date+b.start_time)?-1:1; }); }
-function shiftAgg(ini,fim){ var list=shiftsInRange(ini,fim).filter(function(s){ return !!s.end_time; }); var hours=0,gain=0,kmT=0,kmPass=0,nKm=0; list.forEach(function(s){ var st=shiftStats(s); hours+=st.durH; gain+=st.gain; if(st.km!=null){ kmT+=st.km; kmPass+=st.kmPass; nKm++; } }); return {shifts:list,n:list.length,hours:hours,gain:gain,kmTotal:kmT,kmPass:kmPass,nKm:nKm,aproveit:kmT>0?kmPass/kmT:null,perHour:hours>0?gain/hours:0}; }
-function shiftElapsedMin(s){ try{ var sm=parseHM(s.start_time); if(sm==null) return 0; var pp=String(s.date).split("-"); var dt=new Date(+pp[0],+pp[1]-1,+pp[2],Math.floor(sm/60),sm%60,0); var ms=new Date()-dt; return Math.max(0,ms/60000); }catch(e){ return 0; } }
+function shiftAgg(ini,fim){ var list=shiftsInRange(ini,fim).filter(function(s){ return !!s.end_time; }); var hours=0,gain=0,kmT=0,kmPass=0,nKm=0,kmPe=0; list.forEach(function(s){ var st=shiftStats(s); hours+=st.durH; gain+=st.gain; if(st.km!=null){ kmT+=st.km; kmPass+=st.kmPass; nKm++; try{ kmPe+=shiftKmInfo(s).kmPess||0; }catch(_e){} } }); return {kmPess:kmPe,shifts:list,n:list.length,hours:hours,gain:gain,kmTotal:kmT,kmPass:kmPass,nKm:nKm,aproveit:kmT>0?kmPass/kmT:null,perHour:hours>0?gain/hours:0}; }
+function shiftElapsedMin(s){ try{ var sm=parseHM(s.start_time); if(sm==null) return 0; var pp=String(s.date).split("-"); var dt=new Date(+pp[0],+pp[1]-1,+pp[2],Math.floor(sm/60),sm%60,0); var ms=new Date()-dt; var _pz=0; try{ _pz=shiftPausaMin(s,agoraAbs()); }catch(_e){} return Math.max(0,ms/60000-_pz); }catch(e){ return 0; } }
 function fmtDur(min){ if(min==null) return "\u2013"; min=Math.round(min); var h=Math.floor(min/60), m=min%60; return h+"h"+String(m).padStart(2,"0"); }
 /* ---------- UI base ---------- */
 var viewCtn=document.getElementById("viewCtn"), pageTitle=document.getElementById("pageTitle"),
@@ -4956,7 +4962,7 @@ function renderShifts(box){
     +'<label class="f">Od\u00F4metro inicial (km)<input id="shFOdoS" inputmode="decimal" placeholder="opcional" value="'+esc(ed?brN(ed.odo_start):"")+'"></label>'
     +'<label class="f">Od\u00F4metro final (km)<input id="shFOdoE" inputmode="decimal" placeholder="opcional" value="'+esc(ed?brN(ed.odo_end):"")+'"></label>'
     +'<label class="f">Observa\u00E7\u00E3o<input id="shFNotes" value="'+esc(ed?(ed.notes||""):"")+'"></label>'
-    +'<div class="msg-ok" id="shFMsg"></div><div class="btnrow"><button class="btn green" id="shFSave">'+(ed?"\uD83D\uDCBE Salvar altera\u00E7\u00F5es":"\u2705 Salvar turno")+'</button><button class="btn sm accent" id="shFCancel"'+(ed?"":" hidden")+'>Cancelar</button></div></div>'
+    +(ed&&Array.isArray(ed.pausas)&&ed.pausas.length?turnoPausasEditHTML(ed):"")+'<div class="msg-ok" id="shFMsg"></div><div class="btnrow"><button class="btn green" id="shFSave">'+(ed?"\uD83D\uDCBE Salvar altera\u00E7\u00F5es":"\u2705 Salvar turno")+'</button><button class="btn sm accent" id="shFCancel"'+(ed?"":" hidden")+'>Cancelar</button></div></div>'
     +'<div class="toolbar hist-bar"><span>Per\u00EDodo:</span><select id="shFilt"><option>7 dias</option><option>30 dias</option><option>90 dias</option><option>Todos</option></select><span id="shTot" style="color:var(--muted)"></span><span style="flex:1"></span><button class="btn yellow sm" id="shEdit">\u270F\uFE0F Editar</button><button class="btn sm hist-del" id="shDel">Excluir</button></div>'
     +'<div class="card hist-list-card"><div class="tblwrap"><table class="tbl"><thead><tr><th>Data</th><th>In\u00EDcio</th><th>Fim</th><th>Dura\u00E7\u00E3o</th><th>Km total</th><th>Km pass.</th><th>Aprov.</th><th>Corridas</th><th>Ganho</th><th>R$/h</th></tr></thead><tbody id="shBody"></tbody></table></div><div id="shPager"></div><div class="sub" id="shNote"></div></div>';
   var sel=document.getElementById("shFilt"); sel.value=window.__shiftFilter;
@@ -4989,6 +4995,12 @@ function renderShifts(box){
       }
     }
     var notes=document.getElementById("shFNotes").value.trim().slice(0,300);
+    if(ed&&Array.isArray(ed.pausas)&&ed.pausas.length){
+      var _ivN=shiftInterval({date:iso,start_time:st,end_time:et});
+      var _fora=_ivN&&shiftPausas(ed).some(function(x){ return x.ini<_ivN.start||(_ivN.end!=null&&x.fim!=null&&x.fim>_ivN.end)||(_ivN.end!=null&&x.ini>_ivN.end); });
+      if(_fora){ customAlert("Há pausa fora do novo horário do turno. Remova a pausa (lista abaixo) ou ajuste os horários.","Turnos"); return; }
+      var _paE=shiftPausaAberta(ed); if(et&&_paE&&_ivN&&_ivN.end!=null){ _paE.fim=et; _paE.fd=somaDiasISO(iso,Math.floor(_ivN.end/1440)-isoDays(iso)); if(_paE.of==null&&oe!=null) _paE.of=oe; }
+    }
     if(ed){
       ed.date=iso; ed.start_time=st; ed.end_time=et; ed.odo_start=os; ed.odo_end=oe; ed.notes=notes;
       if(!save()){ msg.textContent=SAVE_FAIL_MSG; return; }
@@ -5011,7 +5023,7 @@ function renderShifts(box){
     var html="";
     slice.forEach(function(s){
       var st=shiftStats(s);
-      var dur=s.end_time?fmtDur(st.durMin):"aberto";
+      var dur=s.end_time?fmtDur(st.durMin):"aberto"; try{ if(s.end_time&&st.pausaMin>0) dur+=" (−"+fmtDur(st.pausaMin)+" pausa)"; else if(!s.end_time&&shiftPausaAberta(s)) dur="pausado"; }catch(_eP){}
       var kmCell, apr;
       if(st.kmInvalid){ kmCell="\u26A0\uFE0F sem km"; apr="\u2013"; }
       else if(st.km!=null){ kmCell=st.km.toFixed(1); apr=(st.km>0?(st.kmPass/st.km*100).toFixed(0)+"%":"\u2013"); }
@@ -5702,8 +5714,10 @@ function kmMonthStats(ini,fim){
       var earnShiftm=0, kmPassm=0;
       DB.rides.forEach(function(r){ if(r.date>=ini&&r.date<=fim){ for(var j=0;j<agm.shifts.length;j++){ var shm=agm.shifts[j]; if(validm[shm.id]&&rideInShift(r,shm)){ earnShiftm+=rideTotal(r); kmPassm+=Number(r.distance)||0; break; } } } });
       var kmTm=agm.kmTotal;
+      var _fpm=(agm.kmTotal+(agm.kmPess||0))>0?agm.kmTotal/(agm.kmTotal+(agm.kmPess||0)):1, _epm=rc*(1-_fpm), totm=tot-_epm;
+      base.kmPess=agm.kmPess||0; base.energiaPessoal=_epm;
       base.km=kmTm; base.src="shift"; base.kmPass=kmPassm; base.aproveit=kmTm>0?kmPassm/kmTm:null;
-      base.ganho=kmTm>0?earnShiftm/kmTm:null; base.custo=kmTm>0?tot/kmTm:null; base.lucro=kmTm>0?(earnShiftm-tot)/kmTm:null;
+      base.ganho=kmTm>0?earnShiftm/kmTm:null; base.custo=kmTm>0?totm/kmTm:null; base.lucro=kmTm>0?(earnShiftm-totm)/kmTm:null;
     }
   }catch(e){rmLogErr(e)}
   return base;
@@ -5764,8 +5778,10 @@ function custoKmStatsOper(days){
       for(i=0;i<DB.rides.length;i++){ var r2=DB.rides[i]; if(!(r2.date>=s&&r2.date<=t0)) continue;
         for(var j=0;j<ag.shifts.length;j++){ var sh2=ag.shifts[j]; if(valid[sh2.id]&&rideInShift(r2,sh2)){ earnShift+=rideTotal(r2); kmPass+=Number(r2.distance)||0; break; } } }
       var kmT=ag.kmTotal;
+      var _fp=(ag.kmTotal+(ag.kmPess||0))>0?ag.kmTotal/(ag.kmTotal+(ag.kmPess||0)):1, _ep=rc*(1-_fp), tot2=tot-_ep;
+      base.kmPess=ag.kmPess||0; base.energiaPessoal=_ep;
       base.km=kmT; base.src="shift"; base.shiftN=ag.nKm; base.shiftTotal=ag.n; base.kmPass=kmPass; base.aproveit=kmT>0?kmPass/kmT:null; base.earnShift=earnShift;
-      base.ganho=kmT>0?earnShift/kmT:null; base.custo=kmT>0?tot/kmT:null; base.lucro=kmT>0?(earnShift-tot)/kmT:null; base.cons=(kmT>0&&kwh>0)?kwh/kmT:null; base.cr=tot; base.prop=1;
+      base.ganho=kmT>0?earnShift/kmT:null; base.custo=kmT>0?tot2/kmT:null; base.lucro=kmT>0?(earnShift-tot2)/kmT:null; base.cons=(kmT>0&&kwh>0)?(kwh*_fp)/kmT:null; base.cr=tot2; base.prop=1;
       return base;
     }
   }catch(e){rmLogErr(e)}
@@ -5804,7 +5820,7 @@ function custoKmStats(days){
     b.veicCfg=_cfgAny; b.alugNasDesp=_nas;
     if(!(b.km>0)) return b;
     b.dep=_dep; b.depKm=_dep/b.km; b.alug=Math.round(_al*100)/100; b.alugDias=_ald;
-    b.alugPart=(b.src==="shift")?al.valor:al.valor*(b.prop||1);
+    b.alugPart=(b.src==="shift")?b.alug:b.alug*(b.prop||1);
     b.cr=b.crOper+b.dep+b.alugPart;
     b.custo=b.cr/b.km;
     var earn=(b.src==="shift")?(b.earnShift||0):b.earnKm;
@@ -5836,6 +5852,7 @@ function kmBodyHTML(s){
     +'<div class="kv"><span>Custo total'+(s.src==="shift"?" (sem rateio)":" rateado")+'</span><b>'+BRL(s.cr)+'</b></div>'
     +((!s.veicCfg&&!s.alugNasDesp)?'<div class="sub">ℹ️ Depreciação e aluguel do carro ainda não entram aqui. Cadastre em Configurações › Manutenção › Custo do carro para ver o lucro real.</div>':"")
     +(s.alugNasDesp?'<div class="sub">Aluguel do carro: conta pelas Despesas lançadas (opção marcada em Custo do carro).</div>':"");
+  if(s.src==="shift"&&s.kmPess>0){ h+='<div class="sub">Pausas: '+brGroup(String(Math.round(s.kmPess)))+' km pessoais fora do turno e '+BRL(s.energiaPessoal||0)+' de energia proporcional fora deste custo (o DRE continua com a despesa inteira).</div>'; }
   if(s.src==="shift"){ h+='<div class="sub">fonte: km do turno (od\u00F4metro'+(s.shiftN?(' \u00B7 '+s.shiftN+' turno(s) com km'):"")+') \u2014 sem rateio. Aproveitamento = km com passageiro \u00F7 km total.</div>'; if(s.aproveit!=null) h+='<div class="kv"><span>Aproveitamento (km pass. \u00F7 km total)</span><b>'+(s.aproveit*100).toFixed(0)+'%</b></div>'; if(s.kmPass!=null) h+='<div class="kv"><span>Km com passageiro</span><b>'+s.kmPass.toFixed(1)+' km</b></div>'; }
   else { h+='<div class="sub">fonte: km das corridas (rateado).</div>'; if(s.ridesKm<s.ridesTotal) h+='<div class="sub">\u2139\uFE0F '+(s.ridesTotal-s.ridesKm)+' corrida(s) sem km no per\u00EDodo. Custos rateados proporcionalmente pelo ganho ('+(s.prop*100).toFixed(0)+'%).</div>'; }
   var ePart=(s.src==="shift"?s.rc:s.rc*s.prop), xPart=(s.src==="shift"?s.exp:s.exp*s.prop);
@@ -7472,7 +7489,7 @@ function rManual(){
     {t:"Data de corte e saldo inicial",ps:["Cada conta tem uma data de corte, que é a data do saldo inicial. O saldo só conta movimento dessa data em diante.","Baixa e transferência com data anterior ao corte são bloqueadas.","Corrida em dinheiro com data anterior ao corte é permitida, porque pode ser carga histórica — mas o app avisa na hora e deixa um indicador na conta, dizendo quantos movimentos estão fora do saldo e quanto somam. Se isso aparecer sem você esperar, provavelmente a data está errada."]},
     {t:"Previsto, realizado e os 90 dias",ps:["O fluxo de caixa mostra lado a lado o que já aconteceu e o que está previsto, nunca somados.","O previsto usa o vencimento para o que é a pagar, e a data ESTIMADA do repasse para o que é a receber. Essa data sai da média dos repasses anteriores daquela plataforma; sem pelo menos dois repasses conciliados, não há estimativa e o valor aparece à parte, sem data.","A projeção de 90 dias mostra o menor saldo do período e em que dia ele cai. É o indicador mais útil do app: é ele que avisa que a conta vai faltar antes de faltar."]},
     {t:"Backup, descartes e limpeza",ps:["Exportar baixa tudo num arquivo. Importar SUBSTITUI a base, e antes disso o app baixa sozinho um backup do estado anterior.","Backup automático (Configurações › Backup): no celular, Enviar backup abre o compartilhar — mande para o Google Drive ou para você mesmo no WhatsApp/e-mail. No computador (Chrome/Edge), escolha uma pasta de backup, de preferência sincronizada com Drive ou OneDrive, e o app grava o arquivo do dia sozinho a cada lançamento, guardando os 30 últimos. Se o navegador pedir permissão de novo, um toque em Reativar resolve.","Cópias diárias: o app também guarda sozinho, neste aparelho, uma cópia por dia (7 dias + 4 semanas), com Restaurar e Baixar. Serve para desfazer um erro; não substitui o backup, porque some junto se o celular sumir ou o navegador for limpo. Restaurar guarda antes o estado atual como Antes da última restauração.","Se o arquivo tiver registro inválido, ele é descartado e RELATADO, com indicação do que foi. Se um título perder uma baixa inválida e voltar a ficar em aberto, isso aparece em destaque — não é perda silenciosa.","A limpeza da base apaga o movimento e preserva os cadastros. Ela pede backup, data de corte e confirmação digitada. Atenção: as séries são cadastro e NÃO são apagadas.","Os dados ficam no banco do navegador (IndexedDB), com espaço de centenas de MB. Cada navegador, aparelho e endereço tem a sua base: o arquivo aberto do disco e o site publicado são bases diferentes, ligadas só pelo backup. Limpar os dados do site ou desinstalar o app apaga a base daquele aparelho.","Configurações › Backup mostra o espaço usado e o Diagnóstico: a contagem de erros internos da sessão e o botão para baixar o log. O esperado é zero.","Se a base salva estiver danificada, o app guarda uma cópia antes de abrir uma nova; sem espaço para a cópia, ele bloqueia a gravação até você baixar os dados brutos. Nada é apagado às cegas."]},
-    {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu (no celular, em Mais), ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","No celular, a barra de baixo tem Início, Corridas (histórico), o + verde do meio (corrida rápida), Dinheiro (resumo financeiro) e Mais, que abre o menu completo; o voltar do celular fecha o menu. O botão de sincronizar fica no topo, ao lado do título.","No celular, o Início abre com o painel do dia: ganho do dia de trabalho, barra da meta diária, R$ por hora, por corrida, km, turno aberto e os últimos 7 dias. O Histórico mostra as corridas em cartões agrupados por dia, com o total de cada dia; toque numa corrida para Editar ou Excluir. O aviso de backup tem um × que adia até amanhã.","Formulários no celular: Nova corrida, Recarga e Despesa mostram primeiro o essencial — plataforma ou categoria em botões, valor grande — e guardam o resto em Mais detalhes. Na Nova corrida o início já vem com a hora atual e o preço do passageiro só aparece com Pago em dinheiro. O botão Salvar fica preso embaixo da tela.","Tabelas no celular: as que não cabem na tela (Contas a pagar, Lotes, Saldos, Manutenção, Categorias, Top 10 da Previsão) viram cartões, com a primeira coluna como título e as outras como rótulo e valor; os botões de cada linha continuam no cartão. Neste manual, toque no título de uma seção para abrir ou fechar.","Telas longas no celular (Início, Financeiro, Recarga, Previsão): os 2 primeiros blocos vêm abertos e os outros recolhidos; toque no título do bloco para abrir ou fechar — o app lembra a sua escolha neste aparelho.","O + verde (no computador, o botão + Corrida no canto de baixo ou a tecla N) lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Corrida com cronômetro: no Início toque em Iniciar corrida (ou, na corrida rápida, Iniciar com cronômetro). Uma faixa mostra o tempo e os km; toque em Encerrar e a corrida rápida abre com início, fim e km preenchidos — só falta o valor. Os km vêm do GPS, mas o celular só entrega a posição com o RideMax na tela: se você usar o app da Uber/99 na frente, o trecho perdido entra em linha reta e o km aparece como estimado. Se o app fechar no meio, a corrida continua de onde estava.","Tela ligada: durante a corrida com cronômetro a tela não bloqueia sozinha (enquanto o RideMax estiver na tela). O botão ☀ no topo deixa a tela ligada sempre que o app estiver aberto — fica amarelo quando está ativo. Gasta mais bateria; vale com o celular no carregador.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Backup, armazenamento e lembretes, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
+    {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu (no celular, em Mais), ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","No celular, a barra de baixo tem Início, Corridas (histórico), o + verde do meio (corrida rápida), Dinheiro (resumo financeiro) e Mais, que abre o menu completo; o voltar do celular fecha o menu. O botão de sincronizar fica no topo, ao lado do título.","No celular, o Início abre com o painel do dia: ganho do dia de trabalho, barra da meta diária, R$ por hora, por corrida, km, turno aberto e os últimos 7 dias. O Histórico mostra as corridas em cartões agrupados por dia, com o total de cada dia; toque numa corrida para Editar ou Excluir. O aviso de backup tem um × que adia até amanhã.","Formulários no celular: Nova corrida, Recarga e Despesa mostram primeiro o essencial — plataforma ou categoria em botões, valor grande — e guardam o resto em Mais detalhes. Na Nova corrida o início já vem com a hora atual e o preço do passageiro só aparece com Pago em dinheiro. O botão Salvar fica preso embaixo da tela.","Tabelas no celular: as que não cabem na tela (Contas a pagar, Lotes, Saldos, Manutenção, Categorias, Top 10 da Previsão) viram cartões, com a primeira coluna como título e as outras como rótulo e valor; os botões de cada linha continuam no cartão. Neste manual, toque no título de uma seção para abrir ou fechar.","Telas longas no celular (Início, Financeiro, Recarga, Previsão): os 2 primeiros blocos vêm abertos e os outros recolhidos; toque no título do bloco para abrir ou fechar — o app lembra a sua escolha neste aparelho.","O + verde (no computador, o botão + Corrida no canto de baixo ou a tecla N) lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Corrida com cronômetro: no Início toque em Iniciar corrida (ou, na corrida rápida, Iniciar com cronômetro). Uma faixa mostra o tempo e os km; toque em Encerrar e a corrida rápida abre com início, fim e km preenchidos — só falta o valor. Os km vêm do GPS, mas o celular só entrega a posição com o RideMax na tela: se você usar o app da Uber/99 na frente, o trecho perdido entra em linha reta e o km aparece como estimado. Se o app fechar no meio, a corrida continua de onde estava.","Turno com um toque: no Início, Iniciar turno pede só o odômetro (vem sugerido o último conhecido) e a hora. Com o turno aberto, Encerrar turno mostra o resumo — duração, corridas e ganho — e pede o odômetro final. Só pode haver um turno aberto por vez.","Pausa no turno: para algo pessoal, toque em Pausar (pede o odômetro) e depois em Retomar (pede de novo). O tempo da pausa sai das horas e do R$/hora; os km rodados na pausa saem do km do turno; e no custo por km da Análise sai também a parte da energia proporcional a esses km. O DRE continua com a despesa inteira. Se começar uma corrida com o turno pausado, o app pergunta se quer retomar.","Tela ligada: durante a corrida com cronômetro a tela não bloqueia sozinha (enquanto o RideMax estiver na tela). O botão ☀ no topo deixa a tela ligada sempre que o app estiver aberto — fica amarelo quando está ativo. Gasta mais bateria; vale com o celular no carregador.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Backup, armazenamento e lembretes, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
     {t:"Celular e computador juntos",ps:["Configurações › Backup, armazenamento e lembretes › Sincronizar. Os dois aparelhos usam a mesma conta Google; os dados ficam numa pasta privada do app no seu Drive. A primeira configuração (ID do cliente) está no manual, seção 7.6.","Toque em Sincronizar (no topo do menu) ao começar e ao terminar o dia. A junção é por lançamento: o que foi incluído, editado ou apagado em cada aparelho é respeitado. Se o mesmo campo foi editado nos dois, fica a versão do aparelho que sincronizou por último.","Aparelho novo, sem lançamentos, recebe tudo da nuvem. Se os dois já têm lançamentos e nunca sincronizaram, o app pergunta o que fazer. Antes de aplicar a junção, o app guarda uma cópia em Antes da última restauração."]},
     {t:"Comprovante de renda",ps:["Para alugar imóvel, financiar ou pedir crédito: Financeiro › DRE › Comprovante de renda (PDF), ou Configurações › MEI e DAS. Escolha 3, 6 ou 12 meses; o mês atual entra só se você marcar, e sai como parcial.","O PDF traz, mês a mês, corridas, receita bruta, despesas do trabalho e rendimento líquido, mais o total por plataforma e as médias mensais (calculadas só sobre os meses com movimento). Os números são os do DRE por competência, no centro de custo do trabalho.","É uma declaração sua, assinada por você: o próprio PDF diz isso e indica os extratos das plataformas como prova. Lançamentos faltando = renda menor no papel, então confira antes de entregar. Nome, CPF, CNPJ e cidade ficam guardados para a próxima vez."]},
     {t:"Imposto de renda (IRPF)",ps:["Financeiro › DRE › Relatório IRPF (PDF), ou Configurações › MEI e DAS. Escolha o ano-calendário e a forma de trabalho. O PDF junta o que a declaração pede e o app já sabe: corridas mês a mês, bens em 31/12 pelo custo, proventos pagos no ano e vendas em bolsa.","Autônomo, sem CNPJ: 60% da receita bruta das corridas é tributável (regra do transporte de passageiros) e entra pelo Carnê-Leão, mês a mês; os outros 40% vão como não tributáveis. MEI: 16% da receita bruta é a parcela isenta presumida, limitada ao lucro; o lucro acima disso é tributável.","É relatório de apoio: não calcula o imposto e não substitui o contador. Os números oficiais são os dos informes das plataformas, bancos e corretoras — mês sem lançamento no app sai zerado no relatório."]},
@@ -11427,6 +11444,7 @@ function qrRender(pref){
 }
 function qrOpen(pref){
   if(pref&&!pref.titulo&&!pref.end) pref=null; /* chamada por clique: o evento não é preferência */
+  try{ var _pf=pref; if(!(_pf&&_pf.end)&&turnoChecaPausa(function(){ qrOpen(_pf); })) return; }catch(_eP){}
   qrEnsureDom();
   if(DB_LOAD_BLOCKED!=null){ try{ showLoadBlockedModal(); }catch(e){ rmLogErr(e); } return; }
   if(!qrActivePlats().length){ customAlert("Cadastre ou ative uma plataforma antes (Configurações › Plataformas).","Corrida rápida"); return; }
@@ -12756,13 +12774,14 @@ function dashHeroHTML(){
   h+='<div class="dh-mini"><div><b>'+(rh!=null?esc(BRL(rh)):"—")+'</b><span>por hora</span></div><div><b>'+(rides.length?esc(BRL(ganho/rides.length)):"—")+'</b><span>por corrida</span></div><div><b>'+(km>0?esc(brGroup(String(Math.round(km))))+" km":"—")+'</b><span>rodados</span></div></div>';
   try{
     var op=openShift();
-    if(op){ var st=shiftStats(op), el=shiftElapsedMin(op); h+='<button type="button" class="dh-turno" data-go-v="historico" data-hist-tab="1"><span class="dot"></span><span class="tx">Turno aberto há <b>'+esc(fmtDur(el))+'</b> · '+esc(BRL(st.gain))+' no turno</span><span class="chev">›</span></button>'; }
+    if(op){ var st=shiftStats(op), el=shiftElapsedMin(op); h+='<button type="button" class="dh-turno" data-go-v="historico" data-hist-tab="1"><span class="dot"></span><span class="tx">'+(shiftPausaAberta(op)?('Turno <b>pausado</b> desde '+esc(shiftPausaAberta(op).ini)+' · trabalhado <b>'):'Turno aberto há <b>')+''+esc(fmtDur(el))+'</b> · '+esc(BRL(st.gain))+' no turno</span><span class="chev">›</span></button>'; }
   }catch(e){ rmLogErr(e,"hero-turno"); }
   try{
     var gW=Number(DB.goals&&DB.goals.weekly)||0, sw=statsPeriod(7);
     h+='<div class="dh-sem">Últimos 7 dias: <b>'+esc(BRL(liq?sw.e-expensesTotal(7):sw.e))+'</b>'+(gW>0?(' de '+esc(BRL(gW))+' na meta semanal'):'')+'</div>';
   }catch(e){}
   try{ h+=cronHeroHTML(); }catch(_eC){}
+  try{ h+=turnoHeroHTML(); }catch(_eT){ rmLogErr(_eT,"turno-hero"); }
   h+='</div>';
   return h;
 }
@@ -13030,6 +13049,7 @@ function cronGpsLigar(){
 }
 function cronGpsDesligar(){ try{ if(cronWatch!=null) navigator.geolocation.clearWatch(cronWatch); }catch(e){} cronWatch=null; }
 function cronIniciar(){
+  try{ if(turnoChecaPausa(function(){ cronIniciar(); })) return; }catch(_eP){}
   if(cronLer()){ cronPintar(); return; }
   var o={ini:Date.now(),fim:null,km:0,ult:null,gps:"aguardando",gapMin:0};
   cronGrava(o); cronGpsLigar(); cronPintar();
@@ -13128,6 +13148,196 @@ try{
   telaAtualiza();
 }catch(e){ rmLogErr(e,"tela-init"); }
 try{ window.RM.telaModo=telaModo; window.RM.telaAtiva=function(){ return !!telaLock; }; }catch(e){ rmLogErr(e); }
+
+/* ---------- TURNO COM UM TOQUE (painel do dia, celular) ----------
+   Iniciar: pede só o odômetro (sugere o último conhecido) e a hora (agora).
+   Encerrar: mostra o resumo do turno e pede o odômetro final.
+   Mesmas regras do formulário de Turnos: um turno aberto por vez, aviso acima de
+   18 h; e um aviso a mais se o odômetro final for menor que o inicial. */
+function turnoUltOdo(){
+  var m=null;
+  try{ (DB.shifts||[]).forEach(function(s){ [s.odo_end,s.odo_start].forEach(function(v){ if(v!=null&&v!==""&&isFinite(Number(v))) m=(m==null)?Number(v):Math.max(m,Number(v)); }); }); }catch(e){}
+  try{ var mo=maxOdo(); if(mo!=null) m=(m==null)?mo:Math.max(m,mo); }catch(e){}
+  return m;
+}
+function turnoNum(v){ v=String(v||"").trim(); if(!v) return null; var n=parseBR(v.replace(/\.(?=\d{3}(\D|$))/g,"")); return (isFinite(n)&&n>=0)?n:NaN; }
+function turnoHeroHTML(){
+  var op=null; try{ op=openShift(); }catch(e){}
+  if(op&&shiftPausaAberta(op)) return '<div class="turno-row"><button type="button" class="turno-btn ret" data-turno="retomar">▶ Retomar turno</button><button type="button" class="turno-btn fim" data-turno="fim">■ Encerrar</button></div>';
+  if(op) return '<div class="turno-row"><button type="button" class="turno-btn pausa" data-turno="pausa">⏸ Pausar</button><button type="button" class="turno-btn fim" data-turno="fim">■ Encerrar turno</button></div>';
+  return '<button type="button" class="turno-btn" data-turno="ini">⏱ Iniciar turno</button>';
+}
+function turnoAbrirInicio(){
+  if(openShift()){ turnoAbrirFim(); return; }
+  var ult=turnoUltOdo();
+  var h='<h3>Iniciar turno<button type="button" class="qrx" id="crX" aria-label="Fechar">×</button></h3>';
+  h+='<div class="sub">Marca o começo do expediente. O R$/hora e os km do turno saem daqui.</div>';
+  h+='<div class="qr-row"><label>Odômetro agora (km)<input id="tuOdo" inputmode="numeric" placeholder="opcional" value="'+(ult!=null?esc(brGroup(String(Math.round(ult)))):"")+'"></label><label>Início (HH:MM)<input id="tuHora" inputmode="numeric" value="'+esc(nowHM())+'"></label></div>';
+  if(ult!=null) h+='<div class="sub">Sugestão: último odômetro conhecido. Confira no painel do carro.</div>';
+  h+='<div class="msg-ok" id="tuMsg" style="color:#e0695c"></div>';
+  h+='<div class="btnrow" style="margin-top:var(--s3)"><button type="button" class="btn green" id="tuOk" style="flex:1;min-height:50px;background:var(--green);color:#0f1116">▶ Iniciar turno</button><button type="button" class="btn accent" id="veicCancel">Cancelar</button></div>';
+  veicSheet(h);
+  try{ var o=document.getElementById("tuOdo"); o.focus(); o.select(); }catch(e){}
+  document.getElementById("tuOk").onclick=function(){
+    var msg=document.getElementById("tuMsg"); msg.textContent="";
+    var os=turnoNum(document.getElementById("tuOdo").value), st=document.getElementById("tuHora").value.trim();
+    if(isNaN(os)){ msg.textContent="Odômetro inválido (só números)."; return; }
+    if(!/^\d{2}:\d{2}$/.test(st)||parseHM(st)==null){ msg.textContent="Início inválido. Use HH:MM."; return; }
+    if(openShift()){ msg.textContent="Já existe um turno aberto. Encerre-o antes de abrir outro."; return; }
+    var s={id:uid(),date:todayISO(),start_time:st,end_time:null,odo_start:os,odo_end:null,notes:""};
+    DB.shifts.push(s);
+    if(!save()){ var ix=DB.shifts.indexOf(s); if(ix>=0) DB.shifts.splice(ix,1); msg.textContent=SAVE_FAIL_MSG; return; }
+    crFechar(); try{ qrToast("⏱ Turno iniciado às "+st+(os!=null?" · "+brGroup(String(Math.round(os)))+" km":""),3500); }catch(e){}
+    show(current);
+  };
+}
+function turnoAbrirFim(){
+  var op=openShift(); if(!op){ turnoAbrirInicio(); return; }
+  var st={n:0,gain:0}; try{ st=shiftStats(op); }catch(e){}
+  var el=0; try{ el=shiftElapsedMin(op); }catch(e){}
+  var h='<h3>Encerrar turno<button type="button" class="qrx" id="crX" aria-label="Fechar">×</button></h3>';
+  h+='<div class="qr-cron">Começou '+esc(isoToBR(op.date).slice(0,5))+' às '+esc(op.start_time||"")+' · '+esc(fmtDur(el))+' · '+(st.n||0)+' corrida'+((st.n||0)===1?"":"s")+' · '+esc(BRL(st.gain||0))+(op.odo_start!=null?' · início '+esc(brGroup(String(Math.round(op.odo_start))))+' km':'')+'</div>';
+  if(shiftPausaAberta(op)) h+='<div class="sub" style="color:var(--yellow)">O turno está pausado desde '+esc(shiftPausaAberta(op).ini)+': a pausa termina junto com o turno (o trecho final conta como pessoal).</div>';
+  h+='<div class="qr-row"><label>Odômetro agora (km)<input id="tuOdo" inputmode="numeric" placeholder="opcional"></label><label>Fim (HH:MM)<input id="tuHora" inputmode="numeric" value="'+esc(nowHM())+'"></label></div>';
+  h+='<div class="msg-ok" id="tuMsg" style="color:#e0695c"></div>';
+  h+='<div class="btnrow" style="margin-top:var(--s3)"><button type="button" class="btn red" id="tuOk" style="flex:1;min-height:50px;background:var(--neg-solid);color:#fff">■ Encerrar turno</button><button type="button" class="btn accent" id="veicCancel">Cancelar</button></div>';
+  veicSheet(h);
+  try{ document.getElementById("tuOdo").focus(); }catch(e){}
+  document.getElementById("tuOk").onclick=async function(){
+    var msg=document.getElementById("tuMsg"); msg.textContent="";
+    var oe=turnoNum(document.getElementById("tuOdo").value), et=document.getElementById("tuHora").value.trim();
+    if(isNaN(oe)){ msg.textContent="Odômetro inválido (só números)."; return; }
+    if(!/^\d{2}:\d{2}$/.test(et)||parseHM(et)==null){ msg.textContent="Fim inválido. Use HH:MM."; return; }
+    var cur=openShift(); if(!cur||cur.id!==op.id){ msg.textContent="Este turno já foi encerrado (talvez em outra tela)."; return; }
+    if(oe!=null&&op.odo_start!=null&&oe<Number(op.odo_start)){
+      crFechar();
+      var ok1=await customProceed("O odômetro final ("+brGroup(String(Math.round(oe)))+" km) é menor que o do início ("+brGroup(String(Math.round(op.odo_start)))+" km). Confira o número.","Odômetro","Salvar mesmo assim");
+      if(!ok1){ turnoAbrirFim(); return; }
+    }
+    var dm=null; try{ dm=shiftDurationMin({date:op.date,start_time:op.start_time,end_time:et}); }catch(e){}
+    if(dm!=null&&dm>18*60){
+      crFechar();
+      var ok2=await customProceed("O turno tem "+fmtDur(dm)+" (acima de 18h). Confira os horários antes de salvar.","Turno longo","Salvar mesmo assim");
+      if(!ok2){ turnoAbrirFim(); return; }
+    }
+    var old={end_time:op.end_time,odo_end:op.odo_end}, _pa=shiftPausaAberta(op), _paOld=_pa?{fd:_pa.fd,fim:_pa.fim,of:_pa.of}:null;
+    op.end_time=et; op.odo_end=oe;
+    if(_pa){ var _fdE=todayISO(); if(pausaAbs(_fdE,et)<pausaAbs(_pa.d,_pa.ini)) _fdE=somaDiasISO(_fdE,-1); _pa.fd=_fdE; _pa.fim=et; _pa.of=oe; }
+    if(!save()){ op.end_time=old.end_time; op.odo_end=old.odo_end; if(_pa){ _pa.fd=_paOld.fd; _pa.fim=_paOld.fim; _pa.of=_paOld.of; } try{ msg.textContent=SAVE_FAIL_MSG; }catch(e){ customAlert(SAVE_FAIL_MSG,"Turno"); } return; }
+    crFechar();
+    var km=(oe!=null&&op.odo_start!=null)?(oe-Number(op.odo_start)):null; try{ if(km!=null) km=Math.max(0,km-shiftKmPessoal(op)); }catch(_eK){}
+    try{ qrToast("■ Turno encerrado · "+(dm!=null?fmtDur(dm):"")+(km!=null&&km>=0?" · "+brGroup(String(Math.round(km)))+" km":"")+" · "+BRL(st.gain||0),4500); }catch(e){}
+    show(current);
+  };
+}
+try{
+  document.addEventListener("click",function(ev){ var b=ev.target&&ev.target.closest?ev.target.closest("[data-turno]"):null; if(!b) return; ev.preventDefault(); ev.stopPropagation(); var _t=b.dataset.turno; if(_t==="fim") turnoAbrirFim(); else if(_t==="pausa") turnoAbrirPausa(); else if(_t==="retomar") turnoAbrirRetomar(); else turnoAbrirInicio(); },true);
+}catch(e){ rmLogErr(e,"turno-init"); }
+try{ window.RM.turnoAbrirInicio=turnoAbrirInicio; window.RM.turnoAbrirFim=turnoAbrirFim; window.RM.openShift=openShift; }catch(e){ rmLogErr(e); }
+
+/* ---------- PAUSA NO TURNO (intervalo pessoal) ----------
+   Cada turno guarda pausas: {d,ini,fd,fim,oi,of} (data/hora de início e fim, odômetros).
+   - Tempo do turno = total − pausas  → R$/hora e horas trabalhadas.
+   - Km do turno = odômetro final − inicial − km rodados nas pausas → aproveitamento e custo/km.
+   - Custo por km (Análise): a energia do período é reduzida na proporção dos km pessoais
+     (opção b). O DRE, os saldos, o MEI e o IRPF não usam o turno: não mudam. */
+function pausaAbs(d,hm){ var m=parseHM(hm); if(m==null||!validISO(d)) return null; return isoDays(d)*1440+m; }
+function shiftPausas(s){ var out=[]; try{ (s&&Array.isArray(s.pausas)?s.pausas:[]).forEach(function(p){ if(!p) return; var a=pausaAbs(p.d,p.ini); if(a==null) return; var b=(p.fim&&p.fd)?pausaAbs(p.fd,p.fim):null; if(b!=null&&b<a) b=null; out.push({p:p,ini:a,fim:b,oi:(p.oi!=null&&isFinite(Number(p.oi)))?Number(p.oi):null,of:(p.of!=null&&isFinite(Number(p.of)))?Number(p.of):null}); }); }catch(e){ rmLogErr(e,"pausas"); } return out; }
+function shiftPausaMin(s,ateMin){ var iv=shiftInterval(s); if(!iv) return 0; var lim=(ateMin!=null)?ateMin:(iv.end!=null?iv.end:null); var t=0; shiftPausas(s).forEach(function(x){ var a=Math.max(x.ini,iv.start), b=(x.fim!=null)?x.fim:lim; if(b==null) return; if(lim!=null) b=Math.min(b,lim); if(b>a) t+=b-a; }); return t; }
+function shiftKmPessoal(s){ var k=0; shiftPausas(s).forEach(function(x){ var of=x.of; if(of==null&&x.fim==null&&s&&s.end_time&&s.odo_end!=null&&isFinite(Number(s.odo_end))) of=Number(s.odo_end); if(x.oi!=null&&of!=null&&of>=x.oi) k+=of-x.oi; }); return k; }
+function shiftPausaAberta(s){ var ps=(s&&Array.isArray(s.pausas))?s.pausas:[]; for(var i=ps.length-1;i>=0;i--){ if(ps[i]&&!ps[i].fim) return ps[i]; } return null; }
+function agoraAbs(){ var d=new Date(); return isoDays(todayISO())*1440+d.getHours()*60+d.getMinutes(); }
+function sanitizePausas(arr){ if(!Array.isArray(arr)) return []; var out=[]; arr.forEach(function(p){ if(!p||!validISO(p.d)||!/^\d{2}:\d{2}$/.test(p.ini||"")||parseHM(p.ini)==null) return; var q={d:p.d,ini:p.ini,fd:null,fim:null,oi:null,of:null}; if(p.fim&&/^\d{2}:\d{2}$/.test(p.fim)&&parseHM(p.fim)!=null&&validISO(p.fd)){ q.fd=p.fd; q.fim=p.fim; } var oi=Number(p.oi), of=Number(p.of); if(p.oi!=null&&p.oi!==""&&isFinite(oi)&&oi>=0) q.oi=oi; if(p.of!=null&&p.of!==""&&isFinite(of)&&of>=0) q.of=of; out.push(q); }); return out.slice(0,50); }
+
+/* ---- pausar / retomar ---- */
+var turnoPularCheque=false;
+function turnoAbrirPausa(){
+  var op=openShift(); if(!op){ turnoAbrirInicio(); return; }
+  if(shiftPausaAberta(op)){ turnoAbrirRetomar(); return; }
+  try{ var c=cronLer(); if(c&&!c.fim){ customAlert("Há uma corrida com cronômetro em andamento. Encerre a corrida antes de pausar o turno.","Pausar turno"); return; } }catch(e){}
+  var ult=turnoUltOdo();
+  var h='<h3>Pausar turno<button type="button" class="qrx" id="crX" aria-label="Fechar">×</button></h3>';
+  h+='<div class="sub">Para algo pessoal: o tempo e os km da pausa não entram no turno (nem no R$/hora, nem no custo por km).</div>';
+  h+='<div class="qr-row"><label>Odômetro agora (km)<input id="tuOdo" inputmode="numeric" placeholder="opcional" value="'+(ult!=null?esc(brGroup(String(Math.round(ult)))):"")+'"></label><label>Início da pausa<input id="tuHora" inputmode="numeric" value="'+esc(nowHM())+'"></label></div>';
+  h+='<div class="sub">Sem odômetro, só o tempo sai do turno; os km da pausa ficam dentro.</div><div class="msg-ok" id="tuMsg" style="color:#e0695c"></div>';
+  h+='<div class="btnrow" style="margin-top:var(--s3)"><button type="button" class="btn" id="tuOk" style="flex:1;min-height:50px;background:var(--yellow);color:#0f1116">⏸ Pausar</button><button type="button" class="btn accent" id="veicCancel">Cancelar</button></div>';
+  veicSheet(h);
+  try{ var o=document.getElementById("tuOdo"); o.focus(); o.select(); }catch(e){}
+  document.getElementById("tuOk").onclick=function(){
+    var msg=document.getElementById("tuMsg"); msg.textContent="";
+    var oi=turnoNum(document.getElementById("tuOdo").value), hm=document.getElementById("tuHora").value.trim();
+    if(isNaN(oi)){ msg.textContent="Odômetro inválido (só números)."; return; }
+    if(!/^\d{2}:\d{2}$/.test(hm)||parseHM(hm)==null){ msg.textContent="Hora inválida. Use HH:MM."; return; }
+    var cur=openShift(); if(!cur||cur.id!==op.id||shiftPausaAberta(cur)){ msg.textContent="O turno mudou em outra tela. Feche e tente de novo."; return; }
+    var d=todayISO(), a=pausaAbs(d,hm), iv=shiftInterval(cur);
+    if(iv&&a<iv.start){ msg.textContent="A pausa não pode começar antes do turno ("+cur.start_time+")."; return; }
+    var ult2=shiftPausas(cur).filter(function(x){ return x.fim!=null; }).map(function(x){ return x.fim; }).sort(function(x,y){ return y-x; })[0];
+    if(ult2!=null&&a<ult2){ msg.textContent="A pausa não pode começar antes do fim da pausa anterior."; return; }
+    if(a>agoraAbs()+1){ msg.textContent="Hora no futuro."; return; }
+    cur.pausas=Array.isArray(cur.pausas)?cur.pausas:[];
+    var p={d:d,ini:hm,fd:null,fim:null,oi:oi,of:null}; cur.pausas.push(p);
+    if(!save()){ cur.pausas.pop(); msg.textContent=SAVE_FAIL_MSG; return; }
+    crFechar(); try{ qrToast("⏸ Turno pausado às "+hm+" — o tempo da pausa não conta",3500); }catch(e){}
+    show(current);
+  };
+}
+function turnoAbrirRetomar(depois){
+  var op=openShift(); var p=op&&shiftPausaAberta(op); if(!p){ if(depois) depois(); return; }
+  var a=pausaAbs(p.d,p.ini), dur=Math.max(0,agoraAbs()-a);
+  var h='<h3>Retomar turno<button type="button" class="qrx" id="crX" aria-label="Fechar">×</button></h3>';
+  h+='<div class="qr-cron">Pausado desde '+esc(p.ini)+' · '+esc(fmtDur(dur))+(p.oi!=null?' · odômetro na pausa '+esc(brGroup(String(Math.round(p.oi))))+' km':'')+'</div>';
+  h+='<div class="qr-row"><label>Odômetro agora (km)<input id="tuOdo" inputmode="numeric" placeholder="'+(p.oi!=null?"ex.: "+esc(brGroup(String(Math.round(p.oi+5)))):"opcional")+'"></label><label>Fim da pausa<input id="tuHora" inputmode="numeric" value="'+esc(nowHM())+'"></label></div>';
+  if(p.oi!=null) h+='<div class="sub">A diferença para o odômetro da pausa são os km pessoais, que saem do turno.</div>';
+  h+='<div class="msg-ok" id="tuMsg" style="color:#e0695c"></div>';
+  h+='<div class="btnrow" style="margin-top:var(--s3)"><button type="button" class="btn" id="tuOk" style="flex:1;min-height:50px;background:var(--green);color:#0f1116">▶ Retomar</button><button type="button" class="btn accent" id="veicCancel">Cancelar</button></div>';
+  veicSheet(h);
+  try{ document.getElementById("tuOdo").focus(); }catch(e){}
+  document.getElementById("tuOk").onclick=async function(){
+    var msg=document.getElementById("tuMsg"); msg.textContent="";
+    var of=turnoNum(document.getElementById("tuOdo").value), hm=document.getElementById("tuHora").value.trim();
+    if(isNaN(of)){ msg.textContent="Odômetro inválido (só números)."; return; }
+    if(!/^\d{2}:\d{2}$/.test(hm)||parseHM(hm)==null){ msg.textContent="Hora inválida. Use HH:MM."; return; }
+    var cur=openShift(); var pp=cur&&shiftPausaAberta(cur); if(!pp||pp!==p){ msg.textContent="A pausa já foi encerrada em outra tela."; return; }
+    var fd=todayISO(), b=pausaAbs(fd,hm); if(b<a){ fd=somaDiasISO(fd,-1); b=pausaAbs(fd,hm); }
+    if(b<a){ msg.textContent="O fim da pausa não pode ser antes do início ("+p.ini+")."; return; }
+    if(b>agoraAbs()+1){ msg.textContent="Hora no futuro."; return; }
+    if(of!=null&&p.oi!=null&&of<p.oi){ crFechar(); var ok=await customProceed("O odômetro agora ("+brGroup(String(Math.round(of)))+" km) é menor que o da pausa ("+brGroup(String(Math.round(p.oi)))+" km). Confira o número.","Odômetro","Salvar mesmo assim"); if(!ok){ turnoAbrirRetomar(depois); return; } }
+    var old={fd:p.fd,fim:p.fim,of:p.of}; p.fd=fd; p.fim=hm; p.of=of;
+    if(!save()){ p.fd=old.fd; p.fim=old.fim; p.of=old.of; try{ msg.textContent=SAVE_FAIL_MSG; }catch(e){ customAlert(SAVE_FAIL_MSG,"Turno"); } return; }
+    crFechar();
+    var kmP=(of!=null&&p.oi!=null&&of>=p.oi)?of-p.oi:null;
+    try{ qrToast("▶ Turno retomado · pausa de "+fmtDur(b-a)+(kmP!=null?" · "+brGroup(String(Math.round(kmP)))+" km pessoais":""),3500); }catch(e){}
+    show(current);
+    if(depois){ turnoPularCheque=true; try{ depois(); }finally{ turnoPularCheque=false; } }
+  };
+}
+/* começou corrida com o turno pausado: pergunta se retoma */
+function turnoChecaPausa(continuar){
+  if(turnoPularCheque) return false;
+  var op=null; try{ op=openShift(); }catch(e){}
+  var p=op&&shiftPausaAberta(op); if(!p) return false;
+  customConfirm("O turno está pausado desde "+p.ini+". Retomar o turno agora? (Se não, a corrida é lançada normalmente e a pausa continua.)","Turno pausado","Retomar").then(function(ok){
+    if(ok) turnoAbrirRetomar(continuar);
+    else { turnoPularCheque=true; try{ continuar(); }finally{ turnoPularCheque=false; } }
+  });
+  return true;
+}
+/* Histórico › Turnos (edição): lista e remove pausas */
+function turnoPausasEditHTML(s){
+  var ps=Array.isArray(s.pausas)?s.pausas:[]; if(!ps.length) return "";
+  var h='<div class="sub" style="grid-column:1/-1;margin-top:8px">Pausas deste turno</div><div style="grid-column:1/-1">';
+  ps.forEach(function(p,i){ var km=(p.oi!=null&&p.of!=null&&p.of>=p.oi)?(" · "+brGroup(String(Math.round(p.of-p.oi)))+" km"):""; h+='<div class="kv"><span>'+esc(isoToBR(p.d).slice(0,5)+" "+p.ini+"–"+(p.fim||"em andamento"))+esc(km)+'</span><b><button type="button" class="btn sm" data-pausa-del="'+i+'">Remover</button></b></div>'; });
+  h+='<div class="sub">Remover devolve o tempo (e os km) da pausa ao turno.</div></div>';
+  return h;
+}
+try{
+  document.addEventListener("click",function(ev){ var b=ev.target&&ev.target.closest?ev.target.closest("[data-pausa-del]"):null; if(!b) return;
+    var id=window.__shiftEditId, s=(DB.shifts||[]).filter(function(x){ return x.id===id; })[0]; if(!s||!Array.isArray(s.pausas)) return;
+    var i=Number(b.dataset.pausaDel), p=s.pausas[i]; if(!p) return;
+    customConfirm("Remover a pausa "+p.ini+"–"+(p.fim||"…")+"? O tempo e os km dela voltam a contar no turno.","Pausa","Remover").then(function(ok){ if(!ok) return; var rem=s.pausas.splice(i,1); if(!save()){ s.pausas.splice(i,0,rem[0]); return; } window.__histTab=1; show("historico"); });
+  });
+}catch(e){ rmLogErr(e,"pausa-init"); }
+try{ window.RM.turnoAbrirPausa=turnoAbrirPausa; window.RM.turnoAbrirRetomar=turnoAbrirRetomar; window.RM.shiftStats=shiftStats; window.RM.shiftKmPessoal=shiftKmPessoal; window.RM.shiftPausaAberta=shiftPausaAberta; }catch(e){ rmLogErr(e); }
 
 } /* fim rmApp */
 })();
