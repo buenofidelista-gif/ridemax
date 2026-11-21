@@ -1138,7 +1138,7 @@ body.fit-lock #finBox:has(.fin-dre){display:block;overflow:visible}
     <div id="viewCtn"></div>
   </main>
 </div><div id="modalBk" hidden=""><div id="modalBox"><h3 id="mTitle"></h3><p id="mMsg"></p><div class="mrow" id="mBtns"></div></div></div><div id="tipBalloon" role="tooltip" hidden=""></div><input type="file" id="impFile" hidden="" accept="application/json">
-<script>
+<script id="rm-app">
 
 (function(){
 "use strict";
@@ -1636,6 +1636,8 @@ function defaultSettings(){
    mei:{enabled:0,teto:81000,abertura:null,dasnDoneYear:null},
    titJurosCat:null,
    titDescCat:null,
+   lembretes:{on:0},
+   veiculo:{tipo:"proprio",valorAtual:"",valorRevenda:"",kmAteVender:"",aluguelSemanal:"",aluguelNasDespesas:0},
     inv:{metaRendaMensal:0,alvoFixa:66,alvoVariavel:34,cdiAnual:"",cdiData:null,mesesReserva:6,custoVidaManual:"",selic:"",selicData:null,ir:{isencaoAcoesMes:20000,aliqAcoes:15,aliqDayTrade:20,aliqFii:20,aliqEtf:15}}};
 }
 function sanitizeSettings(s){
@@ -1706,6 +1708,16 @@ function sanitizeSettings(s){
     d.inv.ir={isencaoAcoesMes:20000,aliqAcoes:15,aliqDayTrade:20,aliqFii:20,aliqEtf:15};
     try{ var _ir8j=(_iv8e&&_iv8e.ir)||null; if(_ir8j&&typeof _ir8j==="object"&&!Array.isArray(_ir8j)){ var _is8j=parseBR(String(_ir8j.isencaoAcoesMes)); if(!(isFinite(_is8j)&&_is8j>=0)) _is8j=Number(_ir8j.isencaoAcoesMes); if(isFinite(_is8j)&&_is8j>=0&&_is8j<=1000000000) d.inv.ir.isencaoAcoesMes=Math.round(_is8j*100)/100; var _aa8j=parseBR(String(_ir8j.aliqAcoes)); if(!(isFinite(_aa8j))) _aa8j=Number(_ir8j.aliqAcoes); if(isFinite(_aa8j)&&_aa8j>=0&&_aa8j<=100) d.inv.ir.aliqAcoes=Math.round(_aa8j*100)/100; var _ad8j=parseBR(String(_ir8j.aliqDayTrade)); if(!(isFinite(_ad8j))) _ad8j=Number(_ir8j.aliqDayTrade); if(isFinite(_ad8j)&&_ad8j>=0&&_ad8j<=100) d.inv.ir.aliqDayTrade=Math.round(_ad8j*100)/100; var _af8j=parseBR(String(_ir8j.aliqFii)); if(!(isFinite(_af8j))) _af8j=Number(_ir8j.aliqFii); if(isFinite(_af8j)&&_af8j>=0&&_af8j<=100) d.inv.ir.aliqFii=Math.round(_af8j*100)/100; var _ae8j=parseBR(String(_ir8j.aliqEtf)); if(!(isFinite(_ae8j))) _ae8j=Number(_ir8j.aliqEtf); if(isFinite(_ae8j)&&_ae8j>=0&&_ae8j<=100) d.inv.ir.aliqEtf=Math.round(_ae8j*100)/100; } }catch(_e8j){rmLogErr(_e8j)}
   } }catch(_e8e){rmLogErr(_e8e)}
+  /* CUSTO DO CARRO — depreciação (próprio) e aluguel (alugado). Backup antigo sem o campo abre vazio. */
+  d.veiculo={tipo:"proprio",valorAtual:"",valorRevenda:"",kmAteVender:"",aluguelSemanal:"",aluguelNasDespesas:0};
+  try{ var _vc=s.veiculo; if(_vc&&typeof _vc==="object"&&!Array.isArray(_vc)){
+    d.veiculo.tipo=(_vc.tipo==="alugado")?"alugado":"proprio";
+    var _vnum=function(x,max){ if(x===""||x==null) return ""; var v=(typeof x==="number")?x:parseBR(String(x)); return (isFinite(v)&&v>=0&&v<=max)?Math.round(v*100)/100:""; };
+    d.veiculo.valorAtual=_vnum(_vc.valorAtual,10000000); d.veiculo.valorRevenda=_vnum(_vc.valorRevenda,10000000);
+    d.veiculo.kmAteVender=_vnum(_vc.kmAteVender,5000000); d.veiculo.aluguelSemanal=_vnum(_vc.aluguelSemanal,100000);
+    d.veiculo.aluguelNasDespesas=_vc.aluguelNasDespesas?1:0;
+  } }catch(_eVc){rmLogErr(_eVc)}
+  try{ d.lembretes={on:(s.lembretes&&s.lembretes.on)?1:0}; }catch(_eLb){ d.lembretes={on:0}; }
   return d;
 }
 function seed(){
@@ -2687,7 +2699,7 @@ function save(){
   expireTrash(false);
   var _prevRev=DB._rev;
   DB._rev=DB_MEM_REV+1;
-  try{ RMS.setItem(LS_KEY, JSON.stringify(DB)); DB_MEM_REV=DB._rev; try{ hideRevBanner(); }catch(_e){rmLogErr(_e)} markFileOwner(); return true; }
+  try{ RMS.setItem(LS_KEY, JSON.stringify(DB)); DB_MEM_REV=DB._rev; try{ hideRevBanner(); }catch(_e){rmLogErr(_e)} markFileOwner(); try{ if(typeof lembretesAgendar==="function") lembretesAgendar(); }catch(_eL){rmLogErr(_eL)} return true; }
   catch(e){ try{ DB._rev=_prevRev; }catch(_e2){rmLogErr(_e2)} customAlert("Não foi possível salvar: armazenamento cheio ou bloqueado. Exporte um backup agora.","Falha ao salvar"); return false; }
 }
 /* Concorrência (falso positivo): gravação que preserva o carimbo — só para
@@ -2808,7 +2820,9 @@ function exportOfflineApp(){
   }catch(e){ css=""; }
   try{
     var scripts=document.querySelectorAll("script"), j, st, best=null;
-    for(j=0;j<scripts.length;j++){
+    /* marcador fixo do script do app (não depende de nome de variável); a busca por texto abaixo fica só como reserva */
+    try{ var _rmApp=document.getElementById("rm-app"); if(_rmApp&&(_rmApp.textContent||"").length>1000) best=_rmApp.textContent; }catch(_eA){ best=null; }
+    for(j=0;!best&&j<scripts.length;j++){
       st=scripts[j].textContent||"";
       if(st.indexOf("cfgSecBackup")<0||st.indexOf("DB_MEM_REV")<0) continue;
       if(/^\s*[\{\[]/.test(st)) continue; /* dado JSON do motor, não é o app */
@@ -2839,7 +2853,7 @@ function exportOfflineApp(){
   if(!bodyHtml){ customAlert("Não foi possível gerar o arquivo offline: tela não encontrada.","Programa offline"); return null; }
   var d=new Date(), p=function(n){return String(n).padStart(2,"0");};
   var name="ridemax-offline-"+d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+".html";
-  var html="<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>RideMax v2.0 \u2014 offline</title>\n<style>\n"+css+"</style>\n</head>\n<body>\n"+bodyHtml+"\n<script>\n"+js+"\n<\/script>\n</body>\n</html>\n";
+  var html="<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>RideMax v2.0 \u2014 offline</title>\n<style>\n"+css+"</style>\n</head>\n<body>\n"+bodyHtml+"\n<script id=\"rm-app\">\n"+js+"\n<\/script>\n</body>\n</html>\n";
   downloadFile(name,html,"text/html");
   return name;
 }
@@ -3113,7 +3127,7 @@ function cashFeeOf(r){ try{ if(!isCashRide(r)) return 0; var f=Number(r.fare); i
 function sinceISO(days){ var d=new Date(); d.setDate(d.getDate()-days+1); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function statsToday(){ var t=todayISO(), n=0, e=0; DB.rides.forEach(function(r){ if(r.date===t){ n++; e+=rideTotal(r); } }); return {n:n,e:e}; }
 function statsPeriod(days){ var s=sinceISO(days), t=todayISO(), n=0, e=0, km=0; DB.rides.forEach(function(r){ if(r.date>=s&&r.date<=t){ n++; e+=rideTotal(r); km+=Number(r.distance)||0; } }); return {n:n,e:e,km:km}; }
-function expensesTotal(days){ var s=sinceISO(days), e=todayISO(), t=0; DB.expenses.forEach(function(x){ if(x.date>=s&&x.date<=e) t+=Number(x.amount)||0; }); return t; }
+function expensesTotal(days){ var s=sinceISO(days), e=todayISO(), t=0; DB.expenses.forEach(function(x){ if(x.date>=s&&x.date<=e) t+=Number(x.amount)||0; }); return Math.round(t*100)/100; }
 function rechargeStats(days,unit){ var u=unit||curUnit(), s=sinceISO(days), e=todayISO(), n=0, kwh=0, cost=0; DB.recharges.forEach(function(r){ if(r.date>=s&&r.date<=e&&(r.unit||"kwh")===u){ n++; kwh+=Number(r.kwh)||0; cost+=Number(r.cost)||0; } }); return {n:n,kwh:kwh,cost:cost,unit:u}; }
 /* Ponto 10 — média com e sem gratuidade */
 function rechargeAvg(days,unit){
@@ -3773,7 +3787,7 @@ function valeCardHTML(){
   for(i=0;i<slots.length;i++){ if(slots[i].n>=3&&slots[i].v!=null){ valid.push(slots[i]); } else { missing+=(3-slots[i].n); } }
   if(missing<0) missing=0;
   var hh='<div class="card" id="valeCard"><h3>\u23F3 Vale continuar rodando? \u2014 pr\u00F3ximas 3 horas</h3>';
-  hh+='<div class="sub">Esperado do mapa de calor (dia de cada faixa) \u00B7 custo/h = custo por km (30d) \u00D7 km/h \u00B7 l\u00EDquido = esperado \u2212 custo. Os n\u00FAmeros resumem o esperado; a decis\u00E3o \u00E9 sua.</div>';
+  hh+='<div class="sub">Esperado do mapa de calor (dia de cada faixa) \u00B7 custo/h = custo por km (30d, com deprecia\u00E7\u00E3o e aluguel do carro quando cadastrados) \u00D7 km/h \u00B7 l\u00EDquido = esperado \u2212 custo. Os n\u00FAmeros resumem o esperado; a decis\u00E3o \u00E9 sua.</div>';
   hh+='<div class="tblwrap"><table class="tbl"><tr><th>Faixa</th><th>Esperado</th><th>Amostras</th><th>Custo/h</th><th>L\u00EDquido/h</th></tr><tbody>';
   for(i=0;i<slots.length;i++){
     var s2=slots[i];
@@ -5203,7 +5217,7 @@ function suggestRepPeriod(pid, fonte){
 }
 function repasseSum(p){ var n=0,e=0,cardN=0,cardSum=0,cashN=0,cashSum=0,cashFee=0; DB.rides.forEach(function(r){ if(r.platform_id===p.platform_id&&r.date>=p.start&&r.date<=p.end){ n++; e+=rideTotal(r); if(isCashRide(r)){ cashN++; var f=Number(r.fare); if(isFinite(f)&&f>0) cashSum+=f; cashFee+=cashFeeOf(r); } else { cardN++; cardSum+=rideTotal(r); } } }); cashSum=Math.round(cashSum*100)/100; cashFee=Math.round(cashFee*100)/100; cardSum=Math.round(cardSum*100)/100; var expected=Math.round((cardSum-cashFee)*100)/100; return {n:n,sum:e,cardN:cardN,cardSum:cardSum,cashN:cashN,cashSum:cashSum,cashFee:cashFee,expected:expected}; }
 function repasseExpected(p){ var s=repasseSum(p); return s.expected; }
-function repasseAdjSum(p){ var s=0; (p.adjustments||[]).forEach(function(a){ s+=Number(a.amount)||0; }); return s; }
+function repasseAdjSum(p){ var s=0; (p.adjustments||[]).forEach(function(a){ s+=Number(a.amount)||0; }); return Math.round(s*100)/100; }
 function repDifNorm(v){ var n=Number(v)||0; return Math.abs(n)<0.005?0:n; }
 function repDifTxt(v){ var n=repDifNorm(v); if(n===0) return BRL(0); var a=Math.abs(n); return BRL(a)+(n<0?" a menos":" a mais"); }
 function csvCashTrue(v){ try{ var s=String(v==null?"":v).trim().toLowerCase(); if(!s) return false; if(s==="1"||s==="sim"||s==="s"||s==="true"||s==="x") return true; return false; }catch(e){ return false; } }
@@ -5473,7 +5487,7 @@ function drawKmMonthly(cv,ms){
    cruza corridas · recargas · TODAS as despesas, com rateio proporcional pelos ganhos.
    Difere do card "por plataforma" (que usa só custos variáveis do DRE). */
 var kmPeriod=30;
-function custoKmStats(days){
+function custoKmStatsOper(days){
   var s=sinceISO(days||30), t0=todayISO();
   var earnKm=0, km=0, ridesKm=0;
   DB.rides.forEach(function(r){ if(r.date>=s&&r.date<=t0&&(Number(r.distance)||0)>0){ earnKm+=rideTotal(r); km+=Number(r.distance); ridesKm++; } });
@@ -5501,6 +5515,40 @@ function custoKmStats(days){
   }catch(e){rmLogErr(e)}
   return base;
 }
+/* CUSTO DO CARRO — depreciação por km e aluguel pró-rata dia.
+   Depreciação = (valor hoje − revenda esperada) ÷ km até vender; nunca é lançada como despesa, então não duplica.
+   Aluguel = semanal ÷ 7 × dias do período, contados a partir do 1º dia com corrida/turno (não cobra dias antes de começar).
+   Se o aluguel já é lançado em Despesas (aluguelNasDespesas), não soma de novo. Não entra no DRE nem no saldo. */
+function veiculoCfg(){ var v=(DB.settings&&DB.settings.veiculo)||{}; var num=function(x){ var y=Number(x); return (x!==""&&x!=null&&isFinite(y)&&y>=0)?y:0; }; return {tipo:v.tipo==="alugado"?"alugado":"proprio",valorAtual:num(v.valorAtual),valorRevenda:num(v.valorRevenda),kmAteVender:num(v.kmAteVender),aluguelSemanal:num(v.aluguelSemanal),aluguelNasDespesas:v.aluguelNasDespesas?1:0}; }
+function veiculoDepKm(){ var c=veiculoCfg(); if(c.tipo!=="proprio") return 0; if(!(c.valorAtual>0&&c.kmAteVender>0&&c.valorAtual>c.valorRevenda)) return 0; return (c.valorAtual-c.valorRevenda)/c.kmAteVender; }
+function veiculoPrimeiroDia(){ var m=null; try{ (DB.rides||[]).forEach(function(r){ if(validISO(r.date)&&(m==null||r.date<m)) m=r.date; }); (DB.shifts||[]).forEach(function(x){ if(validISO(x.date)&&(m==null||x.date<m)) m=x.date; }); }catch(e){rmLogErr(e)} return m; }
+function veiculoAluguelPeriodo(ini,fim){
+  var c=veiculoCfg(); var out={valor:0,dias:0,ativo:false,nasDespesas:!!c.aluguelNasDespesas,semanal:c.aluguelSemanal};
+  if(c.tipo!=="alugado"||!(c.aluguelSemanal>0)) return out;
+  if(c.aluguelNasDespesas){ out.ativo=false; return out; }
+  var p=veiculoPrimeiroDia(); if(!p||p>fim) return out;
+  var a=(p>ini)?p:ini;
+  var d1=new Date(a+"T12:00:00").getTime(), d2=new Date(fim+"T12:00:00").getTime();
+  var dias=Math.round((d2-d1)/86400000)+1; if(!(dias>0)) return out;
+  out.dias=dias; out.valor=Math.round(c.aluguelSemanal/7*dias*100)/100; out.ativo=true; return out;
+}
+function custoKmStats(days){
+  var b=custoKmStatsOper(days);
+  b.crOper=b.cr; b.custoOper=b.custo; b.lucroOper=b.lucro; b.dep=0; b.depKm=0; b.alug=0; b.alugPart=0; b.alugDias=0; b.alugNasDesp=false; b.veicCfg=false;
+  try{
+    var c=veiculoCfg(); var dk=veiculoDepKm(); var s0=sinceISO(days||30), t0=todayISO();
+    var al=veiculoAluguelPeriodo(s0,t0);
+    b.veicCfg=(dk>0)||(c.tipo==="alugado"&&c.aluguelSemanal>0); b.alugNasDesp=(c.tipo==="alugado"&&al.nasDespesas&&c.aluguelSemanal>0);
+    if(!(b.km>0)) return b;
+    b.depKm=dk; b.dep=dk*b.km; b.alug=al.valor; b.alugDias=al.dias;
+    b.alugPart=(b.src==="shift")?al.valor:al.valor*(b.prop||1);
+    b.cr=b.crOper+b.dep+b.alugPart;
+    b.custo=b.cr/b.km;
+    var earn=(b.src==="shift")?(b.earnShift||0):b.earnKm;
+    b.lucro=(earn-b.cr)/b.km;
+  }catch(e){rmLogErr(e,"custo-carro")}
+  return b;
+}
 function kmBodyHTML(s){
   if(!(s.km>0)){
     var falta=s.ridesTotal-s.ridesKm;
@@ -5520,12 +5568,16 @@ function kmBodyHTML(s){
     +'<div class="kv"><span>Ganho bruto (período)</span><b>'+BRL(s.earnAll)+'</b></div>'
     +'<div class="kv"><span>'+(isF?"Combustível":"Energia")+' (recargas)</span><b>'+BRL(s.rc)+(s.kwh>0?(" ("+s.kwh.toFixed(1)+" "+qtyShort()+")"):"")+'</b></div>'
     +'<div class="kv"><span>Despesas (todas)</span><b>'+BRL(s.exp)+'</b></div>'
-    +'<div class="kv"><span>Custo total'+(s.src==="shift"?" (sem rateio)":" rateado")+'</span><b>'+BRL(s.cr)+'</b></div>';
+    +((s.dep>0)?('<div class="kv"><span>Depreciação do carro ('+fmtPerKm(s.depKm)+' × '+s.km.toFixed(1)+' km)</span><b>'+BRL(s.dep)+'</b></div>'):"")
+    +((s.alug>0)?('<div class="kv"><span>Aluguel do carro ('+s.alugDias+' dia'+(s.alugDias===1?"":"s")+')</span><b>'+BRL(s.alug)+'</b></div>'):"")
+    +'<div class="kv"><span>Custo total'+(s.src==="shift"?" (sem rateio)":" rateado")+'</span><b>'+BRL(s.cr)+'</b></div>'
+    +((!s.veicCfg&&!s.alugNasDesp)?'<div class="sub">ℹ️ Depreciação e aluguel do carro ainda não entram aqui. Cadastre em Configurações › Manutenção › Custo do carro para ver o lucro real.</div>':"")
+    +(s.alugNasDesp?'<div class="sub">Aluguel do carro: conta pelas Despesas lançadas (opção marcada em Custo do carro).</div>':"");
   if(s.src==="shift"){ h+='<div class="sub">fonte: km do turno (od\u00F4metro'+(s.shiftN?(' \u00B7 '+s.shiftN+' turno(s) com km'):"")+') \u2014 sem rateio. Aproveitamento = km com passageiro \u00F7 km total.</div>'; if(s.aproveit!=null) h+='<div class="kv"><span>Aproveitamento (km pass. \u00F7 km total)</span><b>'+(s.aproveit*100).toFixed(0)+'%</b></div>'; if(s.kmPass!=null) h+='<div class="kv"><span>Km com passageiro</span><b>'+s.kmPass.toFixed(1)+' km</b></div>'; }
   else { h+='<div class="sub">fonte: km das corridas (rateado).</div>'; if(s.ridesKm<s.ridesTotal) h+='<div class="sub">\u2139\uFE0F '+(s.ridesTotal-s.ridesKm)+' corrida(s) sem km no per\u00EDodo. Custos rateados proporcionalmente pelo ganho ('+(s.prop*100).toFixed(0)+'%).</div>'; }
   var ePart=(s.src==="shift"?s.rc:s.rc*s.prop), xPart=(s.src==="shift"?s.exp:s.exp*s.prop);
   h+='<div class="sub" style="margin-top:8px">Composição do custo/km</div>';
-  [[(isF?"Combustível":"Energia")+" (recargas)",ePart,"#4aa89b"],["Despesas operacionais",xPart,"#cf8a46"]].forEach(function(r){
+  [[(isF?"Combustível":"Energia")+" (recargas)",ePart,"#4aa89b"],["Despesas operacionais",xPart,"#cf8a46"],["Depreciação do carro",s.dep||0,"#9b7fc4"],["Aluguel do carro",s.alugPart||0,"#5a9fd4"]].filter(function(r,ix){ return ix<2||r[1]>0; }).forEach(function(r){
     var vkm=r[1]/s.km, pct=s.cr>0?(r[1]/s.cr*100):0;
     h+='<div class="bar-row"><span style="min-width:200px;flex:1 1 200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r[0]+'</span>'+bar(r[1],s.cr,160,r[2])+'<b>'+BRL(vkm)+'/km ('+pct.toFixed(0)+'%)</b></div>';
   });
@@ -6625,6 +6677,30 @@ function cfgSecManut(){
   h+='<p class="tip">O botão "Feita" registra a manutenção no odômetro atual (maior leitura). Alertas também aparecem na tela de '+(em?"Abastecimento":"Recarga")+'.</p>';
   return h;
 }
+function cfgSecVeiculo(){
+  var c=veiculoCfg(), v=(DB.settings&&DB.settings.veiculo)||{};
+  var inpS='background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;width:100%';
+  var fv=function(x){ return (x===""||x==null)?"":brDec(Number(x),2); };
+  var fk=function(x){ return (x===""||x==null)?"":brGroup(String(Math.round(Number(x)))); };
+  var h='<div class="sub" id="cfgVeic">Custo do carro — entra no custo por km, no lucro por km e no “Vale continuar?”</div>';
+  h+='<div class="seg" id="sVeicTipo" role="radiogroup" aria-label="Tipo do carro"><button type="button" data-vtipo="proprio" class="'+(c.tipo==="proprio"?"on":"")+'" aria-pressed="'+(c.tipo==="proprio")+'">Carro próprio</button><button type="button" data-vtipo="alugado" class="'+(c.tipo==="alugado"?"on":"")+'" aria-pressed="'+(c.tipo==="alugado")+'">Carro alugado</button></div>';
+  if(c.tipo==="proprio"){
+    h+='<div class="toolbar" style="align-items:flex-end"><label class="f" style="flex:1;min-width:150px">Valor do carro hoje (R$)<input id="sVeicAtual" data-vf="valorAtual" inputmode="decimal" placeholder="ex: 95.000,00" value="'+esc(fv(v.valorAtual))+'" style="'+inpS+'"></label>'
+      +'<label class="f" style="flex:1;min-width:150px">Valor esperado na revenda (R$)<input id="sVeicRev" data-vf="valorRevenda" inputmode="decimal" placeholder="ex: 60.000,00" value="'+esc(fv(v.valorRevenda))+'" style="'+inpS+'"></label>'
+      +'<label class="f" style="flex:1;min-width:150px">Km que pretende rodar até vender<input id="sVeicKm" data-vf="kmAteVender" inputmode="numeric" placeholder="ex: 120.000" value="'+esc(fk(v.kmAteVender))+'" style="'+inpS+'"></label></div>';
+    var dk=veiculoDepKm();
+    if(dk>0) h+='<div class="kv"><span>Depreciação</span><b>'+fmtPerKm(dk)+'</b></div><div class="sub">(valor hoje − revenda) ÷ km até vender = ('+BRL(c.valorAtual)+' − '+BRL(c.valorRevenda)+') ÷ '+brGroup(String(Math.round(c.kmAteVender)))+' km.</div>';
+    else if(c.valorAtual>0&&c.kmAteVender>0&&!(c.valorAtual>c.valorRevenda)) h+='<div class="sub" style="color:var(--yellow)">A revenda esperada não é menor que o valor de hoje: sem depreciação.</div>';
+    else h+='<div class="sub">Preencha os três campos para incluir a depreciação. Ex.: carro de R$ 95.000 que você espera vender por R$ 60.000 depois de 120.000 km = R$ 0,29/km.</div>';
+  } else {
+    h+='<div class="toolbar" style="align-items:flex-end"><label class="f" style="flex:1;min-width:150px">Aluguel semanal (R$)<input id="sVeicAlug" data-vf="aluguelSemanal" inputmode="decimal" placeholder="ex: 650,00" value="'+esc(fv(v.aluguelSemanal))+'" style="'+inpS+'"></label></div>';
+    h+='<label style="font-size:13px;display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="sVeicAlugDesp"'+(c.aluguelNasDespesas?" checked":"")+' style="width:auto"> Já lanço o aluguel em Despesas (não somar de novo)</label>';
+    if(c.aluguelSemanal>0) h+='<div class="kv"><span>Aluguel</span><b>'+BRL(c.aluguelSemanal/7)+'/dia · '+BRL(c.aluguelSemanal*52/12)+'/mês</b></div>';
+    h+='<div class="sub">'+(c.aluguelNasDespesas?"Marcado: o aluguel entra no custo pelas Despesas que você lança; este valor fica só como referência.":"O aluguel é distribuído pelos dias do período, a partir do primeiro dia com corrida ou turno. Não lance o mesmo aluguel em Despesas, senão ele conta duas vezes — ou marque a caixa acima.")+'</div>';
+  }
+  h+='<div class="sub">Isto é custo gerencial: não entra no DRE, no saldo nem no MEI.</div>';
+  return h;
+}
 function cfgSecAnnual(){
   var st=DB.settings;
   var h='';
@@ -6640,9 +6716,20 @@ function cfgSecAnnual(){
   return h;
 }
 function settingsCard(){
-  return '<div class="card"><h3>Configurações</h3>'+cfgSecEnergia()+cfgSecBackup()+cfgSecMeiDas()+cfgEncargosHTML()+cfgSecManut()+cfgSecAnnual()+'</div>';
+  return '<div class="card"><h3>Configurações</h3>'+cfgSecEnergia()+cfgSecBackup()+cfgSecLembretes()+cfgSecMeiDas()+cfgEncargosHTML()+cfgSecManut()+cfgSecVeiculo()+cfgSecAnnual()+'</div>';
 }
 function wireSettings(){
+  try{
+    var _vst=DB.settings; if(!_vst.veiculo) _vst.veiculo={tipo:"proprio",valorAtual:"",valorRevenda:"",kmAteVender:"",aluguelSemanal:"",aluguelNasDespesas:0};
+    document.querySelectorAll("#sVeicTipo [data-vtipo]").forEach(function(b){ b.onclick=function(){ var _o=_vst.veiculo.tipo; _vst.veiculo.tipo=b.getAttribute("data-vtipo")==="alugado"?"alugado":"proprio"; if(!save()) _vst.veiculo.tipo=_o; show("plataformas"); }; });
+    document.querySelectorAll("[data-vf]").forEach(function(inp){ inp.onchange=function(){
+      var k=inp.getAttribute("data-vf"), raw=String(inp.value||"").trim(), _o=_vst.veiculo[k];
+      if(raw===""){ _vst.veiculo[k]=""; }
+      else { var v=parseBR(raw); if(!(isFinite(v)&&v>=0)){ customAlert("Valor inválido. Use números, ex.: 95.000,00.","Custo do carro"); inp.value=""; return; } _vst.veiculo[k]=Math.round(v*100)/100; }
+      if(!save()) _vst.veiculo[k]=_o; show("plataformas");
+    }; });
+    var _ad=document.getElementById("sVeicAlugDesp"); if(_ad) _ad.onchange=function(){ var _o=_vst.veiculo.aluguelNasDespesas; _vst.veiculo.aluguelNasDespesas=this.checked?1:0; if(!save()) _vst.veiculo.aluguelNasDespesas=_o; show("plataformas"); };
+  }catch(_eVw){rmLogErr(_eVw,"custo-carro-ui")}
   var st=DB.settings;
   document.querySelectorAll("#sEnergy button").forEach(function(b){ b.onclick=function(){ st.energyMode=b.dataset.e; save(); show("plataformas"); }; });
   var _bkD=document.getElementById("sBkpDays"); if(_bkD) _bkD.onchange=function(){ st.backupDays=Number(this.value)||7; save(); };
@@ -6834,8 +6921,8 @@ function renderCfg(){
   if(cfgTab==="centros"){ try{ window.__cfgBox=box; }catch(e){rmLogErr(e)} rCentros(); return; }
   if(cfgTab==="categorias"){ box.innerHTML=catCard()+'<div class="card"><h3>Encargos do Contas a pagar</h3>'+cfgEncargosHTML()+'</div>'; wireCatCard(); wireSettings(); return; }
   if(cfgTab==="mei"){ box.innerHTML='<div class="card"><h3>MEI e DAS</h3>'+cfgSecMeiDas()+'</div>'; wireSettings(); return; }
-  if(cfgTab==="manut"){ box.innerHTML='<div class="card"><h3>Manutenção e gastos anuais</h3>'+cfgSecManut()+cfgSecAnnual()+'</div>'; wireSettings(); return; }
-  if(cfgTab==="backup"){ box.innerHTML='<div class="card"><h3>Backup e armazenamento</h3>'+cfgSecBackup()+'</div>'; wireSettings(); return; }
+  if(cfgTab==="manut"){ box.innerHTML='<div class="card"><h3>Manutenção e gastos anuais</h3>'+cfgSecManut()+cfgSecVeiculo()+cfgSecAnnual()+'</div>'; wireSettings(); return; }
+  if(cfgTab==="backup"){ box.innerHTML='<div class="card"><h3>Backup, armazenamento e lembretes</h3>'+cfgSecBackup()+cfgSecLembretes()+'</div>'; wireSettings(); return; }
   if(cfgTab==="energia"){ box.innerHTML='<div class="card"><h3>Tipo de energia</h3>'+cfgSecEnergia()+'</div>'; wireSettings(); return; }
   renderCfgPlat(box);
 }
@@ -7104,7 +7191,7 @@ function rLimpeza(){
   })();
 }
 /* ---------- MANUAL (parte 3; só leitura; sem biblioteca nova) ----------
-   Onze seções fixas, na ordem do enunciado, com índice no topo que leva a
+   Seções fixas (SEC), na ordem do enunciado, com índice no topo que leva a
    cada seção via âncora + scrollIntoView (mesmo padrão já usado nas telas:
    titDesc, ctaNome, shFTitle etc.). Não grava, não altera, sem botão de ação:
    só links internos de navegação. */
@@ -7120,7 +7207,9 @@ function rManual(){
     {t:"Conciliação",ps:["Conciliar é conferir contra o extrato do banco, item a item. Você digita o saldo do extrato, marca o que encontrou, e o que sobra é pendência.","A diferença se resolve LANÇANDO o que faltou: a tarifa esquecida, o PIX que ninguém anotou, a duplicidade a excluir. Nunca com um ajuste criado para o saldo fechar.","Ajuste existe para um caso só: diferença investigada e não identificada. E exige observação escrita."]},
     {t:"Data de corte e saldo inicial",ps:["Cada conta tem uma data de corte, que é a data do saldo inicial. O saldo só conta movimento dessa data em diante.","Baixa e transferência com data anterior ao corte são bloqueadas.","Corrida em dinheiro com data anterior ao corte é permitida, porque pode ser carga histórica — mas o app avisa na hora e deixa um indicador na conta, dizendo quantos movimentos estão fora do saldo e quanto somam. Se isso aparecer sem você esperar, provavelmente a data está errada."]},
     {t:"Previsto, realizado e os 90 dias",ps:["O fluxo de caixa mostra lado a lado o que já aconteceu e o que está previsto, nunca somados.","O previsto usa o vencimento para o que é a pagar, e a data ESTIMADA do repasse para o que é a receber. Essa data sai da média dos repasses anteriores daquela plataforma; sem pelo menos dois repasses conciliados, não há estimativa e o valor aparece à parte, sem data.","A projeção de 90 dias mostra o menor saldo do período e em que dia ele cai. É o indicador mais útil do app: é ele que avisa que a conta vai faltar antes de faltar."]},
-    {t:"Backup, descartes e limpeza",ps:["Exportar baixa tudo num arquivo. Importar SUBSTITUI a base, e antes disso o app baixa sozinho um backup do estado anterior.","Se o arquivo tiver registro inválido, ele é descartado e RELATADO, com indicação do que foi. Se um título perder uma baixa inválida e voltar a ficar em aberto, isso aparece em destaque — não é perda silenciosa.","A limpeza da base apaga o movimento e preserva os cadastros. Ela pede backup, data de corte e confirmação digitada. Atenção: as séries são cadastro e NÃO são apagadas."]},
+    {t:"Backup, descartes e limpeza",ps:["Exportar baixa tudo num arquivo. Importar SUBSTITUI a base, e antes disso o app baixa sozinho um backup do estado anterior.","Se o arquivo tiver registro inválido, ele é descartado e RELATADO, com indicação do que foi. Se um título perder uma baixa inválida e voltar a ficar em aberto, isso aparece em destaque — não é perda silenciosa.","A limpeza da base apaga o movimento e preserva os cadastros. Ela pede backup, data de corte e confirmação digitada. Atenção: as séries são cadastro e NÃO são apagadas.","Os dados ficam no banco do navegador (IndexedDB), com espaço de centenas de MB. Cada navegador, aparelho e endereço tem a sua base: o arquivo aberto do disco e o site publicado são bases diferentes, ligadas só pelo backup. Limpar os dados do site ou desinstalar o app apaga a base daquele aparelho.","Configurações › Backup mostra o espaço usado e o Diagnóstico: a contagem de erros internos da sessão e o botão para baixar o log. O esperado é zero.","Se a base salva estiver danificada, o app guarda uma cópia antes de abrir uma nova; sem espaço para a cópia, ele bloqueia a gravação até você baixar os dados brutos. Nada é apagado às cegas."]},
+    {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu, ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","O botão verde + Corrida, no canto de baixo de todas as telas (no computador, a tecla N), lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Backup, armazenamento e lembretes, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
+    {t:"Custo real do carro",ps:["O custo por km soma energia e despesas lançadas. Para ver o lucro de verdade, cadastre o custo do carro em Configurações › Manutenção › Custo do carro.","Carro próprio: a depreciação é (valor de hoje − valor esperado na revenda) ÷ km que você pretende rodar até vender. Ex.: R$ 95.000 − R$ 60.000 em 120.000 km = R$ 0,29 por km. Ela nunca é lançada como despesa, então não duplica.","Carro alugado: o aluguel semanal é dividido pelos dias do período, a partir do primeiro dia com corrida ou turno. Se você já lança o aluguel em Despesas, marque a caixa correspondente — senão ele conta duas vezes.","Isso muda o custo por km, o lucro por km da Análise e o Vale continuar do Dashboard. Não muda o DRE, o saldo nem o MEI: é custo gerencial, para decidir, não para contabilizar."]},
     {t:"O que este app não faz",ps:["Não tem cotação nem rentabilidade de investimento: patrimônio aqui é saldo.","Não trata saldo negativo com a plataforma nem repasse antecipado com taxa.","O filtro por centro de custo não divide a receita de corridas nem a energia — para corrida tanto faz, porque é Uber por natureza.","O crédito da corrida em dinheiro não pode ser marcado um a um na conciliação: ele é calculado a partir da corrida, não é um lançamento próprio.","Nada disso é defeito: são escolhas, e estão aqui para você não ficar procurando."]}
   ];
   var h='<div class="card" id="man-topo"><h3>Manual — como o app pensa</h3><div class="sub">Só leitura. Toque num item para ir à seção.</div><ol style="font-size:15px;line-height:2;margin:8px 0;padding-left:22px">';
@@ -7145,7 +7234,7 @@ function rManual(){
     }
     try{
       var idxCard=document.getElementById("man-topo");
-      var secs=[]; for(var k=1;k<=11;k++){ var s=document.getElementById("man-s"+k); if(s) secs.push(s); }
+      var secs=[]; for(var k=1;k<=SEC.length;k++){ var s=document.getElementById("man-s"+k); if(s) secs.push(s); }
       if(!idxCard||!secs.length) return;
       var outer=document.createElement("div"); outer.className="fit-screen man-screen";
       var main=document.createElement("div"); main.className="man-main";
@@ -11120,7 +11209,124 @@ async function qrSubmit(again){
 }
 try{ qrEnsureDom(); qrFabSync(); }catch(e){ rmLogErr(e,"qr-init"); }
 try{ if(/[?&]rapida=1/.test(location.search)){ setTimeout(function(){ qrOpen(); },400); } }catch(e){ rmLogErr(e); }
-try{ window.RM.qrOpen=qrOpen; window.RM.qrClose=qrClose; }catch(e){ rmLogErr(e); }
+try{ window.RM.qrOpen=qrOpen; window.RM.veiculoDepKm=veiculoDepKm; window.RM.veiculoAluguelPeriodo=veiculoAluguelPeriodo; window.RM.custoKmStats=custoKmStats; window.RM.qrClose=qrClose; }catch(e){ rmLogErr(e); }
+
+
+/* ---------- LEMBRETES NO CELULAR ----------
+   O app monta a lista dos próximos avisos (conta a pagar vencendo, manutenção
+   perto, backup atrasado) e guarda no banco do navegador (chave
+   ridemax_web_v1_lembretes). O service worker (sw.js) lê essa lista quando o
+   navegador o acorda (periodic background sync — só Chrome Android com o app
+   instalado; o navegador decide a frequência, em geral ~1x/dia) e mostra a
+   notificação, uma vez por aviso. Sem esse recurso, os avisos seguem no Dashboard. */
+var LEMB_KEY=LS_KEY+"_lembretes", LEMB_TAG="ridemax-lembretes", lembTimer=null;
+function lembOn(){ try{ return !!(DB.settings&&DB.settings.lembretes&&DB.settings.lembretes.on); }catch(e){ return false; } }
+function lembretesCalc(){
+  var itens=[], hoje=todayISO(), lim=somaDiasISO(hoje,60);
+  try{
+    (DB.titulos||[]).forEach(function(t){
+      if(!t||t.tipo==="receber"||!titAberto(t)||!validISO(t.vencimento)) return;
+      var f=tituloFalta(t); if(!(f>0.004)) return;
+      if(t.vencimento>lim) return;
+      var nome=String(t.descricao||"Conta").slice(0,60), v=t.vencimento, txt=nome+" — "+BRL(f);
+      var vesp=somaDiasISO(v,-1);
+      itens.push({id:"tit1:"+t.id+":"+v,quando:vesp,ate:vesp,titulo:"Conta vence amanhã",texto:txt});
+      itens.push({id:"tit2:"+t.id+":"+v,quando:v,ate:somaDiasISO(v,3),titulo:"Conta vence em "+isoToBR(v).slice(0,5),texto:txt});
+    });
+  }catch(e){ rmLogErr(e,"lemb-tit"); }
+  try{
+    var mo=maxOdo();
+    if(mo!=null){ maintVisible().forEach(function(m){
+      if(m.lastDone==null||!(m.interval>0)) return;
+      var alvo=m.lastDone+m.interval, rem=alvo-mo;
+      if(rem>500) return;
+      itens.push({id:"man:"+m.id+":"+alvo,quando:hoje,ate:somaDiasISO(hoje,30),titulo:"Manutenção: "+m.name,texto:rem<0?("Atrasada "+brGroup(String(Math.round(-rem)))+" km"):("Faltam "+brGroup(String(Math.round(rem)))+" km")});
+    }); }
+  }catch(e){ rmLogErr(e,"lemb-man"); }
+  try{
+    var st=DB.settings, dias=st.backupDays||7;
+    if(st.lastBackup&&validISO(st.lastBackup)){ var due=somaDiasISO(st.lastBackup,dias); itens.push({id:"bkp:"+due,quando:due,ate:somaDiasISO(due,60),titulo:"Faça um backup",texto:"Último backup em "+isoToBR(st.lastBackup)+". Abra o app e toque em Exportar."}); }
+    else if((DB.rides||[]).length||(DB.titulos||[]).length){ itens.push({id:"bkp:nunca",quando:hoje,ate:somaDiasISO(hoje,60),titulo:"Faça seu primeiro backup",texto:"Seus dados vivem só neste aparelho. Abra o app e toque em Exportar."}); }
+  }catch(e){ rmLogErr(e,"lemb-bkp"); }
+  itens.sort(function(a,b){ return a.quando<b.quando?-1:(a.quando>b.quando?1:0); });
+  return itens;
+}
+function lembretesGravar(){
+  try{
+    var payload=JSON.stringify({on:lembOn()?1:0,geradoEm:todayISO(),itens:lembOn()?lembretesCalc():[]});
+    var cur=null; try{ cur=RMS.getItem(LEMB_KEY); }catch(e){ cur=null; }
+    if(cur!==payload) RMS.setItem(LEMB_KEY,payload);
+  }catch(e){ rmLogErr(e,"lemb-gravar"); }
+}
+function lembretesAgendar(){ try{ clearTimeout(lembTimer); lembTimer=setTimeout(lembretesGravar,1500); }catch(e){ rmLogErr(e); } }
+function lembSuporte(){
+  var r={web:/^https?:$/.test(location.protocol),sw:("serviceWorker" in navigator),notif:("Notification" in window),perm:"indisponível",periodic:false,instalado:pwaStandalone()};
+  try{ if(r.notif) r.perm=Notification.permission; }catch(e){}
+  try{ r.periodic=r.sw&&("PeriodicSyncManager" in window); }catch(e){}
+  return r;
+}
+function lembRegistrarSync(){
+  if(!lembSuporte().periodic) return Promise.resolve("sem-suporte");
+  return navigator.serviceWorker.ready.then(function(reg){
+    var p=(navigator.permissions&&navigator.permissions.query)?navigator.permissions.query({name:"periodic-background-sync"}).then(function(x){ return x.state; }).catch(function(){ return "prompt"; }):Promise.resolve("prompt");
+    return p.then(function(state){
+      if(state==="denied") return "negado";
+      return reg.periodicSync.register(LEMB_TAG,{minInterval:12*60*60*1000}).then(function(){ return "ok"; }).catch(function(e){ rmLogErr(e,"lemb-sync"); return "recusado"; });
+    });
+  }).catch(function(e){ rmLogErr(e,"lemb-sw"); return "erro"; });
+}
+function lembAtivar(){
+  var su=lembSuporte();
+  if(!su.web||!su.sw||!su.notif){ customAlert("Os lembretes funcionam no app instalado no celular (site https). Aberto direto do disco, não há como avisar.","Lembretes"); return; }
+  Notification.requestPermission().then(function(p){
+    if(p!=="granted"){ customAlert("O navegador não deu permissão para notificações. Libere em: configurações do navegador › Sites › Notificações, e tente de novo.","Lembretes"); show("plataformas"); return; }
+    var st=DB.settings; var old=st.lembretes; st.lembretes={on:1};
+    if(!save()){ st.lembretes=old; return; }
+    lembretesGravar();
+    lembRegistrarSync().then(function(r){
+      var msg=(r==="ok")?"Lembretes ativados. O celular vai avisar de contas vencendo, manutenção e backup — o Chrome decide quando verificar (em geral uma vez por dia).":"Notificações liberadas, mas este navegador não verifica com o app fechado"+(su.instalado?"":" (instale o app pelo Chrome do Android para isso)")+". Os avisos continuam no Dashboard.";
+      customAlert(msg,"Lembretes"); show("plataformas");
+    });
+  });
+}
+function lembDesativar(){
+  var st=DB.settings, old=st.lembretes; st.lembretes={on:0};
+  if(!save()){ st.lembretes=old; return; }
+  lembretesGravar();
+  try{ if(lembSuporte().periodic){ navigator.serviceWorker.ready.then(function(reg){ return reg.periodicSync.unregister(LEMB_TAG); }).catch(function(){}); } }catch(e){ rmLogErr(e); }
+  show("plataformas");
+}
+function lembTestar(){
+  var su=lembSuporte();
+  if(!su.sw||su.perm!=="granted"){ customAlert("Ative os lembretes primeiro (e permita as notificações).","Lembretes"); return; }
+  lembretesGravar();
+  navigator.serviceWorker.ready.then(function(reg){
+    var prox=lembretesCalc().filter(function(i){ return i.quando<=todayISO()&&todayISO()<=i.ate; });
+    return reg.showNotification("RideMax — teste",{body:prox.length?("Funcionando ✅ Hoje: "+prox.map(function(i){ return i.titulo; }).join(" · ")):"Funcionando ✅ Nenhum lembrete para hoje.",icon:"icon-192.png",badge:"icon-192.png",tag:"ridemax-teste"});
+  }).catch(function(e){ rmLogErr(e,"lemb-teste"); customAlert("Não foi possível mostrar a notificação: "+String((e&&e.message)||e),"Lembretes"); });
+}
+function cfgSecLembretes(){
+  var su=lembSuporte(), on=lembOn();
+  var h='<div class="sub" id="cfgLemb">Lembretes no celular</div>';
+  if(!su.web){ h+='<div class="sub">Disponível no app instalado (site https). Aberto direto do disco, os avisos ficam só no Dashboard.</div>'; return h; }
+  var permTx={granted:"permitidas",denied:"bloqueadas no navegador",default:"ainda não pedidas"}[su.perm]||su.perm;
+  h+='<div class="kv"><span>Situação</span><b>'+(on?"ativados":"desativados")+' · notificações '+esc(permTx)+'</b></div>';
+  h+='<div class="kv"><span>Aviso com o app fechado</span><b>'+(su.periodic?(su.instalado?"suportado":"suportado se instalar o app"):"não suportado neste navegador")+'</b></div>';
+  h+='<div class="toolbar">'+(on?'<button class="btn sm accent" id="lembTest" type="button">Testar agora</button><button class="btn sm red" id="lembOff" type="button">Desativar</button>':'<button class="btn sm green" id="lembOn" type="button">Ativar lembretes</button>')+'</div>';
+  if(on){
+    var prox=lembretesCalc().filter(function(i){ return i.ate>=todayISO(); }).slice(0,6);
+    if(prox.length){ h+='<div class="tblwrap"><table class="tbl"><tr><th style="text-align:left">Quando</th><th style="text-align:left">Aviso</th></tr><tbody>'; prox.forEach(function(i){ h+='<tr><td class="l">'+esc(i.quando<=todayISO()?"hoje":isoToBR(i.quando))+'</td><td class="l">'+esc(i.titulo)+' — '+esc(i.texto)+'</td></tr>'; }); h+='</tbody></table></div>'; }
+    else h+='<div class="sub">Nenhum aviso nos próximos 60 dias.</div>';
+  }
+  h+='<div class="sub">Avisa: conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos, e backup atrasado — cada aviso uma vez. Com o app fechado, só no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). iPhone e computador: os avisos ficam no Dashboard.</div>';
+  return h;
+}
+try{
+  document.addEventListener("click",function(ev){ var t=ev&&ev.target; if(!t||!t.id) return; if(t.id==="lembOn") lembAtivar(); else if(t.id==="lembOff") lembDesativar(); else if(t.id==="lembTest") lembTestar(); });
+  lembretesGravar();
+  if(lembOn()&&lembSuporte().perm==="granted"){ lembRegistrarSync(); }
+}catch(e){ rmLogErr(e,"lemb-init"); }
+try{ window.RM.lembretesCalc=lembretesCalc; window.RM.lembSuporte=lembSuporte; }catch(e){ rmLogErr(e); }
 
 } /* fim rmApp */
 })();
