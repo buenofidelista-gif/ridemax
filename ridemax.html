@@ -2553,6 +2553,25 @@ function sanitizeDB(d, rawBackup){
       }catch(_e){rmLogErr(_e)}
     }
   }catch(_e){rmLogErr(_e)}
+  /* VEÍCULOS — troca de carro (um por vez); ver veicLista */
+  try{
+    var _vsrc=Array.isArray(d.veiculos)?d.veiculos:[], _vok=[], _vdes={};
+    var _vstr=function(x,m){ return (typeof x==="string")?x.replace(/[\u0000-\u001f]/g,"").trim().slice(0,m):""; };
+    _vsrc.forEach(function(v){
+      if(!v||typeof v!=="object"||!validISO(v.desde)||_vdes[v.desde]) { if(v) noteDropped("veiculos",v); return; }
+      var nm=_vstr(v.nome,40); if(nm.length<1) nm="Carro";
+      var oi=(v.odoIni===""||v.odoIni==null)?null:Number(v.odoIni); if(!(oi!=null&&isFinite(oi)&&oi>=0&&oi<5000000)) oi=null; else oi=Math.round(oi);
+      var arq=null;
+      if(v.arq&&typeof v.arq==="object"&&!Array.isArray(v.arq)){
+        var _tmp=sanitizeSettings({energyMode:v.arq.energyMode,veiculo:v.arq.veiculo,maint:v.arq.maint,maintRemoved:v.arq.maintRemoved});
+        arq={energyMode:_tmp.energyMode,veiculo:_tmp.veiculo,maint:_tmp.maint,maintRemoved:_tmp.maintRemoved};
+      }
+      _vdes[v.desde]=1; _vok.push({id:_vstr(v.id,40)||("v"+uid()),nome:nm,placa:_vstr(v.placa,10).toUpperCase(),desde:v.desde,odoIni:oi,arq:arq});
+    });
+    _vok.sort(function(a,b){ return a.desde<b.desde?-1:1; });
+    _vok.forEach(function(v,i){ if(i<_vok.length-1&&!v.arq) v.arq=null; if(i===_vok.length-1) v.arq=null; });
+    d.veiculos=_vok;
+  }catch(_eV){ rmLogErr(_eV); d.veiculos=[]; }
   return d;
 }
 /* Concorrência entre abas (só carimbo + checagem; sem lock, sem regra nova).
@@ -3155,7 +3174,9 @@ function efficiencyDetail(){
     .sort(function(a,b){return a.key<b.key?-1:1;});
   var acc={kwh:{km:0,q:0,drops:0,n:0},L:{km:0,q:0,drops:0,n:0}};
   var prev={kwh:null,L:null}, skip={kwh:false,L:false};
+  var _sw=[], _si=0; try{ _sw=veicLista().slice(1).map(function(v){ return v.desde+" 00:00"; }); }catch(_e){ _sw=[]; }
   rows.forEach(function(o){
+    while(_si<_sw.length&&o.key>=_sw[_si]){ prev.kwh=null; prev.L=null; skip.kwh=false; skip.L=false; _si++; }
     var A=acc[o.u]||acc.kwh; A.n++;
     if(o.reset){ prev.kwh=null; prev.L=null; skip.kwh=false; skip.L=false; return; }
     var p=prev[o.u];
@@ -3221,7 +3242,9 @@ function maxOdo(){
   var idx=-1;
   for(var i=0;i<s.length;i++){ if(s[i].resetVehicle) idx=i; }
   var m=null;
-  for(var j=0;j<s.length;j++){ if(idx>=0&&j<idx) continue; var r=s[j]; if(r.odometer!=null&&r.odometer!==""&&isFinite(Number(r.odometer))) m=(m==null)?Number(r.odometer):Math.max(m,Number(r.odometer)); }
+  var _vc=null, _va=null; try{ _vc=veicCorteAtual(); _va=veicAtual(); }catch(_e){ _vc=null; }
+  for(var j=0;j<s.length;j++){ if(idx>=0&&j<idx) continue; var r=s[j]; if(_vc&&r.date<_vc) continue; if(r.odometer!=null&&r.odometer!==""&&isFinite(Number(r.odometer))) m=(m==null)?Number(r.odometer):Math.max(m,Number(r.odometer)); }
+  if(_vc&&_va&&_va.odoIni!=null) m=(m==null)?_va.odoIni:Math.max(m,_va.odoIni);
   return m;
 }
 /* Concorrência: reset de veículo no boot é normalização — preserva o carimbo. */
@@ -5527,11 +5550,11 @@ function custoKmStatsOper(days){
    Depreciação = (valor hoje − revenda esperada) ÷ km até vender; nunca é lançada como despesa, então não duplica.
    Aluguel = semanal ÷ 7 × dias do período, contados a partir do 1º dia com corrida/turno (não cobra dias antes de começar).
    Se o aluguel já é lançado em Despesas (aluguelNasDespesas), não soma de novo. Não entra no DRE nem no saldo. */
-function veiculoCfg(){ var v=(DB.settings&&DB.settings.veiculo)||{}; var num=function(x){ var y=Number(x); return (x!==""&&x!=null&&isFinite(y)&&y>=0)?y:0; }; return {tipo:v.tipo==="alugado"?"alugado":"proprio",valorAtual:num(v.valorAtual),valorRevenda:num(v.valorRevenda),kmAteVender:num(v.kmAteVender),aluguelSemanal:num(v.aluguelSemanal),aluguelNasDespesas:v.aluguelNasDespesas?1:0}; }
-function veiculoDepKm(){ var c=veiculoCfg(); if(c.tipo!=="proprio") return 0; if(!(c.valorAtual>0&&c.kmAteVender>0&&c.valorAtual>c.valorRevenda)) return 0; return (c.valorAtual-c.valorRevenda)/c.kmAteVender; }
+function veiculoCfg(vv){ var v=vv||(DB.settings&&DB.settings.veiculo)||{}; var num=function(x){ var y=Number(x); return (x!==""&&x!=null&&isFinite(y)&&y>=0)?y:0; }; return {tipo:v.tipo==="alugado"?"alugado":"proprio",valorAtual:num(v.valorAtual),valorRevenda:num(v.valorRevenda),kmAteVender:num(v.kmAteVender),aluguelSemanal:num(v.aluguelSemanal),aluguelNasDespesas:v.aluguelNasDespesas?1:0}; }
+function veiculoDepKm(vv){ var c=veiculoCfg(vv); if(c.tipo!=="proprio") return 0; if(!(c.valorAtual>0&&c.kmAteVender>0&&c.valorAtual>c.valorRevenda)) return 0; return (c.valorAtual-c.valorRevenda)/c.kmAteVender; }
 function veiculoPrimeiroDia(){ var m=null; try{ (DB.rides||[]).forEach(function(r){ if(validISO(r.date)&&(m==null||r.date<m)) m=r.date; }); (DB.shifts||[]).forEach(function(x){ if(validISO(x.date)&&(m==null||x.date<m)) m=x.date; }); }catch(e){rmLogErr(e)} return m; }
-function veiculoAluguelPeriodo(ini,fim){
-  var c=veiculoCfg(); var out={valor:0,dias:0,ativo:false,nasDespesas:!!c.aluguelNasDespesas,semanal:c.aluguelSemanal};
+function veiculoAluguelPeriodo(ini,fim,vv){
+  var c=veiculoCfg(vv); var out={valor:0,dias:0,ativo:false,nasDespesas:!!c.aluguelNasDespesas,semanal:c.aluguelSemanal};
   if(c.tipo!=="alugado"||!(c.aluguelSemanal>0)) return out;
   if(c.aluguelNasDespesas){ out.ativo=false; return out; }
   var p=veiculoPrimeiroDia(); if(!p||p>fim) return out;
@@ -5544,11 +5567,18 @@ function custoKmStats(days){
   var b=custoKmStatsOper(days);
   b.crOper=b.cr; b.custoOper=b.custo; b.lucroOper=b.lucro; b.dep=0; b.depKm=0; b.alug=0; b.alugPart=0; b.alugDias=0; b.alugNasDesp=false; b.veicCfg=false;
   try{
-    var c=veiculoCfg(); var dk=veiculoDepKm(); var s0=sinceISO(days||30), t0=todayISO();
-    var al=veiculoAluguelPeriodo(s0,t0);
-    b.veicCfg=(dk>0)||(c.tipo==="alugado"&&c.aluguelSemanal>0); b.alugNasDesp=(c.tipo==="alugado"&&al.nasDespesas&&c.aluguelSemanal>0);
+    var s0=sinceISO(days||30), t0=todayISO();
+    /* com troca de carro no período: cada carro com a sua configuração, nos seus dias;
+       a depreciação divide os km pela distância das corridas de cada carro */
+    var segs=veicSegmentos(s0,t0), dist=segs.map(function(sg){ var dd=0; (DB.rides||[]).forEach(function(r){ if(r&&r.date>=sg.a&&r.date<=sg.b) dd+=Number(r.distance)||0; }); return dd; });
+    var dsum=dist.reduce(function(a,x){ return a+x; },0), _dep=0, _al=0, _ald=0, _cfgAny=false, _nas=false;
+    segs.forEach(function(sg,i){ var c=veiculoCfg(sg.cfg), dk=veiculoDepKm(sg.cfg), al=veiculoAluguelPeriodo(sg.a,sg.b,sg.cfg);
+      if((dk>0)||(c.tipo==="alugado"&&c.aluguelSemanal>0)) _cfgAny=true; if(c.tipo==="alugado"&&al.nasDespesas&&c.aluguelSemanal>0) _nas=true;
+      var fr=(segs.length===1)?1:(dsum>0?dist[i]/dsum:(i===segs.length-1?1:0));
+      _dep+=dk*(b.km>0?b.km:0)*fr; _al+=al.valor; _ald+=al.dias; });
+    b.veicCfg=_cfgAny; b.alugNasDesp=_nas;
     if(!(b.km>0)) return b;
-    b.depKm=dk; b.dep=dk*b.km; b.alug=al.valor; b.alugDias=al.dias;
+    b.dep=_dep; b.depKm=_dep/b.km; b.alug=Math.round(_al*100)/100; b.alugDias=_ald;
     b.alugPart=(b.src==="shift")?al.valor:al.valor*(b.prop||1);
     b.cr=b.crOper+b.dep+b.alugPart;
     b.custo=b.cr/b.km;
@@ -6724,7 +6754,7 @@ function cfgSecAnnual(){
   return h;
 }
 function settingsCard(){
-  return '<div class="card"><h3>Configurações</h3>'+cfgSecEnergia()+cfgSecBackup()+cfgSecBkpAuto()+cfgSecLembretes()+cfgSecMeiDas()+cfgEncargosHTML()+cfgSecManut()+cfgSecVeiculo()+cfgSecAnnual()+'</div>';
+  return '<div class="card"><h3>Configurações</h3>'+cfgSecEnergia()+cfgSecBackup()+cfgSecBkpAuto()+cfgSecLembretes()+cfgSecMeiDas()+cfgEncargosHTML()+cfgSecManut()+cfgSecVeiculo()+cfgSecAnnual()+'<div class="sub">Veículos</div>'+cfgSecVeiculos()+'</div>';
 }
 function wireSettings(){
   try{
@@ -6910,7 +6940,7 @@ function wireCatCard(){
   };
 }
 var cfgTab="plataformas";
-var CFG_TABS=[["plataformas","Plataformas"],["categorias","Categorias"],["contas","Contas"],["centros","Centros de custo"],["mei","MEI e DAS"],["manut","Manutenção e gastos anuais"],["backup","Backup e armazenamento"],["energia","Tipo de energia"]];
+var CFG_TABS=[["plataformas","Plataformas"],["categorias","Categorias"],["contas","Contas"],["centros","Centros de custo"],["mei","MEI e DAS"],["manut","Manutenção e gastos anuais"],["veiculos","Veículos"],["backup","Backup e armazenamento"],["energia","Tipo de energia"]];
 function rPlat(){
   try{ if(window.matchMedia&&window.matchMedia("(min-width:1100px)").matches){ document.body.classList.add("fit-lock"); } }catch(e){rmLogErr(e)}
   var h='<div class="fit-screen"><div class="toolbar seg" id="cfgTabs" role="tablist">';
@@ -6928,8 +6958,9 @@ function renderCfg(){
   if(cfgTab==="contas"){ try{ window.__cfgBox=box; }catch(e){rmLogErr(e)} rContas(); return; }
   if(cfgTab==="centros"){ try{ window.__cfgBox=box; }catch(e){rmLogErr(e)} rCentros(); return; }
   if(cfgTab==="categorias"){ box.innerHTML=catCard()+'<div class="card"><h3>Encargos do Contas a pagar</h3>'+cfgEncargosHTML()+'</div>'; wireCatCard(); wireSettings(); return; }
-  if(cfgTab==="mei"){ box.innerHTML='<div class="card"><h3>MEI e DAS</h3>'+cfgSecMeiDas()+'</div><div class="card"><h3>Comprovante de renda</h3><div class="sub">PDF com a receita mês a mês (3, 6 ou 12 meses), para aluguel, financiamento ou crédito.</div><div class="toolbar"><button type="button" class="btn sm green" id="crBtn2">Gerar comprovante de renda (PDF)</button></div></div>'; wireSettings(); return; }
-  if(cfgTab==="manut"){ box.innerHTML='<div class="card"><h3>Manutenção e gastos anuais</h3>'+cfgSecManut()+cfgSecVeiculo()+cfgSecAnnual()+'</div>'; wireSettings(); return; }
+  if(cfgTab==="mei"){ box.innerHTML='<div class="card"><h3>MEI e DAS</h3>'+cfgSecMeiDas()+'</div><div class="card"><h3>Comprovante de renda</h3><div class="sub">PDF com a receita mês a mês (3, 6 ou 12 meses), para aluguel, financiamento ou crédito.</div><div class="toolbar"><button type="button" class="btn sm green" id="crBtn2">Gerar comprovante de renda (PDF)</button></div></div><div class="card"><h3>Imposto de renda (IRPF)</h3><div class="sub">Relatório de apoio para a declaração: corridas mês a mês com a parte tributável, bens em 31/12, proventos e vendas. Não calcula o imposto nem substitui o contador.</div><div class="toolbar"><button type="button" class="btn sm green" id="irBtn2">Gerar relatório para o IRPF (PDF)</button></div></div>'; wireSettings(); return; }
+  if(cfgTab==="veiculos"){ box.innerHTML='<div class="card"><h3>Veículos</h3>'+cfgSecVeiculos()+'</div>'; wireSettings(); return; }
+  if(cfgTab==="manut"){ box.innerHTML='<div class="card"><h3>Manutenção e gastos anuais</h3><div class="toolbar"><span>Carro atual: <b>'+esc(veicNome(veicAtual()))+'</b></span><button type="button" class="btn sm accent" id="veicIrBtn">Trocar ou ver carros</button></div>'+cfgSecManut()+cfgSecVeiculo()+cfgSecAnnual()+'</div>'; wireSettings(); return; }
   if(cfgTab==="backup"){ box.innerHTML='<div class="card"><h3>Backup, armazenamento e lembretes</h3>'+cfgSecBackup()+cfgSecBkpAuto()+cfgSecLembretes()+'</div>'; wireSettings(); return; }
   if(cfgTab==="energia"){ box.innerHTML='<div class="card"><h3>Tipo de energia</h3>'+cfgSecEnergia()+'</div>'; wireSettings(); return; }
   renderCfgPlat(box);
@@ -7218,7 +7249,8 @@ function rManual(){
     {t:"Backup, descartes e limpeza",ps:["Exportar baixa tudo num arquivo. Importar SUBSTITUI a base, e antes disso o app baixa sozinho um backup do estado anterior.","Backup automático (Configurações › Backup): no celular, Enviar backup abre o compartilhar — mande para o Google Drive ou para você mesmo no WhatsApp/e-mail. No computador (Chrome/Edge), escolha uma pasta de backup, de preferência sincronizada com Drive ou OneDrive, e o app grava o arquivo do dia sozinho a cada lançamento, guardando os 30 últimos. Se o navegador pedir permissão de novo, um toque em Reativar resolve.","Cópias diárias: o app também guarda sozinho, neste aparelho, uma cópia por dia (7 dias + 4 semanas), com Restaurar e Baixar. Serve para desfazer um erro; não substitui o backup, porque some junto se o celular sumir ou o navegador for limpo. Restaurar guarda antes o estado atual como Antes da última restauração.","Se o arquivo tiver registro inválido, ele é descartado e RELATADO, com indicação do que foi. Se um título perder uma baixa inválida e voltar a ficar em aberto, isso aparece em destaque — não é perda silenciosa.","A limpeza da base apaga o movimento e preserva os cadastros. Ela pede backup, data de corte e confirmação digitada. Atenção: as séries são cadastro e NÃO são apagadas.","Os dados ficam no banco do navegador (IndexedDB), com espaço de centenas de MB. Cada navegador, aparelho e endereço tem a sua base: o arquivo aberto do disco e o site publicado são bases diferentes, ligadas só pelo backup. Limpar os dados do site ou desinstalar o app apaga a base daquele aparelho.","Configurações › Backup mostra o espaço usado e o Diagnóstico: a contagem de erros internos da sessão e o botão para baixar o log. O esperado é zero.","Se a base salva estiver danificada, o app guarda uma cópia antes de abrir uma nova; sem espaço para a cópia, ele bloqueia a gravação até você baixar os dados brutos. Nada é apagado às cegas."]},
     {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu, ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","O botão verde + Corrida, no canto de baixo de todas as telas (no computador, a tecla N), lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Backup, armazenamento e lembretes, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
     {t:"Comprovante de renda",ps:["Para alugar imóvel, financiar ou pedir crédito: Financeiro › DRE › Comprovante de renda (PDF), ou Configurações › MEI e DAS. Escolha 3, 6 ou 12 meses; o mês atual entra só se você marcar, e sai como parcial.","O PDF traz, mês a mês, corridas, receita bruta, despesas do trabalho e rendimento líquido, mais o total por plataforma e as médias mensais (calculadas só sobre os meses com movimento). Os números são os do DRE por competência, no centro de custo do trabalho.","É uma declaração sua, assinada por você: o próprio PDF diz isso e indica os extratos das plataformas como prova. Lançamentos faltando = renda menor no papel, então confira antes de entregar. Nome, CPF, CNPJ e cidade ficam guardados para a próxima vez."]},
-    {t:"Custo real do carro",ps:["O custo por km soma energia e despesas lançadas. Para ver o lucro de verdade, cadastre o custo do carro em Configurações › Manutenção › Custo do carro.","Carro próprio: a depreciação é (valor de hoje − valor esperado na revenda) ÷ km que você pretende rodar até vender. Ex.: R$ 95.000 − R$ 60.000 em 120.000 km = R$ 0,29 por km. Ela nunca é lançada como despesa, então não duplica.","Carro alugado: o aluguel semanal é dividido pelos dias do período, a partir do primeiro dia com corrida ou turno. Se você já lança o aluguel em Despesas, marque a caixa correspondente — senão ele conta duas vezes.","Isso muda o custo por km, o lucro por km da Análise e o Vale continuar do Dashboard. Não muda o DRE, o saldo nem o MEI: é custo gerencial, para decidir, não para contabilizar."]},
+    {t:"Imposto de renda (IRPF)",ps:["Financeiro › DRE › Relatório IRPF (PDF), ou Configurações › MEI e DAS. Escolha o ano-calendário e a forma de trabalho. O PDF junta o que a declaração pede e o app já sabe: corridas mês a mês, bens em 31/12 pelo custo, proventos pagos no ano e vendas em bolsa.","Autônomo, sem CNPJ: 60% da receita bruta das corridas é tributável (regra do transporte de passageiros) e entra pelo Carnê-Leão, mês a mês; os outros 40% vão como não tributáveis. MEI: 16% da receita bruta é a parcela isenta presumida, limitada ao lucro; o lucro acima disso é tributável.","É relatório de apoio: não calcula o imposto e não substitui o contador. Os números oficiais são os dos informes das plataformas, bancos e corretoras — mês sem lançamento no app sai zerado no relatório."]},
+    {t:"Custo real do carro",ps:["O custo por km soma energia e despesas lançadas. Para ver o lucro de verdade, cadastre o custo do carro em Configurações › Manutenção › Custo do carro.","Carro próprio: a depreciação é (valor de hoje − valor esperado na revenda) ÷ km que você pretende rodar até vender. Ex.: R$ 95.000 − R$ 60.000 em 120.000 km = R$ 0,29 por km. Ela nunca é lançada como despesa, então não duplica.","Carro alugado: o aluguel semanal é dividido pelos dias do período, a partir do primeiro dia com corrida ou turno. Se você já lança o aluguel em Despesas, marque a caixa correspondente — senão ele conta duas vezes.","Isso muda o custo por km, o lucro por km da Análise e o Vale continuar do Dashboard. Não muda o DRE, o saldo nem o MEI: é custo gerencial, para decidir, não para contabilizar.","Trocou de carro? Configurações › Veículos › Trocar de carro, com a data da troca. Um carro por vez: o que tem data antes da troca fica com o carro anterior, sem marcar nada em cada lançamento. Odômetro, manutenção, tipo de energia e custo do carro recomeçam no novo; o anterior guarda a configuração dele, e um período que pega os dois carros usa o custo de cada um nos seus dias. Errou? Desfazer a última troca devolve tudo como estava."]},
     {t:"O que este app não faz",ps:["Não tem cotação nem rentabilidade de investimento: patrimônio aqui é saldo.","Não trata saldo negativo com a plataforma nem repasse antecipado com taxa.","O filtro por centro de custo não divide a receita de corridas nem a energia — para corrida tanto faz, porque é Uber por natureza.","O crédito da corrida em dinheiro não pode ser marcado um a um na conciliação: ele é calculado a partir da corrida, não é um lançamento próprio.","Nada disso é defeito: são escolhas, e estão aqui para você não ficar procurando."]}
   ];
   var h='<div class="card" id="man-topo"><h3>Manual — como o app pensa</h3><div class="sub">Só leitura. Toque num item para ir à seção.</div><ol style="font-size:15px;line-height:2;margin:8px 0;padding-left:22px">';
@@ -7748,7 +7780,7 @@ function rDre(){
   try{ document.body.classList.add("fit-lock"); }catch(e){rmLogErr(e)}
   var html='<div class="fit-screen fin-dre"><div class="fin-dre-bar"><div class="toolbar fin-dre-tools"><span>Período:</span><select id="dreF"><option value="mes">Este mês</option><option value="mesant">Mês passado</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="todos">Todo o período</option></select><span>Centro:</span><select id="dreC" style="max-width:150px"><option value="__consolidado">Consolidado</option>'+dreCentroOptsHTML()+'</select><span class="seg" id="dreRegSeg"><button type="button" data-r="competencia">Por competência</button><button type="button" data-r="caixa">Por caixa</button></span>'
     +(isCaixa?'<span class="mtag" title="Visão pelo dinheiro: só entra o que passou pelo caixa no período. Não é o DRE da norma.">por caixa — visão do dinheiro (não é o DRE da norma)</span>':'<span class="mtag" title="Regime de competência: vale a data de competência, não a do pagamento">por competência</span>')
-    +'<span style="color:var(--muted)">'+esc(D.range.label)+' · '+isoToBR(D.range.ini)+' a '+isoToBR(D.range.fim)+'</span><span style="flex:1 1 auto;min-width:8px"></span><button type="button" class="btn sm green" id="dreNovoBtn">Novo lançamento</button><button type="button" class="btn sm accent" id="crBtn">Comprovante de renda (PDF)</button></div></div>';
+    +'<span style="color:var(--muted)">'+esc(D.range.label)+' · '+isoToBR(D.range.ini)+' a '+isoToBR(D.range.fim)+'</span><span style="flex:1 1 auto;min-width:8px"></span><button type="button" class="btn sm green" id="dreNovoBtn">Novo lançamento</button><button type="button" class="btn sm accent" id="crBtn">Comprovante de renda (PDF)</button><button type="button" class="btn sm accent" id="irBtn">Relatório IRPF (PDF)</button></div></div>';
   html+='<div class="fin-dre-top"><div class="cards c4 fin-dre-cards">'
     +statCard("💰",BRL(D.brutaT),"Receita bruta","#4caf7d",D.nRides+" corridas")
     +statCard("🧾",BRL(D.liquida),"Receita líquida","","− "+BRL(D.ded)+" deduções")
@@ -11806,10 +11838,11 @@ function crEntregar(out){
   var f=null; try{ f=new File([blob],out.nome,{type:"application/pdf"}); }catch(e){ f=null; }
   var podeEnviar=false; try{ podeEnviar=!!(f&&navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})); }catch(e){ podeEnviar=false; }
   window.__crUltimo={nome:out.nome,tamanho:out.bytes.length};
-  if(!podeEnviar){ baixar(); customAlert("Comprovante baixado: "+out.nome+". Confira os valores antes de entregar.","Comprovante de renda"); return; }
-  openModal("Comprovante de renda","PDF pronto ("+out.nome+"). Confira os valores antes de entregar.",[{label:"Baixar",cls:"accent",val:"baixar"},{label:"Enviar (WhatsApp, e-mail…)",cls:"green",val:"enviar"}]).then(function(v){
+  var _tit=out.titulo||"Comprovante de renda";
+  if(!podeEnviar){ baixar(); customAlert("PDF baixado: "+out.nome+". Confira os valores antes de usar.",_tit); return; }
+  openModal(_tit,"PDF pronto ("+out.nome+"). Confira os valores antes de usar.",[{label:"Baixar",cls:"accent",val:"baixar"},{label:"Enviar (WhatsApp, e-mail…)",cls:"green",val:"enviar"}]).then(function(v){
     if(v==="baixar") baixar();
-    else if(v==="enviar") navigator.share({files:[f],title:"Comprovante de rendimentos"}).catch(function(e){ if(e&&e.name==="AbortError") return; rmLogErr(e,"cr-share"); baixar(); });
+    else if(v==="enviar") navigator.share({files:[f],title:_tit}).catch(function(e){ if(e&&e.name==="AbortError") return; rmLogErr(e,"cr-share"); baixar(); });
   });
 }
 try{
@@ -11817,6 +11850,377 @@ try{
   document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ var bk=document.getElementById("crBk"); if(bk&&!bk.hidden) crFechar(); } });
 }catch(e){ rmLogErr(e,"cr-init"); }
 try{ window.RM.crGerarPdf=crGerarPdf; window.RM.crDados=crDados; window.RM.crAbrir=crAbrir; }catch(e){ rmLogErr(e); }
+
+/* ---------- RELATÓRIO DE APOIO AO IRPF ----------
+   Junta, para um ano-calendário, o que a declaração pede e o app já sabe:
+   1) motorista: receita bruta mês a mês (corridas + gorjetas, competência) e a
+      divisão conforme a forma de trabalho —
+      autônomo: 60% tributável (Lei 7.713/1988, art. 9º, II) e 40% não tributável;
+      MEI: parcela isenta = 16% da receita bruta (presunção de transporte de
+      passageiros, Lei 9.249/1995, art. 15), limitada ao lucro; o que passar é tributável.
+   2) investimentos: posição e custo em 31/12 do ano anterior e do ano (Bens e
+      direitos), proventos pagos no ano por tipo, e vendas com a estimativa já existente.
+   NÃO calcula imposto da declaração nem substitui contador: é apoio, e diz isso. */
+var IR_PRESUNCAO_MEI=0.16, IR_TRIB_AUTONOMO=0.60;
+function irAnoPadrao(){ var d=new Date(); return d.getMonth()<=4?d.getFullYear()-1:d.getFullYear(); }
+function irAnos(){
+  var s={}, y=new Date().getFullYear(); s[y]=1; s[y-1]=1;
+  try{ (DB.rides||[]).forEach(function(r){ if(r&&validISO(r.date)) s[Number(r.date.slice(0,4))]=1; }); }catch(e){}
+  try{ (DB.invMovs||[]).forEach(function(m){ if(m&&validISO(m.data)) s[Number(m.data.slice(0,4))]=1; }); }catch(e){}
+  return Object.keys(s).map(Number).filter(function(a){ return a>=2000&&a<=y; }).sort(function(a,b){ return b-a; });
+}
+function irDados(ano,regime){
+  var hoje=todayISO(), out={ano:ano,regime:regime,meses:[],tot:{n:0,bruta:0,desp:0,liq:0,trib:0,naoTrib:0},parcial:(ano+"-12-31")>hoje};
+  for(var m=0;m<12;m++){
+    var ini=ano+"-"+String(m+1).padStart(2,"0")+"-01"; if(ini>hoje) break;
+    var fimD=new Date(ano,m+1,0), fim=ano+"-"+String(m+1).padStart(2,"0")+"-"+String(fimD.getDate()).padStart(2,"0"); if(fim>hoje) fim=hoje;
+    var D=computeDRECustom(ini,fim,"IRPF","__uber","competencia");
+    var bruta=Math.round((Number(D.bruta)||0)*100)/100, brutaT=Math.round((Number(D.brutaT)||0)*100)/100, liq=Math.round((Number(D.liquido)||0)*100)/100;
+    var M={m:m,n:D.nRides||0,bruta:bruta,desp:Math.round((brutaT-liq)*100)/100,liq:liq};
+    M.trib=Math.round(bruta*IR_TRIB_AUTONOMO*100)/100; M.naoTrib=Math.round((bruta-M.trib)*100)/100;
+    out.meses.push(M);
+    ["n","bruta","desp","liq","trib","naoTrib"].forEach(function(k){ out.tot[k]=Math.round((out.tot[k]+M[k])*100)/100; });
+  }
+  /* MEI: no ano */
+  var presumido=Math.round(out.tot.bruta*IR_PRESUNCAO_MEI*100)/100, lucro=out.tot.liq;
+  out.mei={presumido:presumido,lucro:lucro,isento:Math.round(Math.max(0,Math.min(presumido,lucro))*100)/100,tributavel:Math.round(Math.max(0,lucro-presumido)*100)/100};
+  /* investimentos */
+  out.bens=[]; out.prov={dividendo:[],jcp:[],rendimento:[]}; out.vendas=[];
+  try{
+    var pos=invPosicoes(null);
+    Object.keys(pos).forEach(function(k){
+      var p=pos[k], a=invPosicaoDe(p.conta,p.codigo,(ano-1)+"-12-31",null), b=invPosicaoDe(p.conta,p.codigo,ano+"-12-31",null);
+      if(!(Math.abs(a.qtd)>1e-7)&&!(Math.abs(b.qtd)>1e-7)) return;
+      var c=contaById(p.conta), tipo=invDistTipo(p.conta,p.codigo)||"";
+      out.bens.push({codigo:p.codigo,tipo:tipo,conta:c?c.nome:"—",qtdA:a.qtd,custoA:a.total,qtdB:b.qtd,custoB:b.total,pm:b.pm});
+    });
+    out.bens.sort(function(x,y){ return (x.tipo+x.codigo)<(y.tipo+y.codigo)?-1:1; });
+  }catch(e){ rmLogErr(e,"ir-bens"); }
+  try{
+    var porAt={};
+    invProvList().forEach(function(pv){
+      if(!pv||!validISO(pv.dataPag)||pv.dataPag.slice(0,4)!==String(ano)) return;
+      var t=(pv.tipo==="jcp"||pv.tipo==="rendimento")?pv.tipo:"dividendo", k=t+"|"+pv.codigo;
+      if(!porAt[k]) porAt[k]={tipo:t,codigo:pv.codigo,bruto:0,retido:0,liquido:0,n:0};
+      porAt[k].bruto+=invProvBruto(pv); porAt[k].retido+=invProvRetido(pv); porAt[k].liquido+=invProvLiquido(pv); porAt[k].n++;
+    });
+    Object.keys(porAt).sort().forEach(function(k){ var r=porAt[k]; ["bruto","retido","liquido"].forEach(function(f){ r[f]=Math.round(r[f]*100)/100; }); out.prov[r.tipo].push(r); });
+  }catch(e){ rmLogErr(e,"ir-prov"); }
+  try{ out.vendas=invIrResumoMeses().filter(function(r){ return r&&String(r.mes).slice(0,4)===String(ano); }); }catch(e){ rmLogErr(e,"ir-vendas"); }
+  return out;
+}
+var IR_TIPO_NOME={acao:"Ação",fii:"FII",etf:"ETF",tesouro:"Tesouro Direto",cdb:"CDB"};
+function irQtd(q){ var r=Math.round(Number(q)*1e6)/1e6; return (Math.abs(r-Math.round(r))<1e-9)?brGroup(String(Math.round(r))):String(r).replace(".",","); }
+
+function irGerarPdf(ano,regime){
+  var P=crPerfil(), R=irDados(ano,regime), pdf=new CrPdf(), X0=48, X1=547, AZ=[30,42,70], CZ=[90,95,115];
+  var agora=new Date(), p2=function(x){ return String(x).padStart(2,"0"); }, hojeBR=p2(agora.getDate())+"/"+p2(agora.getMonth()+1)+"/"+agora.getFullYear();
+  var par=function(t,o){ o=o||{}; crQuebrar(t,!!o.b,o.tam||9.5,(X1-X0)-(o.ind||0)).forEach(function(l){ pdf.precisa(14); pdf.texto(X0+(o.ind||0),pdf.y,l,{tam:o.tam||9.5,b:o.b,cor:o.cor}); pdf.y-=(o.tam||9.5)+3.5; }); };
+  var titulo=function(t){ pdf.precisa(60); pdf.y-=6; pdf.texto(X0,pdf.y,t,{tam:12.5,b:1,cor:AZ}); pdf.linha(X0,pdf.y-5,X1,pdf.y-5,1,AZ); pdf.y-=22; };
+  var sub=function(t){ pdf.precisa(40); pdf.texto(X0,pdf.y,t,{tam:10.5,b:1,cor:AZ}); pdf.y-=15; };
+  var tabela=function(cols,linhas,tot){
+    var cab=function(){ pdf.ret(X0,pdf.y-5,X1-X0,17,AZ); cols.forEach(function(c){ pdf.texto(c.x,pdf.y,c.t,{tam:8,b:1,cor:[255,255,255],alin:c.d?"dir":null}); }); pdf.y-=18; };
+    pdf.precisa(40); cab();
+    linhas.forEach(function(L,i){ if(pdf.precisa(16)) cab(); if(i%2===1) pdf.ret(X0,pdf.y-4.5,X1-X0,15,[246,247,250]); cols.forEach(function(c,j){ pdf.texto(c.x,pdf.y,String(L[j]),{tam:8.8,alin:c.d?"dir":null,b:c.b}); }); pdf.y-=15; });
+    if(tot){ pdf.precisa(18); pdf.linha(X0,pdf.y+9,X1,pdf.y+9,0.9,AZ); cols.forEach(function(c,j){ if(tot[j]!=null&&tot[j]!=="") pdf.texto(c.x,pdf.y-2,String(tot[j]),{tam:9,b:1,alin:c.d?"dir":null}); }); pdf.y-=20; }
+    pdf.y-=6;
+  };
+  /* cabeçalho */
+  pdf.ret(0,792,595.28,50,AZ);
+  pdf.texto(X0,812,"RELATÓRIO DE APOIO AO IRPF",{tam:16,b:1,cor:[255,255,255]});
+  pdf.texto(X1,812,"Ano-calendário "+ano,{tam:11,b:1,cor:[200,210,230],alin:"dir"});
+  pdf.y=766;
+  var dl=function(r,v){ pdf.texto(X0,pdf.y,r,{tam:9,cor:CZ}); pdf.texto(X0+120,pdf.y,v,{tam:10,b:1}); pdf.y-=15; };
+  dl("Contribuinte",P.nome||"—"); if(P.doc) dl("CPF",P.doc); if(P.cnpj) dl("CNPJ (MEI)",P.cnpj);
+  dl("Forma de trabalho",regime==="mei"?"MEI (microempreendedor individual)":"Autônomo, sem CNPJ");
+  dl("Declaração","IRPF "+(ano+1)+" — ano-calendário "+ano+(R.parcial?" (ano em andamento: dados até "+isoToBR(todayISO())+")":""));
+  pdf.y-=2;
+  pdf.ret(X0,pdf.y-38,X1-X0,44,[255,246,230]);
+  var yA=pdf.y; pdf.y-=8;
+  crQuebrar("Este relatório organiza os números lançados no RideMax para ajudar no preenchimento. Não é a declaração nem calcula o imposto devido. As regras e as fichas do programa da Receita mudam: confira com um contador e com os informes das plataformas, bancos e corretoras.",false,8.5,X1-X0-16).forEach(function(l){ pdf.texto(X0+8,pdf.y,l,{tam:8.5,cor:[110,70,10]}); pdf.y-=11; });
+  pdf.y=Math.min(pdf.y,yA-38)-18;
+
+  /* 1 — motorista */
+  titulo("1. Trabalho como motorista por aplicativo");
+  var cM=[{t:"Mês",x:X0+6},{t:"Corridas",x:X0+150,d:1},{t:"Receita bruta",x:X0+245,d:1}], linhas=[], tot;
+  if(regime==="mei"){
+    cM=cM.concat([{t:"Despesas",x:X0+340,d:1},{t:"Lucro",x:X1-6,d:1}]);
+    R.meses.forEach(function(M){ linhas.push([CR_MESES[M.m].charAt(0).toUpperCase()+CR_MESES[M.m].slice(1),M.n,crValor(M.bruta),crValor(M.desp),crValor(M.liq)]); });
+    tot=["Total",R.tot.n,crValor(R.tot.bruta),crValor(R.tot.desp),crValor(R.tot.liq)];
+  } else {
+    cM=cM.concat([{t:"Tributável (60%)",x:X0+360,d:1},{t:"Não tributável (40%)",x:X1-6,d:1}]);
+    R.meses.forEach(function(M){ linhas.push([CR_MESES[M.m].charAt(0).toUpperCase()+CR_MESES[M.m].slice(1),M.n,crValor(M.bruta),crValor(M.trib),crValor(M.naoTrib)]); });
+    tot=["Total",R.tot.n,crValor(R.tot.bruta),crValor(R.tot.trib),crValor(R.tot.naoTrib)];
+  }
+  if(!R.meses.length) par("Nenhum mês deste ano até hoje.",{cor:CZ}); else tabela(cM,linhas,tot);
+  sub("Onde lançar");
+  if(regime==="mei"){
+    var MI=R.mei;
+    tabela([{t:"Cálculo do ano (MEI)",x:X0+6},{t:"Valor",x:X1-6,d:1}],[
+      ["Receita bruta do ano (corridas e gorjetas)",crValor(R.tot.bruta)],
+      ["Despesas do trabalho lançadas",crValor(R.tot.desp)],
+      ["Lucro evidenciado (receita − despesas)",crValor(MI.lucro)],
+      ["Parcela presumida (16% da receita bruta)",crValor(MI.presumido)],
+      ["Lucro isento (presumido, limitado ao lucro)",crValor(MI.isento)],
+      ["Lucro tributável (lucro − parcela presumida)",crValor(MI.tributavel)]]);
+    par("• Lucro isento: ficha Rendimentos Isentos e Não Tributáveis, \"Lucros e dividendos recebidos\", tendo o CNPJ do MEI como fonte pagadora.",{ind:4});
+    par("• Lucro tributável (se houver): ficha Rendimentos Tributáveis Recebidos de Pessoa Jurídica, com o CNPJ do MEI como fonte e sem imposto retido.",{ind:4});
+    par("• Sem contabilidade, o isento fica limitado à parcela presumida, como acima. Com escrituração contábil feita por contador, o lucro apurado pode ser todo isento — vale conversar com ele. Em qualquer caso, guarde notas e recibos das despesas. A DASN-SIMEI do MEI é outra declaração, com prazo próprio.",{ind:4});
+  } else {
+    par("• Parte tributável (60% da receita bruta, regra do transporte de passageiros — Lei 7.713/1988, art. 9º, II): Rendimentos Tributáveis Recebidos de Pessoa Física/Exterior, mês a mês. Na prática ela entra pelo Carnê-Leão, que tem recolhimento mensal (vence no último dia útil do mês seguinte) e é importado para a declaração.",{ind:4});
+    par("• Parte não tributável (40%): Rendimentos Isentos e Não Tributáveis, \"Outros\", com a descrição \"parcela não tributável — transporte de passageiros\".",{ind:4});
+    par("• Os 60% já levam em conta os custos do veículo. As despesas do app não são abatidas outra vez; para usar livro-caixa em vez dessa regra, fale com um contador.",{ind:4});
+  }
+  par("Valores por competência (data da corrida), no centro de custo do trabalho. Confira com os extratos anuais das plataformas.",{tam:8,cor:CZ});
+  pdf.y-=4;
+
+  /* 2 — investimentos */
+  titulo("2. Investimentos");
+  sub("Bens e direitos — situação em 31/12");
+  if(R.bens.length){
+    tabela([{t:"Ativo",x:X0+6,b:1},{t:"Tipo",x:X0+70},{t:"Instituição",x:X0+150},{t:"31/12/"+(ano-1),x:X0+350,d:1},{t:"31/12/"+ano,x:X1-6,d:1}],
+      R.bens.map(function(b){ return [b.codigo,IR_TIPO_NOME[b.tipo]||b.tipo||"—",String(b.conta).slice(0,30),crValor(b.custoA),crValor(b.custoB)]; }),
+      ["Total","","",crValor(R.bens.reduce(function(s,b){return s+b.custoA;},0)),crValor(R.bens.reduce(function(s,b){return s+b.custoB;},0))]);
+    par("Os valores são de custo (quantidade × preço médio), como pede a declaração — não o valor de mercado. Sugestão de discriminação:",{tam:8.5,cor:CZ});
+    R.bens.filter(function(b){ return Math.abs(b.qtdB)>1e-7; }).slice(0,25).forEach(function(b){ par("• "+irQtd(b.qtdB)+" "+(b.tipo==="acao"?"ações":(b.tipo==="fii"?"cotas do FII":(b.tipo==="etf"?"cotas do ETF":"unidades de")))+" "+b.codigo+", preço médio "+crValor(b.pm)+", custódia em "+b.conta+".",{tam:8.5,ind:6}); });
+  } else par("Nenhuma posição de investimento lançada nesses dois fechamentos.",{cor:CZ});
+  pdf.y-=4;
+  pdf.precisa(110); sub("Proventos pagos no ano");
+  var temProv=false;
+  [["dividendo","Dividendos — isentos (Rendimentos Isentos, \"Lucros e dividendos recebidos\")"],["rendimento","Rendimentos de fundos/Tesouro/CDB — confira no informe se são isentos (FII) ou de tributação exclusiva"],["jcp","Juros sobre capital próprio — tributação exclusiva (valor líquido; o IR já foi retido)"]].forEach(function(T){
+    var L=R.prov[T[0]]; if(!L.length) return; temProv=true;
+    pdf.precisa(80); par(T[1],{tam:8.8,b:1}); pdf.y-=5;
+    if(T[0]==="jcp") tabela([{t:"Ativo",x:X0+6,b:1},{t:"Pagamentos",x:X0+180,d:1},{t:"Bruto",x:X0+290,d:1},{t:"IR retido",x:X0+390,d:1},{t:"Líquido",x:X1-6,d:1}],L.map(function(r){ return [r.codigo,r.n,crValor(r.bruto),crValor(r.retido),crValor(r.liquido)]; }),["Total","",crValor(L.reduce(function(s,r){return s+r.bruto;},0)),crValor(L.reduce(function(s,r){return s+r.retido;},0)),crValor(L.reduce(function(s,r){return s+r.liquido;},0))]);
+    else tabela([{t:"Ativo",x:X0+6,b:1},{t:"Pagamentos",x:X0+260,d:1},{t:"Valor recebido",x:X1-6,d:1}],L.map(function(r){ return [r.codigo,r.n,crValor(r.liquido)]; }),["Total","",crValor(L.reduce(function(s,r){return s+r.liquido;},0))]);
+  });
+  if(!temProv) par("Nenhum provento com pagamento neste ano.",{cor:CZ});
+  sub("Vendas em bolsa (Renda variável)");
+  if(R.vendas.length){
+    tabela([{t:"Mês",x:X0+6},{t:"Vendas de ações",x:X0+160,d:1},{t:"Lucro ações",x:X0+255,d:1},{t:"Lucro FII/ETF",x:X0+345,d:1},{t:"Day trade",x:X0+420,d:1},{t:"IR estimado",x:X1-6,d:1}],
+      R.vendas.map(function(v){ var mm=Number(String(v.mes).slice(5,7))-1; return [CR_MESES[mm].charAt(0).toUpperCase()+CR_MESES[mm].slice(1)+(v.isentoAcoes&&v.lucroAcoes>0?" (isento)":""),crValor(v.vendasAcoes),crValor(v.lucroAcoes),crValor((v.lucroFii||0)+(v.lucroEtf||0)),crValor(v.lucroDay||0),crValor(v.total||0)]; }));
+    par("Estimativa do app, sem compensar prejuízos de meses anteriores. Lucro de ações em mês com vendas até o limite de isenção vai em Rendimentos Isentos; o resto, na ficha Renda Variável, mês a mês, com os DARFs pagos.",{tam:8.5,cor:CZ});
+  } else par("Nenhuma venda lançada neste ano.",{cor:CZ});
+
+  /* 3 — conferência */
+  titulo("3. Antes de enviar a declaração");
+  ["Baixe o informe anual de rendimentos de cada plataforma, banco e corretora; os números oficiais são os deles.","Confira se todos os meses do ano têm lançamentos no app — mês sem lançamento aparece zerado aqui.","Guarde notas e recibos das despesas por 5 anos.","O veículo vai em Bens e direitos pelo valor de compra (não pelo valor atual), e o financiamento em Dívidas e ônus reais."].forEach(function(t){ par("• "+t,{ind:4,tam:9}); });
+  var rod="Gerado pelo RideMax em "+hojeBR+" às "+p2(agora.getHours())+":"+p2(agora.getMinutes())+". Relatório de apoio — não é a declaração.";
+  return {titulo:"Relatório para o IRPF",bytes:pdf.bytes(rod),dados:R,nome:"irpf-"+(ano+1)+"-ano-base-"+ano+(regime==="mei"?"-mei":"")+".pdf"};
+}
+
+/* ---- tela ---- */
+function irAbrir(){
+  var bk=document.getElementById("crBk");
+  if(!bk){ bk=document.createElement("div"); bk.id="crBk"; bk.hidden=true; bk.innerHTML='<div id="crBox" role="dialog" aria-modal="true"></div>'; document.body.appendChild(bk);
+    bk.addEventListener("click",function(e){ if(e.target===bk) crFechar(); }); }
+  var P=crPerfil(), ms=meiSettings(), anos=irAnos(), ap=irAnoPadrao();
+  var h='<h3 id="crTit">Relatório para o IRPF<button type="button" class="qrx" id="crX" aria-label="Fechar">×</button></h3>';
+  h+='<div class="sub">Organiza o ano para a declaração: corridas mês a mês (com a parte tributável), bens em 31/12, proventos e vendas. É apoio — não calcula o imposto nem substitui o contador.</div>';
+  h+='<div class="qr-row" style="flex-direction:column;align-items:stretch"><label>Ano-calendário<select id="irAno">'+anos.map(function(a){ return '<option value="'+a+'"'+(a===ap?" selected":"")+'>'+a+' (declaração '+(a+1)+')</option>'; }).join("")+'</select></label><label>Forma de trabalho<select id="irReg"><option value="autonomo"'+(ms.enabled?"":" selected")+'>Autônomo (sem CNPJ)</option><option value="mei"'+(ms.enabled?" selected":"")+'>MEI</option></select></label></div>';
+  h+='<label class="f" style="margin-top:var(--s3)">Seu nome completo<input id="irNome" autocomplete="name" value="'+esc(P.nome)+'"></label>';
+  h+='<div class="sub" id="irPrev" style="margin-top:var(--s3)"></div><div class="msg-ok" id="irMsg" style="color:#e0695c"></div>';
+  h+='<div class="btnrow" style="margin-top:var(--s3)"><button type="button" class="btn green" id="irGerar">Gerar PDF</button><button type="button" class="btn accent" id="irCancel">Cancelar</button></div>';
+  document.getElementById("crBox").innerHTML=h;
+  bk.hidden=false;
+  var prev=function(){ try{
+    var a=Number(document.getElementById("irAno").value), rg=document.getElementById("irReg").value, R=irDados(a,rg), t;
+    if(rg==="mei") t="Receita bruta <b>"+esc(BRL(R.tot.bruta))+"</b> · lucro <b>"+esc(BRL(R.mei.lucro))+"</b> · isento <b>"+esc(BRL(R.mei.isento))+"</b> · tributável <b>"+esc(BRL(R.mei.tributavel))+"</b>";
+    else t="Receita bruta <b>"+esc(BRL(R.tot.bruta))+"</b> · tributável (60%) <b>"+esc(BRL(R.tot.trib))+"</b> · não tributável <b>"+esc(BRL(R.tot.naoTrib))+"</b>";
+    var semMov=R.meses.filter(function(M){ return !M.n; }).length;
+    t+="<br>"+R.tot.n+" corridas"+(semMov?(" · <b>"+semMov+" "+(semMov===1?"mês":"meses")+" sem corrida</b>"):"")+" · "+R.bens.length+" ativo(s) · "+(R.prov.dividendo.length+R.prov.jcp.length+R.prov.rendimento.length)+" provento(s)"+(R.parcial?" · <b>ano ainda em andamento</b>":"");
+    document.getElementById("irPrev").innerHTML=t;
+  }catch(e){ rmLogErr(e,"ir-prev"); } };
+  document.getElementById("irAno").onchange=prev; document.getElementById("irReg").onchange=prev; prev();
+  document.getElementById("crX").onclick=crFechar; document.getElementById("irCancel").onclick=crFechar;
+  document.getElementById("irGerar").onclick=function(){
+    var msg=document.getElementById("irMsg"); msg.textContent="";
+    var nome=document.getElementById("irNome").value.trim().replace(/\s+/g," ").slice(0,90);
+    if(nome.length<3){ msg.textContent="Digite seu nome completo."; return; }
+    var a=Number(document.getElementById("irAno").value), rg=document.getElementById("irReg").value;
+    var st=DB.settings, old=st.perfil, np=Object.assign({},crPerfil(),{nome:nome});
+    if(JSON.stringify(old||{})!==JSON.stringify(np)){ st.perfil=np; if(!save()){ st.perfil=old; return; } }
+    var out; try{ out=irGerarPdf(a,rg); }catch(e){ rmLogErr(e,"ir-pdf"); msg.textContent="Não foi possível gerar o PDF: "+String((e&&e.message)||e); return; }
+    crFechar(); crEntregar(out);
+  };
+}
+try{
+  document.addEventListener("click",function(ev){ var t=ev&&ev.target; var b=t&&t.closest?t.closest("button"):null; if(b&&(b.id==="irBtn"||b.id==="irBtn2")) irAbrir(); });
+}catch(e){ rmLogErr(e,"ir-init"); }
+try{ window.RM.irDados=irDados; window.RM.irGerarPdf=irGerarPdf; window.RM.irAbrir=irAbrir; }catch(e){ rmLogErr(e); }
+
+/* ---------- VEÍCULOS (troca de carro, um por vez) ----------
+   Cada carro vale da data "desde" até a véspera da troca seguinte. Tudo o que tem
+   data nesse período pertence a ele — não é preciso marcar o carro em cada lançamento.
+   O carro ATUAL é o de "desde" mais recente: a configuração dele (tipo de energia,
+   custo do carro, manutenção) continua em DB.settings, como sempre. Os carros
+   anteriores guardam uma cópia dessa configuração em "arq".
+   Odômetro: a partir da troca, a manutenção e a eficiência recomeçam no carro novo. */
+function veicLista(){ return (DB.veiculos||[]).slice().sort(function(a,b){ return a.desde<b.desde?-1:(a.desde>b.desde?1:0); }); }
+function veicAtual(){ var l=veicLista(); return l.length?l[l.length-1]:null; }
+function veicFim(v){ var l=veicLista(), i=l.indexOf(v); if(i<0||i===l.length-1) return null; return somaDiasISO(l[i+1].desde,-1); }
+function veicDoDia(iso){ var l=veicLista(), r=null; for(var i=0;i<l.length;i++){ if(l[i].desde<=iso) r=l[i]; } return r||(l[0]||null); }
+function veicCorteAtual(){ var l=veicLista(); return l.length>1?l[l.length-1].desde:null; }
+function veicEnergia(v){ var a=veicAtual(); if(!v||v===a) return (DB.settings&&DB.settings.energyMode==="combustao")?"combustao":"eletrico"; return (v.arq&&v.arq.energyMode==="combustao")?"combustao":"eletrico"; }
+function veicCfgDe(v){ var a=veicAtual(); if(!v||v===a) return (DB.settings&&DB.settings.veiculo)||{}; return (v.arq&&v.arq.veiculo)||{}; }
+function veicNome(v){ if(!v) return "Meu carro"; return v.nome+(v.placa?(" ("+v.placa+")"):""); }
+/* segmentos de carro dentro de [ini,fim] — para custo do carro por período */
+function veicSegmentos(ini,fim){
+  var l=veicLista();
+  if(l.length<2) return [{cfg:(DB.settings&&DB.settings.veiculo)||{},a:ini,b:fim}];
+  var out=[];
+  l.forEach(function(v,i){
+    var a=(i===0)?"0000-01-01":v.desde, b=(i===l.length-1)?"9999-12-31":somaDiasISO(l[i+1].desde,-1);
+    var A=a>ini?a:ini, B=b<fim?b:fim; if(A>B) return;
+    out.push({cfg:veicCfgDe(v),a:A,b:B,v:v});
+  });
+  return out;
+}
+function veicResumo(v){
+  var l=veicLista(), i=l.indexOf(v), ini=(i<=0)?"0000-01-01":v.desde, fim=veicFim(v)||"9999-12-31";
+  var R={corridas:0,receita:0,km:0,energia:0,despesas:0,turnos:0,primeiro:null,ultimo:null};
+  var ok=function(dt){ return validISO(dt)&&dt>=ini&&dt<=fim; }, marca=function(dt){ if(R.primeiro==null||dt<R.primeiro) R.primeiro=dt; if(R.ultimo==null||dt>R.ultimo) R.ultimo=dt; };
+  (DB.rides||[]).forEach(function(r){ if(r&&ok(r.date)){ R.corridas++; R.receita+=rideTotal(r); R.km+=Number(r.distance)||0; marca(r.date); } });
+  (DB.recharges||[]).forEach(function(r){ if(r&&ok(r.date)){ R.energia+=Number(r.cost)||0; marca(r.date); } });
+  (DB.expenses||[]).forEach(function(x){ if(x&&ok(x.date)) R.despesas+=Number(x.amount)||0; });
+  (DB.shifts||[]).forEach(function(s){ if(s&&ok(s.date)){ R.turnos++; marca(s.date); } });
+  ["receita","energia","despesas"].forEach(function(k){ R[k]=Math.round(R[k]*100)/100; }); R.km=Math.round(R.km*10)/10;
+  return R;
+}
+function veicSnapshot(){
+  var st=DB.settings||{};
+  return JSON.parse(JSON.stringify({energyMode:st.energyMode==="combustao"?"combustao":"eletrico",veiculo:st.veiculo||{},maint:st.maint||[],maintRemoved:st.maintRemoved||[]}));
+}
+function veicPrimeiraData(){ var m=null; try{ var f=function(dt){ if(validISO(dt)&&(m==null||dt<m)) m=dt; }; (DB.rides||[]).forEach(function(r){ f(r&&r.date); }); (DB.shifts||[]).forEach(function(r){ f(r&&r.date); }); (DB.recharges||[]).forEach(function(r){ f(r&&r.date); }); (DB.expenses||[]).forEach(function(r){ f(r&&r.date); }); }catch(e){ rmLogErr(e); } return m||todayISO(); }
+function veicNovoId(){ return "v"+uid(); }
+
+/* ---- operações ---- */
+function veicTrocar(o){
+  /* o: {nome, placa, data, odo, energia, nomeAnterior, placaAnterior} */
+  var hoje=todayISO(), atual=veicAtual();
+  var nome=String(o.nome||"").trim().slice(0,40), placa=String(o.placa||"").trim().toUpperCase().slice(0,10), data=o.data;
+  if(nome.length<2) return {ok:false,msg:"Dê um nome ao carro novo (ex.: Onix branco)."};
+  if(!validISO(data)) return {ok:false,msg:"Data da troca inválida."};
+  if(data>hoje) return {ok:false,msg:"A data da troca não pode estar no futuro."};
+  if(atual&&data<=atual.desde) return {ok:false,msg:"A troca precisa ser depois de "+isoToBR(atual.desde)+", quando começou o carro atual."};
+  var odo=null; if(o.odo!==""&&o.odo!=null){ odo=Number(o.odo); if(!(isFinite(odo)&&odo>=0&&odo<5000000)) return {ok:false,msg:"Odômetro inválido."}; odo=Math.round(odo); }
+  var old=JSON.parse(JSON.stringify({veiculos:DB.veiculos||[],settings:{energyMode:DB.settings.energyMode,veiculo:DB.settings.veiculo,maint:DB.settings.maint}}));
+  DB.veiculos=DB.veiculos||[];
+  if(!atual){
+    var ini=veicPrimeiraData(); if(ini>=data) ini=somaDiasISO(data,-1);
+    atual={id:veicNovoId(),nome:String(o.nomeAnterior||"").trim().slice(0,40)||"Carro anterior",placa:String(o.placaAnterior||"").trim().toUpperCase().slice(0,10),desde:ini,odoIni:null,arq:null};
+    DB.veiculos.push(atual);
+  }
+  atual.arq=veicSnapshot();
+  DB.veiculos.push({id:veicNovoId(),nome:nome,placa:placa,desde:data,odoIni:odo,arq:null});
+  /* configuração do carro novo: energia escolhida, custo em branco, mesmos itens de manutenção sem "última vez" */
+  DB.settings.energyMode=(o.energia==="combustao")?"combustao":"eletrico";
+  DB.settings.veiculo={tipo:"proprio",valorAtual:"",valorRevenda:"",kmAteVender:"",aluguelSemanal:"",aluguelNasDespesas:0};
+  (DB.settings.maint||[]).forEach(function(m){ if(m) m.lastDone=null; });
+  if(!save()){ DB.veiculos=old.veiculos; DB.settings.energyMode=old.settings.energyMode; DB.settings.veiculo=old.settings.veiculo; DB.settings.maint=old.settings.maint; return {ok:false,msg:""}; }
+  return {ok:true};
+}
+function veicDesfazer(){
+  var l=veicLista(); if(l.length<2) return {ok:false,msg:"Não há troca para desfazer."};
+  var atual=l[l.length-1], ant=l[l.length-2], a=ant.arq||{};
+  var old=JSON.parse(JSON.stringify({veiculos:DB.veiculos,settings:{energyMode:DB.settings.energyMode,veiculo:DB.settings.veiculo,maint:DB.settings.maint,maintRemoved:DB.settings.maintRemoved}}));
+  DB.veiculos=(DB.veiculos||[]).filter(function(v){ return v.id!==atual.id; });
+  DB.settings.energyMode=a.energyMode==="combustao"?"combustao":"eletrico";
+  DB.settings.veiculo=a.veiculo||DB.settings.veiculo; if(Array.isArray(a.maint)) DB.settings.maint=a.maint; if(Array.isArray(a.maintRemoved)) DB.settings.maintRemoved=a.maintRemoved;
+  ant.arq=null;
+  if(DB.veiculos.length===1&&!DB.veiculos[0].placa&&DB.veiculos[0].nome==="Carro anterior") DB.veiculos=[];
+  if(!save()){ DB.veiculos=old.veiculos; DB.settings.energyMode=old.settings.energyMode; DB.settings.veiculo=old.settings.veiculo; DB.settings.maint=old.settings.maint; DB.settings.maintRemoved=old.settings.maintRemoved; return {ok:false,msg:""}; }
+  return {ok:true};
+}
+function veicRenomear(id,nome,placa){
+  var v=(DB.veiculos||[]).filter(function(x){ return x.id===id; })[0];
+  nome=String(nome||"").trim().slice(0,40); placa=String(placa||"").trim().toUpperCase().slice(0,10);
+  if(nome.length<2) return {ok:false,msg:"Nome muito curto."};
+  if(!v){ /* carro atual ainda sem cadastro: cria o primeiro */
+    DB.veiculos=[{id:veicNovoId(),nome:nome,placa:placa,desde:veicPrimeiraData(),odoIni:null,arq:null}];
+    if(!save()){ DB.veiculos=[]; return {ok:false,msg:""}; } return {ok:true};
+  }
+  var on=v.nome, op=v.placa; v.nome=nome; v.placa=placa;
+  if(!save()){ v.nome=on; v.placa=op; return {ok:false,msg:""}; }
+  return {ok:true};
+}
+
+/* ---- tela ---- */
+function cfgSecVeiculos(){
+  var l=veicLista(), atual=veicAtual();
+  var h='<div class="sub">Um carro por vez. Ao trocar, o app separa o histórico pela data: o que foi lançado antes da troca fica com o carro anterior. Odômetro, manutenção, tipo de energia e custo do carro recomeçam no carro novo.</div>';
+  h+='<div class="kv"><span>Carro atual</span><b>'+esc(veicNome(atual))+(atual&&l.length>1?' · desde '+esc(isoToBR(atual.desde)):'')+' · '+(veicEnergia(atual)==="combustao"?"combustão":"elétrico")+'</b></div>';
+  h+='<div class="toolbar"><button type="button" class="btn sm green" id="veicTrocarBtn">Trocar de carro</button><button type="button" class="btn sm accent" data-veicren="'+esc(atual?atual.id:"")+'">'+(atual?"Renomear":"Dar nome ao carro atual")+'</button>'+(l.length>1?'<button type="button" class="btn sm red" id="veicDesfazerBtn">Desfazer a última troca</button>':'')+'</div>';
+  if(l.length){
+    h+='<div class="tblwrap"><table class="tbl"><tr><th style="text-align:left">Carro</th><th style="text-align:left">Período</th><th>Corridas</th><th>Receita</th><th>Km (corridas)</th><th>Energia</th><th>Despesas</th><th></th></tr><tbody>';
+    l.slice().reverse().forEach(function(v){
+      var R=veicResumo(v), fim=veicFim(v), i=l.indexOf(v);
+      var per=(i===0&&l.length>1?"início":isoToBR(v.desde))+" a "+(fim?isoToBR(fim):"hoje");
+      if(l.length===1) per="todo o histórico";
+      h+='<tr><td class="l"><b>'+esc(veicNome(v))+'</b>'+(v===atual?' <span class="mtag">atual</span>':'')+'<br><span style="color:var(--muted);font-size:12px">'+(veicEnergia(v)==="combustao"?"combustão":"elétrico")+(v.odoIni!=null?' · odômetro na troca '+esc(brGroup(String(v.odoIni)))+' km':'')+'</span></td><td class="l">'+esc(per)+'</td><td>'+R.corridas+'</td><td>'+esc(BRL(R.receita))+'</td><td>'+esc(brDec(R.km,1))+'</td><td>'+esc(BRL(R.energia))+'</td><td>'+esc(BRL(R.despesas))+'</td><td>'+(v===atual?'':'<button type="button" class="btn sm" data-veicren="'+esc(v.id)+'">Renomear</button>')+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+  } else {
+    h+='<div class="sub">Ainda não há carros cadastrados: todo o histórico conta como um carro só. Dê um nome ao carro atual, ou use Trocar de carro no dia em que mudar.</div>';
+  }
+  h+='<div class="sub">Lançou algo do carro antigo depois da troca? Use a data verdadeira: o app coloca no carro certo pela data. O custo do carro (depreciação/aluguel) do carro atual fica em Manutenção e gastos anuais.</div>';
+  return h;
+}
+function veicSheet(html){
+  var bk=document.getElementById("crBk");
+  if(!bk){ bk=document.createElement("div"); bk.id="crBk"; bk.hidden=true; bk.innerHTML='<div id="crBox" role="dialog" aria-modal="true"></div>'; document.body.appendChild(bk); bk.addEventListener("click",function(e){ if(e.target===bk) crFechar(); }); }
+  document.getElementById("crBox").innerHTML=html; bk.hidden=false;
+  var x=document.getElementById("crX"); if(x) x.onclick=crFechar;
+  var c=document.getElementById("veicCancel"); if(c) c.onclick=crFechar;
+}
+function veicAbrirTroca(){
+  var atual=veicAtual();
+  var h='<h3>Trocar de carro<button type="button" class="qrx" id="crX" aria-label="Fechar">×</button></h3>';
+  h+='<div class="sub">O carro atual'+(atual?(' ('+esc(veicNome(atual))+')'):'')+' vai para o histórico, com a configuração dele guardada.</div>';
+  if(!atual) h+='<div class="qr-row"><label>Nome do carro que sai<input id="vtNomeAnt" placeholder="ex.: Kwid prata"></label><label>Placa<input id="vtPlacaAnt" placeholder="opcional"></label></div>';
+  h+='<div class="qr-row"><label>Nome do carro novo<input id="vtNome" placeholder="ex.: BYD Dolphin"></label><label>Placa<input id="vtPlaca" placeholder="opcional"></label></div>';
+  h+='<div class="qr-row"><label>Data da troca<input id="vtData" type="date" value="'+esc(todayISO())+'" max="'+esc(todayISO())+'"></label><label>Odômetro do carro novo<input id="vtOdo" inputmode="numeric" placeholder="km, opcional"></label></div>';
+  h+='<div class="sub" style="margin-top:var(--s3)">Tipo de energia do carro novo</div><div class="seg" id="vtEn"><button type="button" data-en="eletrico" class="'+(veicEnergia(atual)!=="combustao"?"on":"")+'">Elétrico</button><button type="button" data-en="combustao" class="'+(veicEnergia(atual)==="combustao"?"on":"")+'">Combustão/GNV</button></div>';
+  h+='<div class="sub">A manutenção mantém os mesmos itens, sem a última vez feita — preencha depois. O custo do carro novo (próprio ou alugado) se configura em Manutenção e gastos anuais.</div><div class="msg-ok" id="vtMsg" style="color:#e0695c"></div>';
+  h+='<div class="btnrow" style="margin-top:var(--s3)"><button type="button" class="btn green" id="vtOk">Trocar</button><button type="button" class="btn accent" id="veicCancel">Cancelar</button></div>';
+  veicSheet(h);
+  document.querySelectorAll("#vtEn button").forEach(function(b){ b.onclick=function(){ document.querySelectorAll("#vtEn button").forEach(function(x){ x.classList.toggle("on",x===b); }); }; });
+  document.getElementById("vtOk").onclick=async function(){
+    var en=(document.querySelector("#vtEn button.on")||{}).dataset; en=en?en.en:"eletrico";
+    var oRaw=String(document.getElementById("vtOdo").value||"").replace(/\./g,"").replace(",",".").trim();
+    var o={nome:document.getElementById("vtNome").value,placa:document.getElementById("vtPlaca").value,data:document.getElementById("vtData").value,odo:oRaw,energia:en,
+      nomeAnterior:(document.getElementById("vtNomeAnt")||{}).value,placaAnterior:(document.getElementById("vtPlacaAnt")||{}).value};
+    var msg=document.getElementById("vtMsg");
+    if(o.data&&o.data<todayISO()){ var n=0; (DB.rides||[]).forEach(function(r){ if(r&&r.date>=o.data) n++; }); if(n){ crFechar(); var ok=await customConfirm("Há "+n+" corrida(s) lançadas de "+isoToBR(o.data)+" para cá. Elas passam a contar para o carro novo. Continuar?","Trocar de carro","Trocar"); if(!ok) return; } }
+    var r=veicTrocar(o);
+    if(!r.ok){ if(r.msg){ if(document.getElementById("vtMsg")&&!document.getElementById("crBk").hidden) msg.textContent=r.msg; else customAlert(r.msg,"Trocar de carro"); } return; }
+    crFechar(); show("plataformas");
+    customAlert("Pronto: agora o carro atual é "+o.nome.trim()+". Configure o custo dele em Manutenção e gastos anuais"+(DB.settings.maint&&DB.settings.maint.length?" e marque a última manutenção de cada item":"")+".","Trocar de carro");
+  };
+}
+function veicAbrirRenomear(id){
+  var v=(DB.veiculos||[]).filter(function(x){ return x.id===id; })[0];
+  var h='<h3>'+(v?"Renomear carro":"Nome do carro atual")+'<button type="button" class="qrx" id="crX" aria-label="Fechar">×</button></h3>';
+  h+='<div class="qr-row"><label>Nome<input id="vrNome" value="'+esc(v?v.nome:"")+'" placeholder="ex.: Onix branco"></label><label>Placa<input id="vrPlaca" value="'+esc(v?v.placa:"")+'" placeholder="opcional"></label></div><div class="msg-ok" id="vrMsg" style="color:#e0695c"></div>';
+  h+='<div class="btnrow" style="margin-top:var(--s3)"><button type="button" class="btn green" id="vrOk">Salvar</button><button type="button" class="btn accent" id="veicCancel">Cancelar</button></div>';
+  veicSheet(h);
+  document.getElementById("vrOk").onclick=function(){ var r=veicRenomear(id,document.getElementById("vrNome").value,document.getElementById("vrPlaca").value); if(!r.ok){ if(r.msg) document.getElementById("vrMsg").textContent=r.msg; return; } crFechar(); show("plataformas"); };
+}
+async function veicDesfazerClick(){
+  var l=veicLista(); if(l.length<2) return;
+  var a=l[l.length-1], b=l[l.length-2];
+  var ok=await customConfirm("Desfazer a troca para "+veicNome(a)+"? "+veicNome(b)+" volta a ser o carro atual, com a configuração que tinha (energia, custo, manutenção). Nenhum lançamento é apagado.","Desfazer troca","Desfazer");
+  if(!ok) return;
+  var r=veicDesfazer(); if(!r.ok){ if(r.msg) customAlert(r.msg,"Desfazer troca"); return; }
+  show("plataformas");
+}
+try{
+  document.addEventListener("click",function(ev){ var t=ev&&ev.target; var b=t&&t.closest?t.closest("button"):null; if(!b) return;
+    if(b.id==="veicTrocarBtn") veicAbrirTroca();
+    else if(b.id==="veicDesfazerBtn") veicDesfazerClick();
+    else if(b.dataset&&b.dataset.veicren!=null) veicAbrirRenomear(b.dataset.veicren);
+    else if(b.id==="veicIrBtn"){ cfgTab="veiculos"; show("plataformas"); } });
+}catch(e){ rmLogErr(e,"veic-init"); }
+try{ window.RM.veicTrocar=veicTrocar; window.RM.veicDesfazer=veicDesfazer; window.RM.veicLista=veicLista; window.RM.veicResumo=veicResumo; window.RM.veicSegmentos=veicSegmentos; window.RM.efficiencyDetail=efficiencyDetail; }catch(e){ rmLogErr(e); }
 
 } /* fim rmApp */
 })();
