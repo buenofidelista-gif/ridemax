@@ -1130,6 +1130,61 @@ body.fit-lock #finBox:has(.fin-dre){display:block;overflow:visible}
 #qrToast{position:fixed;left:50%;transform:translateX(-50%);top:calc(12px + env(safe-area-inset-top));z-index:95;background:var(--panel);color:var(--text);border:1px solid var(--green);border-radius:var(--r);padding:10px 16px;font-size:var(--f-base);box-shadow:0 6px 20px rgba(0,0,0,.45);max-width:calc(100% - 32px);text-align:center}
 #qrToast[hidden]{display:none}
 @media print{ #qrFab,#qrBk,#qrToast{display:none!important} }
+/* ---------- CELULAR — FASE 1: barra de baixo, menu em gaveta, tamanhos de toque ----------
+   Só telas até 860px. O computador não muda. Alvos de toque de 44px (Apple 44pt /
+   Android 48dp), texto base 15px e campos com 16px (o iPhone não dá zoom ao tocar). */
+@media(max-width:860px){
+  :root{--f-sm:14px;--f-base:15px;--f-md:17px;--f-lg:22px}
+  body{font-size:15px;background:var(--bg)}
+  #app{display:block}
+  /* menu vira gaveta lateral, aberta pelo "Mais" */
+  #sidebar{position:fixed;top:0;left:0;bottom:0;width:min(86vw,330px);height:100%;max-height:none;z-index:120;transform:translateX(-105%);transition:transform .22s ease;overscroll-behavior:contain;padding-top:env(safe-area-inset-top);padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+  body.nav-open{overflow:hidden}
+  body.nav-open #sidebar{transform:none;box-shadow:8px 0 32px rgba(0,0,0,.55)}
+  #navBk{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:110}
+  #navBk[hidden]{display:none}
+  #sidebar .logo{padding:var(--s4) var(--s2) var(--s2)}
+  .navbtn,.grphead{min-height:48px;display:flex;align-items:center;font-size:16px}
+  .navbtn.sub{padding-left:28px}
+  .sidebtns{flex-direction:row;padding:var(--s2) var(--s4)}
+  .sidebtns button{min-height:44px;font-size:15px}
+  /* conteúdo: espaço para a barra de baixo; cabeçalho fino e fixo */
+  #main{padding-bottom:calc(80px + env(safe-area-inset-bottom))}
+  .topbar{position:sticky;top:0;z-index:40;background:var(--bg);padding:calc(8px + env(safe-area-inset-top)) 16px 0}
+  .topbar h2{font-size:20px;line-height:1.25}
+  #pageSub{display:none}
+  .topbar hr{margin-top:8px}
+  #titleRow{min-height:44px}
+  #mSyncBtn{margin-left:auto;min-width:44px;min-height:44px;border-radius:22px;border:1px solid var(--border);background:var(--input);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;padding:0 12px}
+  #mSyncBtn[hidden]{display:none}
+  #mSyncBtn small{font-size:12px;color:var(--muted)}
+  #hBtn{min-width:40px;min-height:40px}
+  /* barra de baixo */
+  #mbar{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;align-items:stretch;background:var(--panel);border-top:1px solid var(--border);padding:0 4px env(safe-area-inset-bottom);height:calc(64px + env(safe-area-inset-bottom))}
+  #mbar button{flex:1 1 0;min-width:0;background:transparent;border:0;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:0}
+  #mbar button svg{width:24px;height:24px;display:block}
+  #mbar .pill{display:flex;align-items:center;justify-content:center;width:56px;height:30px;border-radius:15px;transition:background .15s}
+  #mbar button.on{color:var(--text)}
+  #mbar button.on .pill{background:var(--accent)}
+  #mbar button:active .pill{background:var(--border)}
+  #mbar .mplus .fab{width:54px;height:54px;border-radius:50%;background:var(--green);color:#0f1116;display:flex;align-items:center;justify-content:center;margin-top:-20px;box-shadow:0 4px 14px rgba(0,0,0,.5);border:3px solid var(--panel)}
+  #mbar .mplus .fab svg{width:28px;height:28px}
+  #mbar .mplus{color:var(--text)}
+  #qrFab{display:none!important}
+  #undoBarWrap{bottom:calc(76px + env(safe-area-inset-bottom))}
+  /* toque: botões, campos e seletores */
+  .btn{min-height:44px}
+  .btn.sm{min-height:44px;font-size:15px;padding:8px 14px}
+  input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]):not([type=file]),select,textarea{font-size:16px!important;min-height:44px}
+  input[type=checkbox],input[type=radio]{width:22px;height:22px;flex-shrink:0}
+  .seg button{min-height:42px;font-size:15px;padding:8px 14px}
+  .hbtn,.infoBtn{min-width:32px;min-height:32px}
+  .toolbar{gap:var(--s2);row-gap:var(--s2)}
+}
+/* cartões com linhas de rótulo + valor: em 2 colunas, o texto maior quebrava palavras no meio */
+@media(max-width:560px){ .cards:has(.kv),.cards:has(.krow){grid-template-columns:1fr!important} }
+@media(min-width:861px){ #mbar,#navBk,#mSyncBtn{display:none!important} }
+@media print{ #mbar,#navBk,#mSyncBtn{display:none!important} }
 </style>
 </head>
 <body>
@@ -3720,6 +3775,7 @@ try{
 function show(v){
   current=v;
   try{ if(typeof qrFabSync==="function") qrFabSync(); }catch(e){rmLogErr(e)}
+  try{ if(typeof navFechar==="function") navFechar(); if(typeof mbarSync==="function") mbarSync(); }catch(e){rmLogErr(e)}
   try{ document.body.classList.remove("fit-lock"); }catch(e){rmLogErr(e)}
   try{ if(v!=="plataformas"){ window.__cfgBox=null; } }catch(e){rmLogErr(e)}
   try{ clearUndoBar(); }catch(e){rmLogErr(e)}
@@ -7250,7 +7306,7 @@ function rManual(){
     {t:"Data de corte e saldo inicial",ps:["Cada conta tem uma data de corte, que é a data do saldo inicial. O saldo só conta movimento dessa data em diante.","Baixa e transferência com data anterior ao corte são bloqueadas.","Corrida em dinheiro com data anterior ao corte é permitida, porque pode ser carga histórica — mas o app avisa na hora e deixa um indicador na conta, dizendo quantos movimentos estão fora do saldo e quanto somam. Se isso aparecer sem você esperar, provavelmente a data está errada."]},
     {t:"Previsto, realizado e os 90 dias",ps:["O fluxo de caixa mostra lado a lado o que já aconteceu e o que está previsto, nunca somados.","O previsto usa o vencimento para o que é a pagar, e a data ESTIMADA do repasse para o que é a receber. Essa data sai da média dos repasses anteriores daquela plataforma; sem pelo menos dois repasses conciliados, não há estimativa e o valor aparece à parte, sem data.","A projeção de 90 dias mostra o menor saldo do período e em que dia ele cai. É o indicador mais útil do app: é ele que avisa que a conta vai faltar antes de faltar."]},
     {t:"Backup, descartes e limpeza",ps:["Exportar baixa tudo num arquivo. Importar SUBSTITUI a base, e antes disso o app baixa sozinho um backup do estado anterior.","Backup automático (Configurações › Backup): no celular, Enviar backup abre o compartilhar — mande para o Google Drive ou para você mesmo no WhatsApp/e-mail. No computador (Chrome/Edge), escolha uma pasta de backup, de preferência sincronizada com Drive ou OneDrive, e o app grava o arquivo do dia sozinho a cada lançamento, guardando os 30 últimos. Se o navegador pedir permissão de novo, um toque em Reativar resolve.","Cópias diárias: o app também guarda sozinho, neste aparelho, uma cópia por dia (7 dias + 4 semanas), com Restaurar e Baixar. Serve para desfazer um erro; não substitui o backup, porque some junto se o celular sumir ou o navegador for limpo. Restaurar guarda antes o estado atual como Antes da última restauração.","Se o arquivo tiver registro inválido, ele é descartado e RELATADO, com indicação do que foi. Se um título perder uma baixa inválida e voltar a ficar em aberto, isso aparece em destaque — não é perda silenciosa.","A limpeza da base apaga o movimento e preserva os cadastros. Ela pede backup, data de corte e confirmação digitada. Atenção: as séries são cadastro e NÃO são apagadas.","Os dados ficam no banco do navegador (IndexedDB), com espaço de centenas de MB. Cada navegador, aparelho e endereço tem a sua base: o arquivo aberto do disco e o site publicado são bases diferentes, ligadas só pelo backup. Limpar os dados do site ou desinstalar o app apaga a base daquele aparelho.","Configurações › Backup mostra o espaço usado e o Diagnóstico: a contagem de erros internos da sessão e o botão para baixar o log. O esperado é zero.","Se a base salva estiver danificada, o app guarda uma cópia antes de abrir uma nova; sem espaço para a cópia, ele bloqueia a gravação até você baixar os dados brutos. Nada é apagado às cegas."]},
-    {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu, ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","O botão verde + Corrida, no canto de baixo de todas as telas (no computador, a tecla N), lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Backup, armazenamento e lembretes, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
+    {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu (no celular, em Mais), ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","No celular, a barra de baixo tem Início, Corridas (histórico), o + verde do meio (corrida rápida), Dinheiro (resumo financeiro) e Mais, que abre o menu completo; o voltar do celular fecha o menu. O botão de sincronizar fica no topo, ao lado do título.","O + verde (no computador, o botão + Corrida no canto de baixo ou a tecla N) lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Backup, armazenamento e lembretes, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
     {t:"Celular e computador juntos",ps:["Configurações › Backup, armazenamento e lembretes › Sincronizar. Os dois aparelhos usam a mesma conta Google; os dados ficam numa pasta privada do app no seu Drive. A primeira configuração (ID do cliente) está no manual, seção 7.6.","Toque em Sincronizar (no topo do menu) ao começar e ao terminar o dia. A junção é por lançamento: o que foi incluído, editado ou apagado em cada aparelho é respeitado. Se o mesmo campo foi editado nos dois, fica a versão do aparelho que sincronizou por último.","Aparelho novo, sem lançamentos, recebe tudo da nuvem. Se os dois já têm lançamentos e nunca sincronizaram, o app pergunta o que fazer. Antes de aplicar a junção, o app guarda uma cópia em Antes da última restauração."]},
     {t:"Comprovante de renda",ps:["Para alugar imóvel, financiar ou pedir crédito: Financeiro › DRE › Comprovante de renda (PDF), ou Configurações › MEI e DAS. Escolha 3, 6 ou 12 meses; o mês atual entra só se você marcar, e sai como parcial.","O PDF traz, mês a mês, corridas, receita bruta, despesas do trabalho e rendimento líquido, mais o total por plataforma e as médias mensais (calculadas só sobre os meses com movimento). Os números são os do DRE por competência, no centro de custo do trabalho.","É uma declaração sua, assinada por você: o próprio PDF diz isso e indica os extratos das plataformas como prova. Lançamentos faltando = renda menor no papel, então confira antes de entregar. Nome, CPF, CNPJ e cidade ficam guardados para a próxima vez."]},
     {t:"Imposto de renda (IRPF)",ps:["Financeiro › DRE › Relatório IRPF (PDF), ou Configurações › MEI e DAS. Escolha o ano-calendário e a forma de trabalho. O PDF junta o que a declaração pede e o app já sabe: corridas mês a mês, bens em 31/12 pelo custo, proventos pagos no ano e vendas em bolsa.","Autônomo, sem CNPJ: 60% da receita bruta das corridas é tributável (regra do transporte de passageiros) e entra pelo Carnê-Leão, mês a mês; os outros 40% vão como não tributáveis. MEI: 16% da receita bruta é a parcela isenta presumida, limitada ao lucro; o lucro acima disso é tributável.","É relatório de apoio: não calcula o imposto e não substitui o contador. Os números oficiais são os dos informes das plataformas, bancos e corretoras — mês sem lançamento no app sai zerado no relatório."]},
@@ -12407,6 +12463,7 @@ function syncPintar(){
     b.hidden=!(c.clientId||window.__syncMockUrl);
     b.textContent=syncRodando?"⏳ Sincronizando…":("🔄 Sincronizar"+(syncUlt?" · "+syncQuando(syncUlt):""));
     b.disabled=!!syncRodando;
+    try{ if(typeof mbarSync==="function") mbarSync(); }catch(_eM){}
   }catch(e){ rmLogErr(e,"sync-btn"); }
 }
 function cfgSecSync(){
@@ -12441,6 +12498,67 @@ function syncSalvarCfg(){
   if(!save()){ st.sync=o; return false; } syncPintar(); return true;
 }
 try{ window.RM.syncJuntar=syncJuntar; window.RM.syncAgora=syncAgora; window.RM.syncBaseLer=syncBaseLer; }catch(e){ rmLogErr(e); }
+
+/* ---------- CELULAR — FASE 1: barra de navegação embaixo + menu em gaveta ----------
+   Início · Corridas · ＋ (corrida rápida) · Dinheiro · Mais (abre o menu completo).
+   O botão "voltar" do Android fecha a gaveta em vez de sair do app. */
+var MBAR_CORRIDAS={historico:1,nova:1}, MBAR_DINHEIRO={financeiro:1,contas:1,centros:1,transferencias:1,contaspagar:1,saldos:1,extrato:1,fluxo:1,relcat:1,conciliacao:1,despesas:1,investimentos:1};
+var MBAR_SVG={
+  inicio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h5v-6h4v6h5V9.5"/></svg>',
+  corridas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>',
+  mais:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+  dinheiro:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M16 14.5h2"/></svg>',
+  mais2:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  sync:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.5-4.5L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.5 4.5L20 16"/><path d="M20 20v-4h-4"/></svg>'
+};
+function mbarIni(){
+  if(document.getElementById("mbar")) return;
+  var b=document.createElement("nav"); b.id="mbar"; b.setAttribute("aria-label","Navegação principal");
+  b.innerHTML='<button type="button" data-mb="inicio"><span class="pill">'+MBAR_SVG.inicio+'</span>Início</button>'
+    +'<button type="button" data-mb="corridas"><span class="pill">'+MBAR_SVG.corridas+'</span>Corridas</button>'
+    +'<button type="button" data-mb="mais-corrida" class="mplus" aria-label="Nova corrida rápida"><span class="fab">'+MBAR_SVG.mais2+'</span>Corrida</button>'
+    +'<button type="button" data-mb="dinheiro"><span class="pill">'+MBAR_SVG.dinheiro+'</span>Dinheiro</button>'
+    +'<button type="button" data-mb="menu" aria-haspopup="true"><span class="pill">'+MBAR_SVG.mais+'</span>Mais</button>';
+  /* dentro do #app: ele tem camada própria (z-index:1, efeito de vidro); fora dele a gaveta ficaria por baixo */
+  var _host=document.getElementById("app")||document.body;
+  _host.appendChild(b);
+  b.addEventListener("click",function(ev){ var t=ev.target.closest?ev.target.closest("button"):null; if(!t) return; var k=t.dataset.mb;
+    if(k==="inicio") show("dashboard");
+    else if(k==="corridas") show("historico");
+    else if(k==="mais-corrida"){ try{ qrOpen(); }catch(e){ rmLogErr(e,"mbar-qr"); show("nova"); } }
+    else if(k==="dinheiro"){ try{ window.__finTab=0; }catch(e){} show("financeiro"); }
+    else if(k==="menu"){ if(document.body.classList.contains("nav-open")) navFechar(); else navAbrir(); }
+  });
+  var bk=document.createElement("div"); bk.id="navBk"; bk.hidden=true; bk.addEventListener("click",function(){ navFechar(); }); _host.appendChild(bk);
+  var tr=document.getElementById("titleRow");
+  if(tr&&!document.getElementById("mSyncBtn")){ var s=document.createElement("button"); s.id="mSyncBtn"; s.type="button"; s.hidden=true; s.setAttribute("aria-label","Sincronizar"); s.innerHTML=MBAR_SVG.sync; s.onclick=function(){ try{ syncClique(); }catch(e){ rmLogErr(e,"msync"); } }; tr.appendChild(s); }
+  window.addEventListener("popstate",function(){ if(document.body.classList.contains("nav-open")) navFechar(true); });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&document.body.classList.contains("nav-open")) navFechar(); });
+  mbarSync();
+}
+function mbarMovel(){ try{ return window.matchMedia("(max-width:860px)").matches; }catch(e){ return false; } }
+function navAbrir(){
+  document.body.classList.add("nav-open"); var bk=document.getElementById("navBk"); if(bk) bk.hidden=false;
+  try{ if(mbarMovel()) history.pushState({rmNav:1},""); }catch(e){}
+  try{ var a=document.querySelector("#sidebar .active"); if(a&&a.scrollIntoView) a.scrollIntoView({block:"center"}); }catch(e){}
+  mbarSync();
+}
+function navFechar(doVoltar){
+  if(!document.body.classList.contains("nav-open")) return;
+  document.body.classList.remove("nav-open"); var bk=document.getElementById("navBk"); if(bk) bk.hidden=true;
+  if(!doVoltar){ try{ if(history.state&&history.state.rmNav) history.back(); }catch(e){} }
+  mbarSync();
+}
+function mbarSync(){
+  var b=document.getElementById("mbar"); if(!b) return;
+  var v=current, aberto=document.body.classList.contains("nav-open");
+  var on=aberto?"menu":(v==="dashboard"?"inicio":(MBAR_CORRIDAS[v]?"corridas":(MBAR_DINHEIRO[v]?"dinheiro":"menu")));
+  b.querySelectorAll("button[data-mb]").forEach(function(x){ var s=(x.dataset.mb===on); x.classList.toggle("on",s); if(s) x.setAttribute("aria-current","page"); else x.removeAttribute("aria-current"); });
+  /* botão de sincronizar no cabeçalho: só se estiver configurado */
+  try{ var ms=document.getElementById("mSyncBtn"); if(ms){ var c=syncCfg(); ms.hidden=!(c.clientId||window.__syncMockUrl); ms.disabled=!!syncRodando; ms.innerHTML=(syncRodando?'⏳':MBAR_SVG.sync)+(syncUlt?'<small>'+esc(syncQuando(syncUlt).replace("hoje às ",""))+'</small>':''); ms.title="Sincronizar"+(syncUlt?" — última: "+syncQuando(syncUlt):""); } }catch(e){}
+}
+try{ mbarIni(); }catch(e){ rmLogErr(e,"mbar-ini"); }
+try{ window.RM.navAbrir=navAbrir; window.RM.navFechar=navFechar; window.RM.telaAtual=function(){ return current; }; }catch(e){ rmLogErr(e); }
 
 } /* fim rmApp */
 })();
