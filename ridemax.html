@@ -1092,6 +1092,13 @@ body.fit-lock #finBox:has(.fin-dre){display:block;overflow:visible}
 #qrFab{position:fixed;right:calc(16px + env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));z-index:80;border:0;border-radius:999px;background:var(--green);color:#0f1116;font-weight:800;font-size:16px;padding:14px 20px;box-shadow:0 6px 20px rgba(0,0,0,.45);cursor:pointer;display:flex;align-items:center;gap:6px}
 #qrFab:hover{filter:brightness(1.08)}
 #qrFab[hidden]{display:none}
+#crBk{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:90;display:flex;align-items:flex-end;justify-content:center}
+#crBk[hidden]{display:none}
+#crBox{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:16px 16px 0 0;width:100%;max-width:520px;max-height:92vh;overflow:auto;padding:var(--s4) var(--s4) calc(var(--s4) + env(safe-area-inset-bottom))}
+@media(min-width:701px){ #crBk{align-items:center} #crBox{border-radius:var(--r)} }
+#crBox h3{margin:0 0 var(--s3);font-size:var(--f-md);display:flex;align-items:center;gap:var(--s2)}
+#crBox h3 .qrx{margin-left:auto;background:transparent;border:0;color:var(--muted);font-size:22px;cursor:pointer;line-height:1}
+#crBox label.f input,#crBox .qr-row input,#crBox select{width:100%;padding:10px;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:var(--r-sm);font-size:var(--f-md)}
 #qrBk{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:90;display:flex;align-items:flex-end;justify-content:center}
 #qrBk[hidden]{display:none}
 #qrBox{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:16px 16px 0 0;width:100%;max-width:480px;max-height:92vh;overflow:auto;padding:var(--s4) var(--s4) calc(var(--s4) + env(safe-area-inset-bottom))}
@@ -1718,6 +1725,7 @@ function sanitizeSettings(s){
     d.veiculo.aluguelNasDespesas=_vc.aluguelNasDespesas?1:0;
   } }catch(_eVc){rmLogErr(_eVc)}
   try{ d.lembretes={on:(s.lembretes&&s.lembretes.on)?1:0}; }catch(_eLb){ d.lembretes={on:0}; }
+  try{ var _pf=(s.perfil&&typeof s.perfil==="object"&&!Array.isArray(s.perfil))?s.perfil:{}; var _ps=function(x,m){ return (typeof x==="string")?x.replace(/[\u0000-\u001f]/g,"").trim().slice(0,m):""; }; d.perfil={nome:_ps(_pf.nome,90),doc:_ps(_pf.doc,20),cnpj:_ps(_pf.cnpj,20),cidade:_ps(_pf.cidade,60)}; }catch(_ePf){ d.perfil={nome:"",doc:"",cnpj:"",cidade:""}; }
   return d;
 }
 function seed(){
@@ -6920,7 +6928,7 @@ function renderCfg(){
   if(cfgTab==="contas"){ try{ window.__cfgBox=box; }catch(e){rmLogErr(e)} rContas(); return; }
   if(cfgTab==="centros"){ try{ window.__cfgBox=box; }catch(e){rmLogErr(e)} rCentros(); return; }
   if(cfgTab==="categorias"){ box.innerHTML=catCard()+'<div class="card"><h3>Encargos do Contas a pagar</h3>'+cfgEncargosHTML()+'</div>'; wireCatCard(); wireSettings(); return; }
-  if(cfgTab==="mei"){ box.innerHTML='<div class="card"><h3>MEI e DAS</h3>'+cfgSecMeiDas()+'</div>'; wireSettings(); return; }
+  if(cfgTab==="mei"){ box.innerHTML='<div class="card"><h3>MEI e DAS</h3>'+cfgSecMeiDas()+'</div><div class="card"><h3>Comprovante de renda</h3><div class="sub">PDF com a receita mês a mês (3, 6 ou 12 meses), para aluguel, financiamento ou crédito.</div><div class="toolbar"><button type="button" class="btn sm green" id="crBtn2">Gerar comprovante de renda (PDF)</button></div></div>'; wireSettings(); return; }
   if(cfgTab==="manut"){ box.innerHTML='<div class="card"><h3>Manutenção e gastos anuais</h3>'+cfgSecManut()+cfgSecVeiculo()+cfgSecAnnual()+'</div>'; wireSettings(); return; }
   if(cfgTab==="backup"){ box.innerHTML='<div class="card"><h3>Backup, armazenamento e lembretes</h3>'+cfgSecBackup()+cfgSecBkpAuto()+cfgSecLembretes()+'</div>'; wireSettings(); return; }
   if(cfgTab==="energia"){ box.innerHTML='<div class="card"><h3>Tipo de energia</h3>'+cfgSecEnergia()+'</div>'; wireSettings(); return; }
@@ -7209,6 +7217,7 @@ function rManual(){
     {t:"Previsto, realizado e os 90 dias",ps:["O fluxo de caixa mostra lado a lado o que já aconteceu e o que está previsto, nunca somados.","O previsto usa o vencimento para o que é a pagar, e a data ESTIMADA do repasse para o que é a receber. Essa data sai da média dos repasses anteriores daquela plataforma; sem pelo menos dois repasses conciliados, não há estimativa e o valor aparece à parte, sem data.","A projeção de 90 dias mostra o menor saldo do período e em que dia ele cai. É o indicador mais útil do app: é ele que avisa que a conta vai faltar antes de faltar."]},
     {t:"Backup, descartes e limpeza",ps:["Exportar baixa tudo num arquivo. Importar SUBSTITUI a base, e antes disso o app baixa sozinho um backup do estado anterior.","Backup automático (Configurações › Backup): no celular, Enviar backup abre o compartilhar — mande para o Google Drive ou para você mesmo no WhatsApp/e-mail. No computador (Chrome/Edge), escolha uma pasta de backup, de preferência sincronizada com Drive ou OneDrive, e o app grava o arquivo do dia sozinho a cada lançamento, guardando os 30 últimos. Se o navegador pedir permissão de novo, um toque em Reativar resolve.","Cópias diárias: o app também guarda sozinho, neste aparelho, uma cópia por dia (7 dias + 4 semanas), com Restaurar e Baixar. Serve para desfazer um erro; não substitui o backup, porque some junto se o celular sumir ou o navegador for limpo. Restaurar guarda antes o estado atual como Antes da última restauração.","Se o arquivo tiver registro inválido, ele é descartado e RELATADO, com indicação do que foi. Se um título perder uma baixa inválida e voltar a ficar em aberto, isso aparece em destaque — não é perda silenciosa.","A limpeza da base apaga o movimento e preserva os cadastros. Ela pede backup, data de corte e confirmação digitada. Atenção: as séries são cadastro e NÃO são apagadas.","Os dados ficam no banco do navegador (IndexedDB), com espaço de centenas de MB. Cada navegador, aparelho e endereço tem a sua base: o arquivo aberto do disco e o site publicado são bases diferentes, ligadas só pelo backup. Limpar os dados do site ou desinstalar o app apaga a base daquele aparelho.","Configurações › Backup mostra o espaço usado e o Diagnóstico: a contagem de erros internos da sessão e o botão para baixar o log. O esperado é zero.","Se a base salva estiver danificada, o app guarda uma cópia antes de abrir uma nova; sem espaço para a cópia, ele bloqueia a gravação até você baixar os dados brutos. Nada é apagado às cegas."]},
     {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu, ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","O botão verde + Corrida, no canto de baixo de todas as telas (no computador, a tecla N), lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Backup, armazenamento e lembretes, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
+    {t:"Comprovante de renda",ps:["Para alugar imóvel, financiar ou pedir crédito: Financeiro › DRE › Comprovante de renda (PDF), ou Configurações › MEI e DAS. Escolha 3, 6 ou 12 meses; o mês atual entra só se você marcar, e sai como parcial.","O PDF traz, mês a mês, corridas, receita bruta, despesas do trabalho e rendimento líquido, mais o total por plataforma e as médias mensais (calculadas só sobre os meses com movimento). Os números são os do DRE por competência, no centro de custo do trabalho.","É uma declaração sua, assinada por você: o próprio PDF diz isso e indica os extratos das plataformas como prova. Lançamentos faltando = renda menor no papel, então confira antes de entregar. Nome, CPF, CNPJ e cidade ficam guardados para a próxima vez."]},
     {t:"Custo real do carro",ps:["O custo por km soma energia e despesas lançadas. Para ver o lucro de verdade, cadastre o custo do carro em Configurações › Manutenção › Custo do carro.","Carro próprio: a depreciação é (valor de hoje − valor esperado na revenda) ÷ km que você pretende rodar até vender. Ex.: R$ 95.000 − R$ 60.000 em 120.000 km = R$ 0,29 por km. Ela nunca é lançada como despesa, então não duplica.","Carro alugado: o aluguel semanal é dividido pelos dias do período, a partir do primeiro dia com corrida ou turno. Se você já lança o aluguel em Despesas, marque a caixa correspondente — senão ele conta duas vezes.","Isso muda o custo por km, o lucro por km da Análise e o Vale continuar do Dashboard. Não muda o DRE, o saldo nem o MEI: é custo gerencial, para decidir, não para contabilizar."]},
     {t:"O que este app não faz",ps:["Não tem cotação nem rentabilidade de investimento: patrimônio aqui é saldo.","Não trata saldo negativo com a plataforma nem repasse antecipado com taxa.","O filtro por centro de custo não divide a receita de corridas nem a energia — para corrida tanto faz, porque é Uber por natureza.","O crédito da corrida em dinheiro não pode ser marcado um a um na conciliação: ele é calculado a partir da corrida, não é um lançamento próprio.","Nada disso é defeito: são escolhas, e estão aqui para você não ficar procurando."]}
   ];
@@ -7739,7 +7748,7 @@ function rDre(){
   try{ document.body.classList.add("fit-lock"); }catch(e){rmLogErr(e)}
   var html='<div class="fit-screen fin-dre"><div class="fin-dre-bar"><div class="toolbar fin-dre-tools"><span>Período:</span><select id="dreF"><option value="mes">Este mês</option><option value="mesant">Mês passado</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="todos">Todo o período</option></select><span>Centro:</span><select id="dreC" style="max-width:150px"><option value="__consolidado">Consolidado</option>'+dreCentroOptsHTML()+'</select><span class="seg" id="dreRegSeg"><button type="button" data-r="competencia">Por competência</button><button type="button" data-r="caixa">Por caixa</button></span>'
     +(isCaixa?'<span class="mtag" title="Visão pelo dinheiro: só entra o que passou pelo caixa no período. Não é o DRE da norma.">por caixa — visão do dinheiro (não é o DRE da norma)</span>':'<span class="mtag" title="Regime de competência: vale a data de competência, não a do pagamento">por competência</span>')
-    +'<span style="color:var(--muted)">'+esc(D.range.label)+' · '+isoToBR(D.range.ini)+' a '+isoToBR(D.range.fim)+'</span><span style="flex:1 1 auto;min-width:8px"></span><button type="button" class="btn sm green" id="dreNovoBtn">Novo lançamento</button></div></div>';
+    +'<span style="color:var(--muted)">'+esc(D.range.label)+' · '+isoToBR(D.range.ini)+' a '+isoToBR(D.range.fim)+'</span><span style="flex:1 1 auto;min-width:8px"></span><button type="button" class="btn sm green" id="dreNovoBtn">Novo lançamento</button><button type="button" class="btn sm accent" id="crBtn">Comprovante de renda (PDF)</button></div></div>';
   html+='<div class="fin-dre-top"><div class="cards c4 fin-dre-cards">'
     +statCard("💰",BRL(D.brutaT),"Receita bruta","#4caf7d",D.nRides+" corridas")
     +statCard("🧾",BRL(D.liquida),"Receita líquida","","− "+BRL(D.ded)+" deduções")
@@ -11578,6 +11587,236 @@ try{
   });
 }catch(e){ rmLogErr(e,"bkp-init"); }
 try{ window.RM.bkpGuardarCopia=bkpGuardarCopia; window.RM.bkpListarCopias=bkpListarCopias; window.RM.bkpRestaurar=bkpRestaurar; window.RM.bkpCopiaDoDia=bkpCopiaDoDia; window.RM.bkpPastaEstado=function(){ return BKP_PASTA_ESTADO; }; }catch(e){ rmLogErr(e); }
+
+/* ---------- COMPROVANTE DE RENDA (PDF) ----------
+   Gera um PDF de verdade, aqui mesmo, sem internet e sem biblioteca externa:
+   fontes padrão do PDF (Helvetica, codificação WinAnsi — cobre os acentos do
+   português). Os números vêm do mesmo cálculo do DRE (competência, centro de
+   custo do trabalho), mês a mês. É uma declaração do próprio motorista: o PDF
+   diz isso e aponta os extratos das plataformas como prova. */
+var CR_W={n:[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584],
+          b:[278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584]};
+var CR_ESP={"—":[0x97,1000],"–":[0x96,556],"•":[0x95,350],"…":[0x85,1000],"‘":[0x91,222],"’":[0x92,222],"“":[0x93,333],"”":[0x94,333],"€":[0x80,556],"−":[0x2D,333]};
+function crCh(c){ /* -> [byte, largura do caractere base em 1/1000] */
+  if(CR_ESP[c]) return CR_ESP[c];
+  var k=c.charCodeAt(0);
+  if(k>=32&&k<127) return [k,null];
+  if(k>=0xA0&&k<=0xFF){ var base=c.normalize?c.normalize("NFD").charAt(0):c; var bk=base.charCodeAt(0); return [k,(bk>=32&&bk<127)?bk:-1]; }
+  return [0x3F,null];
+}
+function crLarg(txt,bold,tam){
+  var t=0, W=bold?CR_W.b:CR_W.n, s=String(txt);
+  for(var i=0;i<s.length;i++){ var c=s.charAt(i), r=crCh(c), w;
+    if(CR_ESP[c]) w=r[1]; else if(r[1]===null) w=W[r[0]-32]||556; else if(r[1]===-1) w=556; else w=W[r[1]-32]||556;
+    t+=w; }
+  return t*tam/1000;
+}
+function crTxt(s){ /* texto -> string PDF (bytes WinAnsi), com escape */
+  var o="", str=String(s);
+  for(var i=0;i<str.length;i++){ var b=crCh(str.charAt(i))[0]; if(b===0x28||b===0x29||b===0x5C) o+="\\"+String.fromCharCode(b); else o+=String.fromCharCode(b); }
+  return "("+o+")";
+}
+function crQuebrar(txt,bold,tam,larg){
+  var pal=String(txt).split(/\s+/), linhas=[], cur="";
+  pal.forEach(function(p){ var t=cur?cur+" "+p:p; if(crLarg(t,bold,tam)>larg&&cur){ linhas.push(cur); cur=p; } else cur=t; });
+  if(cur) linhas.push(cur);
+  return linhas;
+}
+/* PDF mínimo: A4, várias páginas, texto, linhas e retângulos */
+function CrPdf(){ this.pags=[]; this.nova(); }
+CrPdf.prototype.nova=function(){ this.c=[]; this.pags.push(this.c); this.y=800; };
+CrPdf.prototype.cor=function(r,g,b,fill){ this.c.push((r/255).toFixed(3)+" "+(g/255).toFixed(3)+" "+(b/255).toFixed(3)+(fill?" rg":" RG")); };
+CrPdf.prototype.texto=function(x,y,s,o){ o=o||{}; var tam=o.tam||10, bold=!!o.b; if(o.alin==="dir") x=x-crLarg(s,bold,tam); else if(o.alin==="centro") x=x-crLarg(s,bold,tam)/2;
+  var c=o.cor||[20,20,30]; this.c.push("BT "+(c[0]/255).toFixed(3)+" "+(c[1]/255).toFixed(3)+" "+(c[2]/255).toFixed(3)+" rg /"+(bold?"F2":"F1")+" "+tam+" Tf "+x.toFixed(2)+" "+y.toFixed(2)+" Td "+crTxt(s)+" Tj ET"); };
+CrPdf.prototype.linha=function(x1,y1,x2,y2,larg,cor){ cor=cor||[180,180,190]; this.cor(cor[0],cor[1],cor[2],false); this.c.push((larg||0.6)+" w "+x1.toFixed(2)+" "+y1.toFixed(2)+" m "+x2.toFixed(2)+" "+y2.toFixed(2)+" l S"); };
+CrPdf.prototype.ret=function(x,y,w,h,cor){ this.cor(cor[0],cor[1],cor[2],true); this.c.push(x.toFixed(2)+" "+y.toFixed(2)+" "+w.toFixed(2)+" "+h.toFixed(2)+" re f"); };
+CrPdf.prototype.precisa=function(h){ if(this.y-h<70){ this.nova(); return true; } return false; };
+CrPdf.prototype.bytes=function(rodape){
+  var objs=[], self=this;
+  objs[1]="<< /Type /Catalog /Pages 2 0 R >>";
+  objs[3]="<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
+  objs[4]="<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>";
+  var kids=[], n=5, tot=this.pags.length;
+  this.pags.forEach(function(c,i){
+    var extra=[]; var p0=self.c; self.c=extra;
+    if(rodape){ self.linha(48,52,547,52,0.5); self.texto(48,40,rodape,{tam:7.5,cor:[110,110,120]}); self.texto(547,40,"Página "+(i+1)+" de "+tot,{tam:7.5,cor:[110,110,120],alin:"dir"}); }
+    self.c=p0;
+    var st=c.concat(extra).join("\n");
+    objs[n]="<< /Length "+st.length+" >>\nstream\n"+st+"\nendstream";
+    objs[n+1]="<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents "+n+" 0 R >>";
+    kids.push((n+1)+" 0 R"); n+=2;
+  });
+  objs[2]="<< /Type /Pages /Kids ["+kids.join(" ")+"] /Count "+tot+" >>";
+  objs.push("<< /Producer (RideMax) /Title "+crTxt("Comprovante de rendimentos")+" >>"); var info=objs.length-1;
+  var out="%PDF-1.4\n%\xE2\xE3\xCF\xD3\n", offs=[];
+  for(var i=1;i<objs.length;i++){ offs[i]=out.length; out+=i+" 0 obj\n"+objs[i]+"\nendobj\n"; }
+  var xref=out.length;
+  out+="xref\n0 "+objs.length+"\n0000000000 65535 f \n";
+  for(var j=1;j<objs.length;j++) out+=String(offs[j]).padStart(10,"0")+" 00000 n \n";
+  out+="trailer\n<< /Size "+objs.length+" /Root 1 0 R /Info "+info+" 0 R >>\nstartxref\n"+xref+"\n%%EOF";
+  var u=new Uint8Array(out.length); for(var k=0;k<out.length;k++) u[k]=out.charCodeAt(k)&0xFF;
+  return u;
+};
+
+/* ---- dados ---- */
+var CR_MESES=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+function crPerfil(){ var p=(DB.settings&&DB.settings.perfil)||{}; return {nome:p.nome||"",doc:p.doc||"",cnpj:p.cnpj||"",cidade:p.cidade||""}; }
+function crMesesLista(n,incluirAtual){
+  var d=new Date(), out=[]; d.setDate(1); if(!incluirAtual) d.setMonth(d.getMonth()-1);
+  for(var i=0;i<n;i++){ var y=d.getFullYear(), m=d.getMonth(); var ini=y+"-"+String(m+1).padStart(2,"0")+"-01"; var fim=new Date(y,m+1,0); var fimI=y+"-"+String(m+1).padStart(2,"0")+"-"+String(fim.getDate()).padStart(2,"0"); if(fimI>todayISO()) fimI=todayISO(); out.unshift({y:y,m:m,ini:ini,fim:fimI,parcial:fimI<y+"-"+String(m+1).padStart(2,"0")+"-"+String(fim.getDate()).padStart(2,"0")}); d.setMonth(d.getMonth()-1); }
+  return out;
+}
+function crDados(n,incluirAtual){
+  var meses=crMesesLista(n,incluirAtual), plat={}, tot={n:0,bruta:0,desp:0,liq:0,km:0};
+  meses.forEach(function(M){
+    var D=computeDRECustom(M.ini,M.fim,"Comprovante","__uber","competencia");
+    var bruta=Math.round((Number(D.brutaT)||0)*100)/100, liq=Math.round((Number(D.liquido)||0)*100)/100;
+    M.n=D.nRides||0; M.bruta=bruta; M.liq=liq; M.desp=Math.round((bruta-liq)*100)/100; M.km=Number(D.km)||0;
+    Object.keys(D.byPlat||{}).forEach(function(k){ plat[k]=(plat[k]||0)+(Number(D.byPlat[k])||0); });
+    tot.n+=M.n; tot.bruta+=bruta; tot.desp+=M.desp; tot.liq+=liq; tot.km+=M.km;
+  });
+  var comDados=meses.filter(function(M){ return M.n>0||M.bruta!==0; }).length;
+  return {meses:meses,plat:plat,tot:tot,comDados:comDados};
+}
+function crValor(v){ return BRL(Math.round(v*100)/100).replace(/ /g," "); }
+
+/* ---- montagem do PDF ---- */
+function crGerarPdf(opt){
+  var P=crPerfil(), R=crDados(opt.meses,opt.atual), pdf=new CrPdf(), X0=48, X1=547;
+  var agora=new Date(), p2=function(x){ return String(x).padStart(2,"0"); };
+  var hojeBR=p2(agora.getDate())+"/"+p2(agora.getMonth()+1)+"/"+agora.getFullYear();
+  var m0=R.meses[0], mN=R.meses[R.meses.length-1];
+  var perTx=CR_MESES[m0.m]+"/"+m0.y+" a "+CR_MESES[mN.m]+"/"+mN.y;
+  /* cabeçalho */
+  pdf.ret(0,792,595.28,50,[30,42,70]);
+  pdf.texto(X0,812,"COMPROVANTE DE RENDIMENTOS",{tam:16,b:1,cor:[255,255,255]});
+  pdf.texto(X1,812,"Motorista por aplicativo",{tam:10,cor:[200,210,230],alin:"dir"});
+  pdf.y=764;
+  var dl=function(rot,val){ pdf.texto(X0,pdf.y,rot,{tam:9,cor:[100,100,115]}); pdf.texto(X0+110,pdf.y,val,{tam:10.5,b:1}); pdf.y-=16; };
+  dl("Declarante",P.nome||"—");
+  if(P.doc) dl("CPF",P.doc);
+  if(P.cnpj) dl("CNPJ (MEI)",P.cnpj);
+  dl("Período",perTx+(mN.parcial?" (mês atual até "+isoToBR(mN.fim)+")":""));
+  dl("Atividade","Transporte individual de passageiros por aplicativo");
+  pdf.y-=4;
+  crQuebrar("Declaro, para os devidos fins, que obtive os rendimentos abaixo como motorista por aplicativo no período informado. Os valores foram apurados a partir dos meus registros diários de corridas e despesas.",false,10,X1-X0).forEach(function(l){ pdf.texto(X0,pdf.y,l,{tam:10}); pdf.y-=14; });
+  pdf.y-=8;
+  /* resumo */
+  var media=R.comDados?R.tot.bruta/R.comDados:0, mediaL=R.comDados?R.tot.liq/R.comDados:0;
+  var bw=(X1-X0-16)/3, caixas=[["Receita bruta no período",crValor(R.tot.bruta)],["Média mensal bruta",crValor(media)],["Média mensal líquida",crValor(mediaL)]];
+  caixas.forEach(function(c,i){ var x=X0+i*(bw+8); pdf.ret(x,pdf.y-44,bw,48,[238,242,250]); pdf.texto(x+10,pdf.y-12,c[0],{tam:8.5,cor:[90,95,115]}); pdf.texto(x+10,pdf.y-33,c[1],{tam:14,b:1,cor:[30,42,70]}); });
+  pdf.y-=66;
+  if(R.comDados<R.meses.length) { pdf.texto(X0,pdf.y,"Médias calculadas sobre os "+R.comDados+" meses com movimento.",{tam:8,cor:[110,110,120]}); pdf.y-=14; }
+  /* tabela mensal */
+  var cols=[{t:"Mês",x:X0+6,a:"esq"},{t:"Corridas",x:X0+190,a:"dir"},{t:"Receita bruta",x:X0+300,a:"dir"},{t:"Despesas do trabalho",x:X0+405,a:"dir"},{t:"Rendimento líquido",x:X1-6,a:"dir"}];
+  var cabec=function(){ pdf.ret(X0,pdf.y-6,X1-X0,20,[30,42,70]); cols.forEach(function(c){ pdf.texto(c.x,pdf.y,c.t,{tam:8.5,b:1,cor:[255,255,255],alin:c.a==="dir"?"dir":null}); }); pdf.y-=22; };
+  pdf.texto(X0,pdf.y,"Rendimentos mês a mês",{tam:11.5,b:1,cor:[30,42,70]}); pdf.y-=18;
+  cabec();
+  var rh=R.meses.length>6?15:18;
+  R.meses.forEach(function(M,i){
+    if(pdf.precisa(20)){ cabec(); }
+    if(i%2===1) pdf.ret(X0,pdf.y-(rh===18?6:4.5),X1-X0,rh,[246,247,250]);
+    var nome=CR_MESES[M.m].charAt(0).toUpperCase()+CR_MESES[M.m].slice(1)+"/"+M.y+(M.parcial?" (parcial)":"");
+    pdf.texto(cols[0].x,pdf.y,nome,{tam:9.5});
+    pdf.texto(cols[1].x,pdf.y,String(M.n),{tam:9.5,alin:"dir"});
+    pdf.texto(cols[2].x,pdf.y,crValor(M.bruta),{tam:9.5,alin:"dir"});
+    pdf.texto(cols[3].x,pdf.y,crValor(M.desp),{tam:9.5,alin:"dir"});
+    pdf.texto(cols[4].x,pdf.y,crValor(M.liq),{tam:9.5,b:1,alin:"dir",cor:M.liq<0?[180,40,40]:[20,20,30]});
+    pdf.y-=rh;
+  });
+  pdf.linha(X0,pdf.y+10,X1,pdf.y+10,1,[30,42,70]);
+  pdf.texto(cols[0].x,pdf.y-2,"Total",{tam:10,b:1});
+  pdf.texto(cols[1].x,pdf.y-2,String(R.tot.n),{tam:10,b:1,alin:"dir"});
+  pdf.texto(cols[2].x,pdf.y-2,crValor(R.tot.bruta),{tam:10,b:1,alin:"dir"});
+  pdf.texto(cols[3].x,pdf.y-2,crValor(R.tot.desp),{tam:10,b:1,alin:"dir"});
+  pdf.texto(cols[4].x,pdf.y-2,crValor(R.tot.liq),{tam:10,b:1,alin:"dir"});
+  pdf.y-=30;
+  /* por plataforma */
+  var pk=Object.keys(R.plat).filter(function(k){ return Math.abs(R.plat[k])>0.004; }).sort(function(a,b){ return R.plat[b]-R.plat[a]; });
+  if(pk.length){
+    pdf.precisa(40+pk.length*16);
+    pdf.texto(X0,pdf.y,"Corridas por plataforma no período",{tam:11.5,b:1,cor:[30,42,70]}); pdf.y-=18;
+    var somaP=pk.reduce(function(s,k){ return s+R.plat[k]; },0);
+    pk.forEach(function(k){ pdf.precisa(18); pdf.texto(X0+6,pdf.y,k,{tam:9.5}); pdf.texto(X0+300,pdf.y,crValor(R.plat[k]),{tam:9.5,alin:"dir"}); pdf.texto(X0+360,pdf.y,(somaP>0?(R.plat[k]/somaP*100):0).toFixed(1).replace(".",",")+"%",{tam:9.5,alin:"dir",cor:[100,100,115]}); pdf.linha(X0,pdf.y-5,X0+370,pdf.y-5,0.3,[215,215,225]); pdf.y-=16; });
+    pdf.y-=12;
+  }
+  /* notas */
+  var notas=["Receita bruta: ganhos das corridas, gorjetas e outras receitas do trabalho lançadas no período (regime de competência).","Despesas do trabalho: energia ou combustível, manutenção, taxas e demais custos de operar o veículo lançados no período.","Rendimento líquido: receita bruta menos as despesas do trabalho.","Documento declaratório, elaborado pelo próprio declarante. Os extratos das plataformas de transporte comprovam os valores informados."];
+  pdf.precisa(notas.length*24+20);
+  pdf.texto(X0,pdf.y,"Como os valores foram calculados",{tam:9.5,b:1,cor:[30,42,70]}); pdf.y-=14;
+  notas.forEach(function(nt){ crQuebrar(nt,false,8.5,X1-X0-10).forEach(function(l,i){ pdf.precisa(12); pdf.texto(X0+(i?8:0),pdf.y,(i?"":"• ")+l,{tam:8.5,cor:[70,70,85]}); pdf.y-=11.5; }); pdf.y-=2; });
+  /* assinatura */
+  pdf.y-=14; if(pdf.y<150) pdf.nova();
+  pdf.y-=50;
+  pdf.texto(X0,pdf.y+40,(P.cidade?P.cidade:"______________________")+", "+hojeBR+".",{tam:10});
+  pdf.linha(X0+120,pdf.y,X1-120,pdf.y,0.7,[60,60,70]);
+  pdf.texto((X0+X1)/2,pdf.y-14,P.nome||"Assinatura do declarante",{tam:10,b:1,alin:"centro"});
+  if(P.doc) pdf.texto((X0+X1)/2,pdf.y-27,"CPF "+P.doc,{tam:9,alin:"centro",cor:[90,90,100]});
+  var rod="Gerado pelo RideMax em "+hojeBR+" às "+p2(agora.getHours())+":"+p2(agora.getMinutes())+" a partir dos registros do declarante.";
+  return {bytes:pdf.bytes(rod),resumo:R,nome:"comprovante-renda-"+m0.y+"-"+p2(m0.m+1)+"-a-"+mN.y+"-"+p2(mN.m+1)+".pdf"};
+}
+
+/* ---- tela ---- */
+function crDocOk(s){ s=String(s||"").replace(/\D/g,""); return s.length===0||s.length===11||s.length===14; }
+function crFmtDoc(s){ var d=String(s||"").replace(/\D/g,""); if(d.length===11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,"$1.$2.$3-$4"); if(d.length===14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,"$1.$2.$3/$4-$5"); return String(s||"").trim(); }
+function crAbrir(){
+  var bk=document.getElementById("crBk");
+  if(!bk){ bk=document.createElement("div"); bk.id="crBk"; bk.hidden=true; bk.innerHTML='<div id="crBox" role="dialog" aria-modal="true" aria-labelledby="crTit"></div>'; document.body.appendChild(bk);
+    bk.addEventListener("click",function(e){ if(e.target===bk) crFechar(); }); }
+  var P=crPerfil();
+  var h='<h3 id="crTit">Comprovante de renda (PDF)<button type="button" class="qrx" id="crX" aria-label="Fechar">×</button></h3>';
+  h+='<div class="sub">Para aluguel, financiamento ou crédito. Usa os seus lançamentos, mês a mês.</div>';
+  h+='<label class="f">Seu nome completo<input id="crNome" autocomplete="name" value="'+esc(P.nome)+'"></label>';
+  h+='<div class="qr-row"><label>CPF<input id="crDoc" inputmode="numeric" value="'+esc(P.doc)+'" placeholder="opcional"></label><label>CNPJ do MEI<input id="crCnpj" inputmode="numeric" value="'+esc(P.cnpj)+'" placeholder="opcional"></label></div>';
+  h+='<div class="qr-row"><label>Cidade (para a assinatura)<input id="crCid" value="'+esc(P.cidade)+'" placeholder="opcional"></label><label>Período<select id="crMeses"><option value="3">Últimos 3 meses</option><option value="6" selected>Últimos 6 meses</option><option value="12">Últimos 12 meses</option></select></label></div>';
+  h+='<label style="display:flex;gap:8px;align-items:center;margin-top:var(--s3);font-size:var(--f-sm)"><input type="checkbox" id="crAtual" style="width:auto"> incluir o mês atual (ainda incompleto)</label>';
+  h+='<div class="sub" id="crPrev" style="margin-top:var(--s3)"></div><div class="msg-ok" id="crMsg" style="color:#e0695c"></div>';
+  h+='<div class="btnrow" style="margin-top:var(--s3)"><button type="button" class="btn green" id="crGerar">Gerar PDF</button><button type="button" class="btn accent" id="crCancel">Cancelar</button></div>';
+  h+='<div class="sub">Nome, CPF e cidade ficam guardados neste aparelho (e nos seus backups), para não precisar digitar de novo. O PDF só sai daqui quando você baixa ou envia.</div>';
+  document.getElementById("crBox").innerHTML=h;
+  bk.hidden=false;
+  var prev=function(){ try{ var R=crDados(Number(document.getElementById("crMeses").value)||6,document.getElementById("crAtual").checked); document.getElementById("crPrev").innerHTML="Prévia: <b>"+esc(BRL(R.tot.bruta))+"</b> brutos em "+R.meses.length+" meses ("+R.tot.n+" corridas) · média de <b>"+esc(BRL(R.comDados?R.tot.bruta/R.comDados:0))+"</b>/mês"+(R.comDados?"":" — <b>nenhum lançamento no período</b>"); }catch(e){ rmLogErr(e,"cr-prev"); } };
+  document.getElementById("crMeses").onchange=prev; document.getElementById("crAtual").onchange=prev; prev();
+  document.getElementById("crX").onclick=crFechar; document.getElementById("crCancel").onclick=crFechar;
+  document.getElementById("crGerar").onclick=crGerarClick;
+  try{ document.getElementById("crNome").focus(); }catch(e){}
+}
+function crFechar(){ var bk=document.getElementById("crBk"); if(bk) bk.hidden=true; }
+function crGerarClick(){
+  var msg=document.getElementById("crMsg"); msg.textContent="";
+  var nome=document.getElementById("crNome").value.trim().replace(/\s+/g," ").slice(0,90);
+  var doc=document.getElementById("crDoc").value, cnpj=document.getElementById("crCnpj").value, cid=document.getElementById("crCid").value.trim().slice(0,60);
+  if(nome.length<3){ msg.textContent="Digite seu nome completo."; return; }
+  if(!crDocOk(doc)||String(doc).replace(/\D/g,"").length===14){ msg.textContent="CPF deve ter 11 números (ou deixe em branco)."; return; }
+  if(String(cnpj).replace(/\D/g,"").length&&String(cnpj).replace(/\D/g,"").length!==14){ msg.textContent="CNPJ deve ter 14 números (ou deixe em branco)."; return; }
+  var meses=Number(document.getElementById("crMeses").value)||6, atual=document.getElementById("crAtual").checked;
+  var R=crDados(meses,atual);
+  if(!R.comDados){ msg.textContent="Não há lançamentos nesse período — o comprovante sairia zerado."; return; }
+  var st=DB.settings, old=st.perfil;
+  st.perfil={nome:nome,doc:crFmtDoc(doc),cnpj:crFmtDoc(cnpj),cidade:cid};
+  if(JSON.stringify(old||{})!==JSON.stringify(st.perfil)){ if(!save()){ st.perfil=old; return; } }
+  var out;
+  try{ out=crGerarPdf({meses:meses,atual:atual}); }catch(e){ rmLogErr(e,"cr-pdf"); msg.textContent="Não foi possível gerar o PDF: "+String((e&&e.message)||e); return; }
+  crFechar();
+  crEntregar(out);
+}
+function crEntregar(out){
+  var blob=new Blob([out.bytes],{type:"application/pdf"});
+  var baixar=function(){ var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=out.nome; document.body.appendChild(a); a.click(); setTimeout(function(){ try{ URL.revokeObjectURL(a.href); }catch(e){} a.remove(); },1500); };
+  var f=null; try{ f=new File([blob],out.nome,{type:"application/pdf"}); }catch(e){ f=null; }
+  var podeEnviar=false; try{ podeEnviar=!!(f&&navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})); }catch(e){ podeEnviar=false; }
+  window.__crUltimo={nome:out.nome,tamanho:out.bytes.length};
+  if(!podeEnviar){ baixar(); customAlert("Comprovante baixado: "+out.nome+". Confira os valores antes de entregar.","Comprovante de renda"); return; }
+  openModal("Comprovante de renda","PDF pronto ("+out.nome+"). Confira os valores antes de entregar.",[{label:"Baixar",cls:"accent",val:"baixar"},{label:"Enviar (WhatsApp, e-mail…)",cls:"green",val:"enviar"}]).then(function(v){
+    if(v==="baixar") baixar();
+    else if(v==="enviar") navigator.share({files:[f],title:"Comprovante de rendimentos"}).catch(function(e){ if(e&&e.name==="AbortError") return; rmLogErr(e,"cr-share"); baixar(); });
+  });
+}
+try{
+  document.addEventListener("click",function(ev){ var t=ev&&ev.target; var b=t&&t.closest?t.closest("button"):null; if(b&&(b.id==="crBtn"||b.id==="crBtn2")) crAbrir(); });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ var bk=document.getElementById("crBk"); if(bk&&!bk.hidden) crFechar(); } });
+}catch(e){ rmLogErr(e,"cr-init"); }
+try{ window.RM.crGerarPdf=crGerarPdf; window.RM.crDados=crDados; window.RM.crAbrir=crAbrir; }catch(e){ rmLogErr(e); }
 
 } /* fim rmApp */
 })();
