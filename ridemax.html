@@ -1087,6 +1087,8 @@ body.fit-lock #finBox:has(.fin-dre){display:block;overflow:visible}
 }
 
 /* ---------- APP INSTALÁVEL + CORRIDA RÁPIDA ---------- */
+#syncSideBtn{display:block;margin:0 var(--s4) var(--s2);width:calc(100% - 2*var(--s4));background:var(--input);border:1px solid var(--border);color:var(--text);border-radius:var(--r-sm);padding:var(--s2);font:inherit;font-size:var(--f-sm);cursor:pointer}
+#syncSideBtn[hidden]{display:none}
 #instBtn{display:block;margin:0 var(--s4) var(--s2);width:calc(100% - 2*var(--s4));background:var(--accent);border:1px solid var(--border);color:var(--text);border-radius:var(--r-sm);padding:var(--s2);font-size:var(--f-sm);font-weight:700;cursor:pointer}
 #instBtn[hidden]{display:none}
 #qrFab{position:fixed;right:calc(16px + env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));z-index:80;border:0;border-radius:999px;background:var(--green);color:#0f1116;font-weight:800;font-size:16px;padding:14px 20px;box-shadow:0 6px 20px rgba(0,0,0,.45);cursor:pointer;display:flex;align-items:center;gap:6px}
@@ -1726,6 +1728,7 @@ function sanitizeSettings(s){
   } }catch(_eVc){rmLogErr(_eVc)}
   try{ d.lembretes={on:(s.lembretes&&s.lembretes.on)?1:0}; }catch(_eLb){ d.lembretes={on:0}; }
   try{ var _pf=(s.perfil&&typeof s.perfil==="object"&&!Array.isArray(s.perfil))?s.perfil:{}; var _ps=function(x,m){ return (typeof x==="string")?x.replace(/[\u0000-\u001f]/g,"").trim().slice(0,m):""; }; d.perfil={nome:_ps(_pf.nome,90),doc:_ps(_pf.doc,20),cnpj:_ps(_pf.cnpj,20),cidade:_ps(_pf.cidade,60)}; }catch(_ePf){ d.perfil={nome:"",doc:"",cnpj:"",cidade:""}; }
+  try{ var _sy=(s.sync&&typeof s.sync==="object"&&!Array.isArray(s.sync))?s.sync:{}; var _cid=(typeof _sy.clientId==="string")?_sy.clientId.trim().slice(0,200):""; if(_cid&&!/^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$/i.test(_cid)) _cid=""; d.sync={clientId:_cid,auto:_sy.auto?1:0}; }catch(_eSy){ d.sync={clientId:"",auto:0}; }
   return d;
 }
 function seed(){
@@ -2726,7 +2729,7 @@ function save(){
   expireTrash(false);
   var _prevRev=DB._rev;
   DB._rev=DB_MEM_REV+1;
-  try{ RMS.setItem(LS_KEY, JSON.stringify(DB)); DB_MEM_REV=DB._rev; try{ hideRevBanner(); }catch(_e){rmLogErr(_e)} markFileOwner(); try{ if(typeof lembretesAgendar==="function") lembretesAgendar(); }catch(_eL){rmLogErr(_eL)} try{ if(typeof bkpAposSalvar==="function") bkpAposSalvar(); }catch(_eB){rmLogErr(_eB)} return true; }
+  try{ RMS.setItem(LS_KEY, JSON.stringify(DB)); DB_MEM_REV=DB._rev; try{ hideRevBanner(); }catch(_e){rmLogErr(_e)} markFileOwner(); try{ if(typeof lembretesAgendar==="function") lembretesAgendar(); }catch(_eL){rmLogErr(_eL)} try{ if(typeof bkpAposSalvar==="function") bkpAposSalvar(); }catch(_eB){rmLogErr(_eB)} try{ if(typeof syncAposSalvar==="function") syncAposSalvar(); }catch(_eS){rmLogErr(_eS)} return true; }
   catch(e){ try{ DB._rev=_prevRev; }catch(_e2){rmLogErr(_e2)} customAlert("Não foi possível salvar: armazenamento cheio ou bloqueado. Exporte um backup agora.","Falha ao salvar"); return false; }
 }
 /* Concorrência (falso positivo): gravação que preserva o carimbo — só para
@@ -6754,7 +6757,7 @@ function cfgSecAnnual(){
   return h;
 }
 function settingsCard(){
-  return '<div class="card"><h3>Configurações</h3>'+cfgSecEnergia()+cfgSecBackup()+cfgSecBkpAuto()+cfgSecLembretes()+cfgSecMeiDas()+cfgEncargosHTML()+cfgSecManut()+cfgSecVeiculo()+cfgSecAnnual()+'<div class="sub">Veículos</div>'+cfgSecVeiculos()+'</div>';
+  return '<div class="card"><h3>Configurações</h3>'+cfgSecEnergia()+cfgSecBackup()+cfgSecBkpAuto()+cfgSecSync()+cfgSecLembretes()+cfgSecMeiDas()+cfgEncargosHTML()+cfgSecManut()+cfgSecVeiculo()+cfgSecAnnual()+'<div class="sub">Veículos</div>'+cfgSecVeiculos()+'</div>';
 }
 function wireSettings(){
   try{
@@ -6961,7 +6964,7 @@ function renderCfg(){
   if(cfgTab==="mei"){ box.innerHTML='<div class="card"><h3>MEI e DAS</h3>'+cfgSecMeiDas()+'</div><div class="card"><h3>Comprovante de renda</h3><div class="sub">PDF com a receita mês a mês (3, 6 ou 12 meses), para aluguel, financiamento ou crédito.</div><div class="toolbar"><button type="button" class="btn sm green" id="crBtn2">Gerar comprovante de renda (PDF)</button></div></div><div class="card"><h3>Imposto de renda (IRPF)</h3><div class="sub">Relatório de apoio para a declaração: corridas mês a mês com a parte tributável, bens em 31/12, proventos e vendas. Não calcula o imposto nem substitui o contador.</div><div class="toolbar"><button type="button" class="btn sm green" id="irBtn2">Gerar relatório para o IRPF (PDF)</button></div></div>'; wireSettings(); return; }
   if(cfgTab==="veiculos"){ box.innerHTML='<div class="card"><h3>Veículos</h3>'+cfgSecVeiculos()+'</div>'; wireSettings(); return; }
   if(cfgTab==="manut"){ box.innerHTML='<div class="card"><h3>Manutenção e gastos anuais</h3><div class="toolbar"><span>Carro atual: <b>'+esc(veicNome(veicAtual()))+'</b></span><button type="button" class="btn sm accent" id="veicIrBtn">Trocar ou ver carros</button></div>'+cfgSecManut()+cfgSecVeiculo()+cfgSecAnnual()+'</div>'; wireSettings(); return; }
-  if(cfgTab==="backup"){ box.innerHTML='<div class="card"><h3>Backup, armazenamento e lembretes</h3>'+cfgSecBackup()+cfgSecBkpAuto()+cfgSecLembretes()+'</div>'; wireSettings(); return; }
+  if(cfgTab==="backup"){ box.innerHTML='<div class="card"><h3>Backup, armazenamento e lembretes</h3>'+cfgSecBackup()+cfgSecBkpAuto()+cfgSecSync()+cfgSecLembretes()+'</div>'; wireSettings(); return; }
   if(cfgTab==="energia"){ box.innerHTML='<div class="card"><h3>Tipo de energia</h3>'+cfgSecEnergia()+'</div>'; wireSettings(); return; }
   renderCfgPlat(box);
 }
@@ -7248,6 +7251,7 @@ function rManual(){
     {t:"Previsto, realizado e os 90 dias",ps:["O fluxo de caixa mostra lado a lado o que já aconteceu e o que está previsto, nunca somados.","O previsto usa o vencimento para o que é a pagar, e a data ESTIMADA do repasse para o que é a receber. Essa data sai da média dos repasses anteriores daquela plataforma; sem pelo menos dois repasses conciliados, não há estimativa e o valor aparece à parte, sem data.","A projeção de 90 dias mostra o menor saldo do período e em que dia ele cai. É o indicador mais útil do app: é ele que avisa que a conta vai faltar antes de faltar."]},
     {t:"Backup, descartes e limpeza",ps:["Exportar baixa tudo num arquivo. Importar SUBSTITUI a base, e antes disso o app baixa sozinho um backup do estado anterior.","Backup automático (Configurações › Backup): no celular, Enviar backup abre o compartilhar — mande para o Google Drive ou para você mesmo no WhatsApp/e-mail. No computador (Chrome/Edge), escolha uma pasta de backup, de preferência sincronizada com Drive ou OneDrive, e o app grava o arquivo do dia sozinho a cada lançamento, guardando os 30 últimos. Se o navegador pedir permissão de novo, um toque em Reativar resolve.","Cópias diárias: o app também guarda sozinho, neste aparelho, uma cópia por dia (7 dias + 4 semanas), com Restaurar e Baixar. Serve para desfazer um erro; não substitui o backup, porque some junto se o celular sumir ou o navegador for limpo. Restaurar guarda antes o estado atual como Antes da última restauração.","Se o arquivo tiver registro inválido, ele é descartado e RELATADO, com indicação do que foi. Se um título perder uma baixa inválida e voltar a ficar em aberto, isso aparece em destaque — não é perda silenciosa.","A limpeza da base apaga o movimento e preserva os cadastros. Ela pede backup, data de corte e confirmação digitada. Atenção: as séries são cadastro e NÃO são apagadas.","Os dados ficam no banco do navegador (IndexedDB), com espaço de centenas de MB. Cada navegador, aparelho e endereço tem a sua base: o arquivo aberto do disco e o site publicado são bases diferentes, ligadas só pelo backup. Limpar os dados do site ou desinstalar o app apaga a base daquele aparelho.","Configurações › Backup mostra o espaço usado e o Diagnóstico: a contagem de erros internos da sessão e o botão para baixar o log. O esperado é zero.","Se a base salva estiver danificada, o app guarda uma cópia antes de abrir uma nova; sem espaço para a cópia, ele bloqueia a gravação até você baixar os dados brutos. Nada é apagado às cegas."]},
     {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu, ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","O botão verde + Corrida, no canto de baixo de todas as telas (no computador, a tecla N), lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Backup, armazenamento e lembretes, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
+    {t:"Celular e computador juntos",ps:["Configurações › Backup, armazenamento e lembretes › Sincronizar. Os dois aparelhos usam a mesma conta Google; os dados ficam numa pasta privada do app no seu Drive. A primeira configuração (ID do cliente) está no manual, seção 7.6.","Toque em Sincronizar (no topo do menu) ao começar e ao terminar o dia. A junção é por lançamento: o que foi incluído, editado ou apagado em cada aparelho é respeitado. Se o mesmo campo foi editado nos dois, fica a versão do aparelho que sincronizou por último.","Aparelho novo, sem lançamentos, recebe tudo da nuvem. Se os dois já têm lançamentos e nunca sincronizaram, o app pergunta o que fazer. Antes de aplicar a junção, o app guarda uma cópia em Antes da última restauração."]},
     {t:"Comprovante de renda",ps:["Para alugar imóvel, financiar ou pedir crédito: Financeiro › DRE › Comprovante de renda (PDF), ou Configurações › MEI e DAS. Escolha 3, 6 ou 12 meses; o mês atual entra só se você marcar, e sai como parcial.","O PDF traz, mês a mês, corridas, receita bruta, despesas do trabalho e rendimento líquido, mais o total por plataforma e as médias mensais (calculadas só sobre os meses com movimento). Os números são os do DRE por competência, no centro de custo do trabalho.","É uma declaração sua, assinada por você: o próprio PDF diz isso e indica os extratos das plataformas como prova. Lançamentos faltando = renda menor no papel, então confira antes de entregar. Nome, CPF, CNPJ e cidade ficam guardados para a próxima vez."]},
     {t:"Imposto de renda (IRPF)",ps:["Financeiro › DRE › Relatório IRPF (PDF), ou Configurações › MEI e DAS. Escolha o ano-calendário e a forma de trabalho. O PDF junta o que a declaração pede e o app já sabe: corridas mês a mês, bens em 31/12 pelo custo, proventos pagos no ano e vendas em bolsa.","Autônomo, sem CNPJ: 60% da receita bruta das corridas é tributável (regra do transporte de passageiros) e entra pelo Carnê-Leão, mês a mês; os outros 40% vão como não tributáveis. MEI: 16% da receita bruta é a parcela isenta presumida, limitada ao lucro; o lucro acima disso é tributável.","É relatório de apoio: não calcula o imposto e não substitui o contador. Os números oficiais são os dos informes das plataformas, bancos e corretoras — mês sem lançamento no app sai zerado no relatório."]},
     {t:"Custo real do carro",ps:["O custo por km soma energia e despesas lançadas. Para ver o lucro de verdade, cadastre o custo do carro em Configurações › Manutenção › Custo do carro.","Carro próprio: a depreciação é (valor de hoje − valor esperado na revenda) ÷ km que você pretende rodar até vender. Ex.: R$ 95.000 − R$ 60.000 em 120.000 km = R$ 0,29 por km. Ela nunca é lançada como despesa, então não duplica.","Carro alugado: o aluguel semanal é dividido pelos dias do período, a partir do primeiro dia com corrida ou turno. Se você já lança o aluguel em Despesas, marque a caixa correspondente — senão ele conta duas vezes.","Isso muda o custo por km, o lucro por km da Análise e o Vale continuar do Dashboard. Não muda o DRE, o saldo nem o MEI: é custo gerencial, para decidir, não para contabilizar.","Trocou de carro? Configurações › Veículos › Trocar de carro, com a data da troca. Um carro por vez: o que tem data antes da troca fica com o carro anterior, sem marcar nada em cada lançamento. Odômetro, manutenção, tipo de energia e custo do carro recomeçam no novo; o anterior guarda a configuração dele, e um período que pega os dois carros usa o custo de cada um nos seus dias. Errou? Desfazer a última troca devolve tudo como estava."]},
@@ -12221,6 +12225,222 @@ try{
     else if(b.id==="veicIrBtn"){ cfgTab="veiculos"; show("plataformas"); } });
 }catch(e){ rmLogErr(e,"veic-init"); }
 try{ window.RM.veicTrocar=veicTrocar; window.RM.veicDesfazer=veicDesfazer; window.RM.veicLista=veicLista; window.RM.veicResumo=veicResumo; window.RM.veicSegmentos=veicSegmentos; window.RM.efficiencyDetail=efficiencyDetail; }catch(e){ rmLogErr(e); }
+
+/* ---------- SINCRONIZAÇÃO ENTRE APARELHOS (Google Drive) ----------
+   Junção em 3 vias: BASE (o que este aparelho e a nuvem tinham na última
+   sincronização) × LOCAL (este aparelho agora) × NUVEM (o que outro aparelho enviou).
+   - registro (qualquer lista com "id"): incluído de um lado → entra; apagado de um
+     lado e intocado do outro → sai; editado de um lado → vale a edição; editado nos
+     dois → campo a campo, e se o MESMO campo mudou nos dois, vale o deste aparelho
+     (conta como conflito e é informado); apagado de um lado e editado do outro → fica.
+   - preferências: campo a campo, com a mesma regra.
+   A nuvem é um arquivo na pasta privada do app no Google Drive do usuário
+   (appDataFolder: só o RideMax enxerga). O login é do próprio Google (Google
+   Identity Services); o app guarda o acesso só na memória, por ~1 hora. */
+var SYNC_SCOPE="https://www.googleapis.com/auth/drive.appdata", SYNC_ARQ="ridemax-sync.json";
+var syncTok=null, syncTokExp=0, syncGisCarregado=null, syncRodando=false, syncTimer=null, syncUlt=null, syncUltMsg="";
+function syncEq(a,b){ if(a===b) return true; if(a==null||b==null) return a===b; if(typeof a!=="object"||typeof b!=="object") return a===b;
+  if(Array.isArray(a)!==Array.isArray(b)) return false;
+  if(Array.isArray(a)){ if(a.length!==b.length) return false; for(var i=0;i<a.length;i++){ if(!syncEq(a[i],b[i])) return false; } return true; }
+  var ka=Object.keys(a), kb=Object.keys(b); if(ka.length!==kb.length) return false;
+  for(var j=0;j<ka.length;j++){ if(!Object.prototype.hasOwnProperty.call(b,ka[j])||!syncEq(a[ka[j]],b[ka[j]])) return false; } return true; }
+function syncEhLista(arr){ if(!Array.isArray(arr)) return false; for(var i=0;i<arr.length;i++){ var x=arr[i]; if(!x||typeof x!=="object"||Array.isArray(x)||(typeof x.id!=="string"&&typeof x.id!=="number")) return false; } return true; }
+function syncObj(x){ return x!=null&&typeof x==="object"&&!Array.isArray(x); }
+/* devolve o valor juntado; "undefined" = apagado. est = {conflitos, deLa, daqui} */
+function syncMerge(b,l,r,est,cam){
+  if(syncEq(l,r)) return l;
+  if(syncEq(b,l)) { return r; }
+  if(syncEq(b,r)) { return l; }
+  if(syncObj(l)&&syncObj(r)){
+    var bo=syncObj(b)?b:{}, out={}, ks={}, k;
+    Object.keys(l).forEach(function(x){ ks[x]=1; }); Object.keys(r).forEach(function(x){ ks[x]=1; });
+    for(k in ks){ var v=syncMerge(bo[k],l[k],r[k],est,cam+"."+k); if(v!==undefined) out[k]=v; }
+    return out;
+  }
+  var lL=Array.isArray(l)?l:(l===undefined?[]:null), rL=Array.isArray(r)?r:(r===undefined?[]:null), bL=Array.isArray(b)?b:(b===undefined?[]:null);
+  if(lL&&rL&&bL&&syncEhLista(lL)&&syncEhLista(rL)&&syncEhLista(bL)&&(lL.length||rL.length)){
+    var mb={}, ml={}, mr={}, ordem=[], visto={};
+    bL.forEach(function(x){ mb[String(x.id)]=x; }); lL.forEach(function(x){ ml[String(x.id)]=x; }); rL.forEach(function(x){ mr[String(x.id)]=x; });
+    lL.forEach(function(x){ var i=String(x.id); if(!visto[i]){ visto[i]=1; ordem.push(i); } });
+    rL.forEach(function(x){ var i=String(x.id); if(!visto[i]){ visto[i]=1; ordem.push(i); } });
+    var res=[];
+    ordem.forEach(function(i){
+      var bx=mb[i], lx=ml[i], rx=mr[i];
+      if(lx&&rx){ res.push(syncMerge(bx,lx,rx,est,cam+"["+i+"]")); return; }
+      if(lx&&!rx){ if(bx&&syncEq(bx,lx)) return; /* apagado lá */ if(!bx) est.daqui++; res.push(lx); return; }
+      if(rx&&!lx){ if(bx&&syncEq(bx,rx)) return; /* apagado aqui */ if(!bx) est.deLa++; res.push(rx); return; }
+    });
+    return res;
+  }
+  /* mesmo valor mudou dos dois lados: vale o deste aparelho */
+  est.conflitos++; if(est.lista.length<20) est.lista.push(cam);
+  return l;
+}
+/* padroniza antes de comparar: o mesmo lançamento pode estar gravado de formas
+   diferentes (campos completados pelo app) — sem isso, pareceria editado */
+function syncNorm(d){ if(!d) return null; var x; try{ x=sanitizeDB(JSON.parse(JSON.stringify(d))); }catch(e){ x=JSON.parse(JSON.stringify(d)); } x=JSON.parse(JSON.stringify(x)); delete x._rev; return x; }
+/* quantos lançamentos (listas com id, no primeiro nível) diferem entre a e b */
+function syncDif(a,b){ var n=0; try{ Object.keys(Object.assign({},a,b)).forEach(function(k){ var la=a&&a[k], lb=b&&b[k]; if(!(syncEhLista(la||[])&&syncEhLista(lb||[]))) return; if(!Array.isArray(la)&&!Array.isArray(lb)) return; var ma={}, mb={}; (la||[]).forEach(function(x){ ma[String(x.id)]=x; }); (lb||[]).forEach(function(x){ mb[String(x.id)]=x; }); Object.keys(Object.assign({},ma,mb)).forEach(function(i){ if(!syncEq(ma[i],mb[i])) n++; }); }); }catch(e){ rmLogErr(e,"sync-dif"); } return n; }
+function syncJuntar(base,local,nuvem){
+  var est={conflitos:0,deLa:0,daqui:0,lista:[]};
+  var rev=local&&local._rev;
+  var L=syncNorm(local), R=syncNorm(nuvem), B=base?syncNorm(base):{};
+  var m=syncMerge(B,L,R,est,"");
+  if(!syncObj(m)) m=L;
+  est.deLa=syncDif(m,L); est.daqui=syncDif(m,R);
+  m._rev=rev;
+  return {dados:m,est:est};
+}
+
+/* ---- estado guardado neste aparelho (fora da base sincronizada) ---- */
+function syncCfg(){ var s=(DB.settings&&DB.settings.sync)||{}; return {clientId:String(s.clientId||""),auto:s.auto?1:0}; }
+function syncBaseLer(){ return bkpTx(BKP_ST_CFG,"readonly",function(st){ return st.get("syncBase"); }).then(function(x){ try{ return x?JSON.parse(x):null; }catch(e){ return null; } }).catch(function(){ return null; }); }
+function syncBaseGravar(d){ return bkpTx(BKP_ST_CFG,"readwrite",function(st){ st.put(JSON.stringify(d),"syncBase"); }); }
+function syncInfoLer(){ return bkpTx(BKP_ST_CFG,"readonly",function(st){ return st.get("syncInfo"); }).catch(function(){ return null; }); }
+function syncInfoGravar(o){ return bkpTx(BKP_ST_CFG,"readwrite",function(st){ st.put(o,"syncInfo"); }).catch(function(){}); }
+function syncAparelho(){ var k=LS_KEY+"_aparelho", v=null; try{ v=RMS.getItem(k); }catch(e){} if(!v){ v=(/android|iphone|ipad|mobile/i.test(navigator.userAgent)?"celular-":"pc-")+uid().slice(0,6); try{ RMS.setItem(k,v); }catch(e){} } return v; }
+
+/* ---- nuvem: Google Drive (ou simulador, nos testes) ---- */
+function syncGis(){
+  if(window.google&&google.accounts&&google.accounts.oauth2) return Promise.resolve();
+  if(syncGisCarregado) return syncGisCarregado;
+  syncGisCarregado=new Promise(function(ok,erro){ var s=document.createElement("script"); s.src="https://accounts.google.com/gsi/client"; s.async=true; s.onload=function(){ ok(); }; s.onerror=function(){ syncGisCarregado=null; erro(new Error("Sem internet ou o Google bloqueou o login.")); }; document.head.appendChild(s); });
+  return syncGisCarregado;
+}
+function syncToken(interativo){
+  if(window.__syncMockUrl) return Promise.resolve("mock");
+  if(syncTok&&Date.now()<syncTokExp-60000) return Promise.resolve(syncTok);
+  if(!interativo) return Promise.reject(new Error("precisa-tocar"));
+  var cid=syncCfg().clientId; if(!cid) return Promise.reject(new Error("Cole o ID do cliente Google primeiro."));
+  return syncGis().then(function(){ return new Promise(function(ok,erro){
+    try{
+      var tc=google.accounts.oauth2.initTokenClient({client_id:cid,scope:SYNC_SCOPE,callback:function(r){ if(r&&r.access_token){ syncTok=r.access_token; syncTokExp=Date.now()+(Number(r.expires_in)||3600)*1000; ok(syncTok); } else erro(new Error((r&&(r.error_description||r.error))||"Login recusado.")); },error_callback:function(e){ erro(new Error((e&&(e.message||e.type))||"Login cancelado.")); }});
+      tc.requestAccessToken({prompt:""});
+    }catch(e){ erro(e); }
+  }); });
+}
+function syncFetch(url,opt){
+  opt=Object.assign({cache:"no-store"},opt||{});
+  return fetch(url,opt).then(function(r){ if(r.status===401){ syncTok=null; syncTokExp=0; throw new Error("O acesso ao Google expirou. Toque em Sincronizar de novo."); } if(!r.ok) return r.text().then(function(t){ throw new Error("Google Drive respondeu "+r.status+": "+String(t).slice(0,160)); }); return r; });
+}
+function syncNuvemLer(tok){
+  if(window.__syncMockUrl) return fetch(window.__syncMockUrl,{cache:"no-store"}).then(function(r){ return r.status===404?null:r.json(); }).then(function(j){ return j?{id:"mock",conteudo:j}:null; });
+  var H={Authorization:"Bearer "+tok};
+  return syncFetch("https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&fields=files(id,name,modifiedTime)&q="+encodeURIComponent("name='"+SYNC_ARQ+"'"),{headers:H}).then(function(r){ return r.json(); }).then(function(j){
+    var f=(j.files||[])[0]; if(!f) return null;
+    return syncFetch("https://www.googleapis.com/drive/v3/files/"+f.id+"?alt=media",{headers:H}).then(function(r){ return r.json(); }).then(function(c){ return {id:f.id,conteudo:c}; });
+  });
+}
+function syncNuvemGravar(tok,id,conteudo){
+  var corpo=JSON.stringify(conteudo);
+  if(window.__syncMockUrl) return fetch(window.__syncMockUrl,{method:"PUT",body:corpo,cache:"no-store"}).then(function(){ return "mock"; });
+  var H={Authorization:"Bearer "+tok};
+  if(id) return syncFetch("https://www.googleapis.com/upload/drive/v3/files/"+id+"?uploadType=media",{method:"PATCH",headers:Object.assign({"Content-Type":"application/json"},H),body:corpo}).then(function(){ return id; });
+  var bd="rmx"+uid(), meta=JSON.stringify({name:SYNC_ARQ,parents:["appDataFolder"]});
+  var multi="--"+bd+"\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n"+meta+"\r\n--"+bd+"\r\nContent-Type: application/json\r\n\r\n"+corpo+"\r\n--"+bd+"--";
+  return syncFetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id",{method:"POST",headers:Object.assign({"Content-Type":"multipart/related; boundary="+bd},H),body:multi}).then(function(r){ return r.json(); }).then(function(j){ return j.id; });
+}
+
+/* ---- sincronizar ---- */
+async function syncAgora(interativo){
+  if(syncRodando) return {ok:false,msg:"Já está sincronizando."};
+  if(DB_LOAD_BLOCKED!=null) return {ok:false,msg:"A base está bloqueada (ver aviso). Resolva antes de sincronizar."};
+  if(!navigator.onLine&&!window.__syncMockUrl) return {ok:false,msg:"Sem internet agora. Os lançamentos ficam guardados e sobem na próxima sincronização."};
+  syncRodando=true; syncPintar();
+  try{
+    var tok=await syncToken(interativo);
+    var nuvem=await syncNuvemLer(tok), base=await syncBaseLer();
+    var st0=0; try{ st0=readStoredRev().rev; }catch(_e){ st0=DB_MEM_REV; }
+    if(st0!==DB_MEM_REV) return {ok:false,msg:"Outra aba gravou dados. Recarregue o app e sincronize de novo."};
+    var local=JSON.parse(JSON.stringify(DB)), r={dados:local,est:{conflitos:0,deLa:0,daqui:0,lista:[]}};
+    if(nuvem&&nuvem.conteudo&&nuvem.conteudo.data){
+      if(nuvem.conteudo.app!=="RideMax") return {ok:false,msg:"O arquivo da nuvem não é do RideMax. Nada foi alterado."};
+      if(!base&&!bkpMov(local)){
+        /* aparelho novo, sem lançamentos: recebe tudo da nuvem (evita duplicar os cadastros padrão) */
+        var _nd=JSON.parse(JSON.stringify(nuvem.conteudo.data)); _nd._rev=local._rev; r={dados:_nd,est:{conflitos:0,deLa:bkpMov(_nd),daqui:0,lista:[]}};
+      } else if(!base&&bkpMov(nuvem.conteudo.data)){
+        if(!interativo) return {ok:false,msg:"precisa-tocar"};
+        var _esc=await openModal("Primeira sincronização","Este aparelho e a nuvem já têm lançamentos e nunca foram sincronizados.\n\nEste aparelho: "+impMovLine(impNums(local))+"\n\nNuvem: "+impMovLine(impNums(nuvem.conteudo.data))+"\n\nJuntar mantém tudo dos dois, mas cadastros iguais (plataformas, categorias, contas) podem aparecer duplicados. Se um dos lados é só teste, escolha o outro.",[{label:"Cancelar",cls:"accent",val:""},{label:"Usar só a nuvem",cls:"accent",val:"nuvem"},{label:"Usar só este aparelho",cls:"accent",val:"local"},{label:"Juntar os dois",cls:"green",val:"juntar"}]);
+        if(!_esc) return {ok:false,msg:"Sincronização cancelada. Nada foi alterado."};
+        if(_esc==="nuvem"){ var _nd2=JSON.parse(JSON.stringify(nuvem.conteudo.data)); _nd2._rev=local._rev; r={dados:_nd2,est:{conflitos:0,deLa:bkpMov(_nd2),daqui:0,lista:[]}}; }
+        else if(_esc==="local"){ r={dados:local,est:{conflitos:0,deLa:0,daqui:bkpMov(local),lista:[]}}; }
+        else r=syncJuntar(null,local,nuvem.conteudo.data);
+      } else r=syncJuntar(base,local,nuvem.conteudo.data);
+    } else { r.est.daqui=bkpMov(local); }
+    var limpo=sanitizeDB(r.dados);
+    var mudouAqui=!syncEq(Object.assign({},limpo,{_rev:0}),Object.assign({},local,{_rev:0}));
+    if(mudouAqui){
+      try{ await bkpGuardarCopia("restauracao"); }catch(_e){}
+      var antes=DB; DB=limpo; processVehicleReset();
+      if(!save()){ DB=antes; return {ok:false,msg:"Não foi possível gravar a junção neste aparelho. Nada foi enviado."}; }
+    }
+    var final=JSON.parse(JSON.stringify(DB)); delete final._rev;
+    var precisaEnviar=!(nuvem&&nuvem.conteudo&&syncEq(Object.assign({},nuvem.conteudo.data,{_rev:undefined}),Object.assign({},final,{_rev:undefined})));
+    if(precisaEnviar){ var envio=JSON.parse(JSON.stringify(final)); await syncNuvemGravar(tok,nuvem&&nuvem.id,{app:"RideMax",v:1,enviadoEm:new Date().toISOString(),aparelho:syncAparelho(),data:envio}); }
+    await syncBaseGravar(syncNorm(final));
+    syncUlt=new Date().toISOString();
+    syncUltMsg=(r.est.deLa?r.est.deLa+" lançamento(s) vieram do outro aparelho":"nada novo do outro aparelho")+(r.est.daqui&&precisaEnviar?" · "+r.est.daqui+" enviado(s)":"")+(r.est.conflitos?" · "+r.est.conflitos+" campo(s) editados nos dois aparelhos: ficou a versão deste":"");
+    await syncInfoGravar({ult:syncUlt,msg:syncUltMsg});
+    if(mudouAqui) try{ show(current||"dashboard"); }catch(_e){}
+    return {ok:true,msg:syncUltMsg,est:r.est,mudouAqui:mudouAqui,enviou:precisaEnviar};
+  }catch(e){
+    if(e&&e.message==="precisa-tocar") return {ok:false,msg:"precisa-tocar"};
+    rmLogErr(e,"sync"); return {ok:false,msg:String((e&&e.message)||e)};
+  }finally{ syncRodando=false; syncPintar(); }
+}
+function syncClique(){
+  if(!syncCfg().clientId&&!window.__syncMockUrl){ cfgTab="backup"; show("plataformas"); setTimeout(function(){ var e=document.getElementById("cfgSync"); if(e&&e.scrollIntoView) e.scrollIntoView({block:"start"}); },60); return; }
+  syncAgora(true).then(function(r){ if(r.ok) syncToast("Sincronizado: "+r.msg); else customAlert(r.msg,"Sincronizar"); });
+}
+function syncToast(t){ try{ var el=document.getElementById("qrToast"); if(el){ el.textContent=t; el.hidden=false; clearTimeout(el.__t); el.__t=setTimeout(function(){ el.hidden=true; },4000); return; } }catch(e){} customAlert(t,"Sincronizar"); }
+/* depois de gravar: se já tem acesso válido e a opção automática está ligada, sincroniza sozinho */
+function syncAposSalvar(){
+  try{ if(!syncCfg().auto||syncRodando) return; if(!(window.__syncMockUrl||(syncTok&&Date.now()<syncTokExp-60000))) return;
+    clearTimeout(syncTimer); syncTimer=setTimeout(function(){ syncAgora(false); },8000); }catch(e){ rmLogErr(e,"sync-auto"); }
+}
+
+/* ---- tela ---- */
+function syncQuando(iso){ if(!iso) return "nunca"; try{ var d=new Date(iso), p=function(n){ return String(n).padStart(2,"0"); }; var h=p(d.getHours())+":"+p(d.getMinutes()); return (iso.slice(0,10)===new Date().toISOString().slice(0,10)?"hoje":p(d.getDate())+"/"+p(d.getMonth()+1))+" às "+h; }catch(e){ return "—"; } }
+function syncPintar(){
+  try{ var b=document.getElementById("syncSideBtn"), c=syncCfg();
+    if(!b){ var host=document.querySelector("#sidebar .logo"); if(!host||!host.parentNode) return; b=document.createElement("button"); b.id="syncSideBtn"; b.type="button"; var ib=document.getElementById("instBtn"); host.parentNode.insertBefore(b,(ib&&ib.parentNode===host.parentNode)?ib.nextSibling:host.nextSibling); b.onclick=syncClique; }
+    b.hidden=!(c.clientId||window.__syncMockUrl);
+    b.textContent=syncRodando?"⏳ Sincronizando…":("🔄 Sincronizar"+(syncUlt?" · "+syncQuando(syncUlt):""));
+    b.disabled=!!syncRodando;
+  }catch(e){ rmLogErr(e,"sync-btn"); }
+}
+function cfgSecSync(){
+  var c=syncCfg(), web=/^https:$/.test(location.protocol)||/^http:\/\/(127\.0\.0\.1|localhost)/.test(location.href);
+  var h='<div class="sub" id="cfgSync">Sincronizar celular e computador (Google Drive)</div>';
+  if(!web){ h+='<div class="sub">Funciona no app publicado (https). Aberto direto do disco, use Enviar backup / Importar.</div>'; return h; }
+  h+='<div class="kv"><span>Última sincronização</span><b>'+esc(syncQuando(syncUlt))+(syncUltMsg?' — '+esc(syncUltMsg):'')+'</b></div>';
+  h+='<label class="f">ID do cliente Google (OAuth)<input id="syncCid" value="'+esc(c.clientId)+'" placeholder="123456-abc….apps.googleusercontent.com" autocomplete="off" style="background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;width:100%"></label>';
+  h+='<label style="display:flex;gap:8px;align-items:center;font-size:var(--f-sm);margin:6px 0"><input type="checkbox" id="syncAuto" style="width:auto"'+(c.auto?" checked":"")+'> depois de sincronizar, continuar enviando cada lançamento sozinho (enquanto o acesso do Google vale, ~1 hora)</label>';
+  h+='<div class="toolbar"><button type="button" class="btn sm green" id="syncAgoraBtn">'+(syncUlt?"Sincronizar agora":"Conectar e sincronizar")+'</button><button type="button" class="btn sm accent" id="syncSalvarCid">Salvar ID</button>'+(syncTok?'<button type="button" class="btn sm red" id="syncSairBtn">Desconectar</button>':'')+'</div>';
+  h+='<div class="sub">Use a <b>mesma conta Google</b> nos dois aparelhos. Os dados ficam numa pasta privada do app no seu Drive (não aparece nos seus arquivos e nenhum outro app lê). A junção é por lançamento: o que foi incluído, editado ou apagado em cada aparelho é respeitado; se o mesmo campo foi editado nos dois, fica a versão do aparelho que está sincronizando. Antes de aplicar, o app guarda uma cópia em "Antes da última restauração".</div>';
+  try{ if(c.clientId) setTimeout(function(){ syncGis().catch(function(){}); },0); }catch(_e){}
+  h+='<div class="sub">Primeira vez? Siga o passo a passo do manual (seção 7.6) para criar o ID do cliente — leva uns 10 minutos, uma vez só.</div>';
+  return h;
+}
+function syncHidratar(){ syncInfoLer().then(function(i){ if(i&&i.ult){ syncUlt=i.ult; syncUltMsg=i.msg||""; syncPintar(); } }); }
+try{
+  document.addEventListener("click",function(ev){ var t=ev&&ev.target; var b=t&&t.closest?t.closest("button"):null; if(!b) return;
+    if(b.id==="syncAgoraBtn"){ var cv=(document.getElementById("syncCid")||{}).value; if(cv!=null&&cv.trim()!==syncCfg().clientId){ if(!syncSalvarCfg()) return; } syncClique(); }
+    else if(b.id==="syncSalvarCid"){ if(syncSalvarCfg()){ syncToast("ID salvo."); show("plataformas"); } }
+    else if(b.id==="syncSairBtn"){ try{ if(syncTok&&window.google&&google.accounts&&google.accounts.oauth2) google.accounts.oauth2.revoke(syncTok,function(){}); }catch(e){} syncTok=null; syncTokExp=0; show("plataformas"); }
+  });
+  document.addEventListener("change",function(ev){ var t=ev&&ev.target; if(t&&t.id==="syncAuto"){ var st=DB.settings, o=st.sync; st.sync=Object.assign({},syncCfg(),{auto:t.checked?1:0}); if(!save()) st.sync=o; } });
+  syncHidratar(); syncPintar();
+  /* carrega o login do Google antes do toque: assim a janelinha de login não é bloqueada */
+  try{ if(syncCfg().clientId&&/^https:$/.test(location.protocol)&&navigator.onLine) setTimeout(function(){ syncGis().catch(function(){}); },2500); }catch(_eG){}
+}catch(e){ rmLogErr(e,"sync-init"); }
+function syncSalvarCfg(){
+  var v=String((document.getElementById("syncCid")||{}).value||"").trim();
+  if(v&&!/^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$/i.test(v)){ customAlert("Esse não parece um ID de cliente do Google. Ele termina em .apps.googleusercontent.com.","Sincronizar"); return false; }
+  var st=DB.settings, o=st.sync; st.sync=Object.assign({},syncCfg(),{clientId:v});
+  if(!save()){ st.sync=o; return false; } syncPintar(); return true;
+}
+try{ window.RM.syncJuntar=syncJuntar; window.RM.syncAgora=syncAgora; window.RM.syncBaseLer=syncBaseLer; }catch(e){ rmLogErr(e); }
 
 } /* fim rmApp */
 })();
