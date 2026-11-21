@@ -1137,7 +1137,7 @@ body.fit-lock #finBox:has(.fin-dre){display:block;overflow:visible}
     <div class="topbar"><div id="titleRow"><h2 id="pageTitle">RideMax</h2><button id="hBtn" type="button" title="Ajuda" aria-label="Ajuda" aria-expanded="false" hidden="">?</button></div><p id="pageSub"></p><div id="hBox" hidden="" data-chave="plataformas"></div><hr></div>
     <div id="viewCtn"></div>
   </main>
-</div><div id="modalBk" hidden=""><div id="modalBox"><h3 id="mTitle"></h3><p id="mMsg"></p><div class="mrow" id="mBtns"></div></div></div><div id="tipBalloon" role="tooltip" hidden=""></div><input type="file" id="impFile" hidden="" accept="application/json">
+</div><div id="modalBk" hidden=""><div id="modalBox"><h3 id="mTitle"></h3><p id="mMsg"></p><div class="mrow" id="mBtns"></div></div></div><div id="tipBalloon" role="tooltip" hidden=""></div><input type="file" id="impFile" hidden="" accept=".json,.txt,application/json,text/plain">
 <script id="rm-app">
 
 (function(){
@@ -2699,7 +2699,7 @@ function save(){
   expireTrash(false);
   var _prevRev=DB._rev;
   DB._rev=DB_MEM_REV+1;
-  try{ RMS.setItem(LS_KEY, JSON.stringify(DB)); DB_MEM_REV=DB._rev; try{ hideRevBanner(); }catch(_e){rmLogErr(_e)} markFileOwner(); try{ if(typeof lembretesAgendar==="function") lembretesAgendar(); }catch(_eL){rmLogErr(_eL)} return true; }
+  try{ RMS.setItem(LS_KEY, JSON.stringify(DB)); DB_MEM_REV=DB._rev; try{ hideRevBanner(); }catch(_e){rmLogErr(_e)} markFileOwner(); try{ if(typeof lembretesAgendar==="function") lembretesAgendar(); }catch(_eL){rmLogErr(_eL)} try{ if(typeof bkpAposSalvar==="function") bkpAposSalvar(); }catch(_eB){rmLogErr(_eB)} return true; }
   catch(e){ try{ DB._rev=_prevRev; }catch(_e2){rmLogErr(_e2)} customAlert("Não foi possível salvar: armazenamento cheio ou bloqueado. Exporte um backup agora.","Falha ao salvar"); return false; }
 }
 /* Concorrência (falso positivo): gravação que preserva o carimbo — só para
@@ -3939,7 +3939,7 @@ function backupBanner(){
   } else {
     inner='Você ainda não fez nenhum backup. Seus dados vivem só neste navegador.';
   }
-  return '<div class="card warn"><h3>Proteja seus dados — faça backup</h3><div class="sub">'+inner+'</div><div class="btnrow"><button class="btn sm accent" id="bNow">Fazer backup agora</button></div></div>';
+  return '<div class="card warn"><h3>Proteja seus dados — faça backup</h3><div class="sub">'+inner+'</div><div class="btnrow"><button class="btn sm accent" id="bNow">Fazer backup agora</button>'+(bkpPodeEnviar()?'<button class="btn sm green" id="bkpEnviar" type="button">Enviar para o Drive/WhatsApp</button>':'')+'</div></div>';
 }
 /* ---------- FASE 6A — DASHBOARD HOJE + SEMANA (só leitura) ----------
    O dashboard LÊ o que já existe; não recalcula, não grava, não altera.
@@ -4223,7 +4223,7 @@ function dashPatrimonioHTML(){
 }
 function rDash(){
   try{ document.body.classList.add("fit-lock"); }catch(e){rmLogErr(e)}
-  var html=corruptBanner()+backupBanner();
+  var html=corruptBanner()+backupBanner()+bkpBannerPasta();
   html+='<div class="fit-screen dash-screen"><div class="dash-grid">';
   /* ============ BLOCO 1 — HOJE ============ */
   var contas=(DB.contas||[]).filter(function(c){ return c.ativa; }).sort(finSortNome);
@@ -6716,7 +6716,7 @@ function cfgSecAnnual(){
   return h;
 }
 function settingsCard(){
-  return '<div class="card"><h3>Configurações</h3>'+cfgSecEnergia()+cfgSecBackup()+cfgSecLembretes()+cfgSecMeiDas()+cfgEncargosHTML()+cfgSecManut()+cfgSecVeiculo()+cfgSecAnnual()+'</div>';
+  return '<div class="card"><h3>Configurações</h3>'+cfgSecEnergia()+cfgSecBackup()+cfgSecBkpAuto()+cfgSecLembretes()+cfgSecMeiDas()+cfgEncargosHTML()+cfgSecManut()+cfgSecVeiculo()+cfgSecAnnual()+'</div>';
 }
 function wireSettings(){
   try{
@@ -6922,7 +6922,7 @@ function renderCfg(){
   if(cfgTab==="categorias"){ box.innerHTML=catCard()+'<div class="card"><h3>Encargos do Contas a pagar</h3>'+cfgEncargosHTML()+'</div>'; wireCatCard(); wireSettings(); return; }
   if(cfgTab==="mei"){ box.innerHTML='<div class="card"><h3>MEI e DAS</h3>'+cfgSecMeiDas()+'</div>'; wireSettings(); return; }
   if(cfgTab==="manut"){ box.innerHTML='<div class="card"><h3>Manutenção e gastos anuais</h3>'+cfgSecManut()+cfgSecVeiculo()+cfgSecAnnual()+'</div>'; wireSettings(); return; }
-  if(cfgTab==="backup"){ box.innerHTML='<div class="card"><h3>Backup, armazenamento e lembretes</h3>'+cfgSecBackup()+cfgSecLembretes()+'</div>'; wireSettings(); return; }
+  if(cfgTab==="backup"){ box.innerHTML='<div class="card"><h3>Backup, armazenamento e lembretes</h3>'+cfgSecBackup()+cfgSecBkpAuto()+cfgSecLembretes()+'</div>'; wireSettings(); return; }
   if(cfgTab==="energia"){ box.innerHTML='<div class="card"><h3>Tipo de energia</h3>'+cfgSecEnergia()+'</div>'; wireSettings(); return; }
   renderCfgPlat(box);
 }
@@ -7207,7 +7207,7 @@ function rManual(){
     {t:"Conciliação",ps:["Conciliar é conferir contra o extrato do banco, item a item. Você digita o saldo do extrato, marca o que encontrou, e o que sobra é pendência.","A diferença se resolve LANÇANDO o que faltou: a tarifa esquecida, o PIX que ninguém anotou, a duplicidade a excluir. Nunca com um ajuste criado para o saldo fechar.","Ajuste existe para um caso só: diferença investigada e não identificada. E exige observação escrita."]},
     {t:"Data de corte e saldo inicial",ps:["Cada conta tem uma data de corte, que é a data do saldo inicial. O saldo só conta movimento dessa data em diante.","Baixa e transferência com data anterior ao corte são bloqueadas.","Corrida em dinheiro com data anterior ao corte é permitida, porque pode ser carga histórica — mas o app avisa na hora e deixa um indicador na conta, dizendo quantos movimentos estão fora do saldo e quanto somam. Se isso aparecer sem você esperar, provavelmente a data está errada."]},
     {t:"Previsto, realizado e os 90 dias",ps:["O fluxo de caixa mostra lado a lado o que já aconteceu e o que está previsto, nunca somados.","O previsto usa o vencimento para o que é a pagar, e a data ESTIMADA do repasse para o que é a receber. Essa data sai da média dos repasses anteriores daquela plataforma; sem pelo menos dois repasses conciliados, não há estimativa e o valor aparece à parte, sem data.","A projeção de 90 dias mostra o menor saldo do período e em que dia ele cai. É o indicador mais útil do app: é ele que avisa que a conta vai faltar antes de faltar."]},
-    {t:"Backup, descartes e limpeza",ps:["Exportar baixa tudo num arquivo. Importar SUBSTITUI a base, e antes disso o app baixa sozinho um backup do estado anterior.","Se o arquivo tiver registro inválido, ele é descartado e RELATADO, com indicação do que foi. Se um título perder uma baixa inválida e voltar a ficar em aberto, isso aparece em destaque — não é perda silenciosa.","A limpeza da base apaga o movimento e preserva os cadastros. Ela pede backup, data de corte e confirmação digitada. Atenção: as séries são cadastro e NÃO são apagadas.","Os dados ficam no banco do navegador (IndexedDB), com espaço de centenas de MB. Cada navegador, aparelho e endereço tem a sua base: o arquivo aberto do disco e o site publicado são bases diferentes, ligadas só pelo backup. Limpar os dados do site ou desinstalar o app apaga a base daquele aparelho.","Configurações › Backup mostra o espaço usado e o Diagnóstico: a contagem de erros internos da sessão e o botão para baixar o log. O esperado é zero.","Se a base salva estiver danificada, o app guarda uma cópia antes de abrir uma nova; sem espaço para a cópia, ele bloqueia a gravação até você baixar os dados brutos. Nada é apagado às cegas."]},
+    {t:"Backup, descartes e limpeza",ps:["Exportar baixa tudo num arquivo. Importar SUBSTITUI a base, e antes disso o app baixa sozinho um backup do estado anterior.","Backup automático (Configurações › Backup): no celular, Enviar backup abre o compartilhar — mande para o Google Drive ou para você mesmo no WhatsApp/e-mail. No computador (Chrome/Edge), escolha uma pasta de backup, de preferência sincronizada com Drive ou OneDrive, e o app grava o arquivo do dia sozinho a cada lançamento, guardando os 30 últimos. Se o navegador pedir permissão de novo, um toque em Reativar resolve.","Cópias diárias: o app também guarda sozinho, neste aparelho, uma cópia por dia (7 dias + 4 semanas), com Restaurar e Baixar. Serve para desfazer um erro; não substitui o backup, porque some junto se o celular sumir ou o navegador for limpo. Restaurar guarda antes o estado atual como Antes da última restauração.","Se o arquivo tiver registro inválido, ele é descartado e RELATADO, com indicação do que foi. Se um título perder uma baixa inválida e voltar a ficar em aberto, isso aparece em destaque — não é perda silenciosa.","A limpeza da base apaga o movimento e preserva os cadastros. Ela pede backup, data de corte e confirmação digitada. Atenção: as séries são cadastro e NÃO são apagadas.","Os dados ficam no banco do navegador (IndexedDB), com espaço de centenas de MB. Cada navegador, aparelho e endereço tem a sua base: o arquivo aberto do disco e o site publicado são bases diferentes, ligadas só pelo backup. Limpar os dados do site ou desinstalar o app apaga a base daquele aparelho.","Configurações › Backup mostra o espaço usado e o Diagnóstico: a contagem de erros internos da sessão e o botão para baixar o log. O esperado é zero.","Se a base salva estiver danificada, o app guarda uma cópia antes de abrir uma nova; sem espaço para a cópia, ele bloqueia a gravação até você baixar os dados brutos. Nada é apagado às cegas."]},
     {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu, ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","O botão verde + Corrida, no canto de baixo de todas as telas (no computador, a tecla N), lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Backup, armazenamento e lembretes, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
     {t:"Custo real do carro",ps:["O custo por km soma energia e despesas lançadas. Para ver o lucro de verdade, cadastre o custo do carro em Configurações › Manutenção › Custo do carro.","Carro próprio: a depreciação é (valor de hoje − valor esperado na revenda) ÷ km que você pretende rodar até vender. Ex.: R$ 95.000 − R$ 60.000 em 120.000 km = R$ 0,29 por km. Ela nunca é lançada como despesa, então não duplica.","Carro alugado: o aluguel semanal é dividido pelos dias do período, a partir do primeiro dia com corrida ou turno. Se você já lança o aluguel em Despesas, marque a caixa correspondente — senão ele conta duas vezes.","Isso muda o custo por km, o lucro por km da Análise e o Vale continuar do Dashboard. Não muda o DRE, o saldo nem o MEI: é custo gerencial, para decidir, não para contabilizar."]},
     {t:"O que este app não faz",ps:["Não tem cotação nem rentabilidade de investimento: patrimônio aqui é saldo.","Não trata saldo negativo com a plataforma nem repasse antecipado com taxa.","O filtro por centro de custo não divide a receita de corridas nem a energia — para corrida tanto faz, porque é Uber por natureza.","O crédito da corrida em dinheiro não pode ser marcado um a um na conciliação: ele é calculado a partir da corrida, não é um lançamento próprio.","Nada disso é defeito: são escolhas, e estão aqui para você não ficar procurando."]}
@@ -11245,8 +11245,8 @@ function lembretesCalc(){
   }catch(e){ rmLogErr(e,"lemb-man"); }
   try{
     var st=DB.settings, dias=st.backupDays||7;
-    if(st.lastBackup&&validISO(st.lastBackup)){ var due=somaDiasISO(st.lastBackup,dias); itens.push({id:"bkp:"+due,quando:due,ate:somaDiasISO(due,60),titulo:"Faça um backup",texto:"Último backup em "+isoToBR(st.lastBackup)+". Abra o app e toque em Exportar."}); }
-    else if((DB.rides||[]).length||(DB.titulos||[]).length){ itens.push({id:"bkp:nunca",quando:hoje,ate:somaDiasISO(hoje,60),titulo:"Faça seu primeiro backup",texto:"Seus dados vivem só neste aparelho. Abra o app e toque em Exportar."}); }
+    if(st.lastBackup&&validISO(st.lastBackup)){ var due=somaDiasISO(st.lastBackup,dias); itens.push({id:"bkp:"+due,quando:due,ate:somaDiasISO(due,60),titulo:"Faça um backup",texto:"Último backup em "+isoToBR(st.lastBackup)+". Abra o app e toque em Enviar backup (ou Exportar)."}); }
+    else if((DB.rides||[]).length||(DB.titulos||[]).length){ itens.push({id:"bkp:nunca",quando:hoje,ate:somaDiasISO(hoje,60),titulo:"Faça seu primeiro backup",texto:"Seus dados vivem só neste aparelho. Abra o app e toque em Enviar backup (ou Exportar)."}); }
   }catch(e){ rmLogErr(e,"lemb-bkp"); }
   itens.sort(function(a,b){ return a.quando<b.quando?-1:(a.quando>b.quando?1:0); });
   return itens;
@@ -11327,6 +11327,257 @@ try{
   if(lembOn()&&lembSuporte().perm==="granted"){ lembRegistrarSync(); }
 }catch(e){ rmLogErr(e,"lemb-init"); }
 try{ window.RM.lembretesCalc=lembretesCalc; window.RM.lembSuporte=lembSuporte; }catch(e){ rmLogErr(e); }
+
+/* ---------- BACKUP AUTOMÁTICO ----------
+   1) Cópias no aparelho: uma vez por dia (ao abrir o app ou na primeira gravação
+      do dia) guarda o estado da base num banco separado ("ridemax-copias"), fora
+      do cache em memória. Mantém os 7 dias mais recentes + 1 por semana até 4
+      semanas antes. Protege contra erro (apagou, importou o arquivo errado), NÃO
+      contra perder o aparelho ou limpar o navegador — por isso não conta como backup.
+   2) Enviar backup: no celular, abre o compartilhar (Drive, WhatsApp, e-mail).
+   3) Pasta de backup (computador, Chrome/Edge): escolhida uma vez; depois cada
+      gravação atualiza o arquivo do dia nessa pasta (mantém os 30 mais recentes). */
+var BKP_DBNAME="ridemax-copias", BKP_ST_COP="copias", BKP_ST_CFG="cfg", BKP_KEEP_DIAS=7, BKP_KEEP_SEM=4, BKP_KEEP_ARQ=30;
+var BKP_PASTA=null, BKP_PASTA_ESTADO="nenhuma", BKP_PASTA_ULT=null, bkpTimer=null, bkpUltDiaCopia=null;
+function bkpIdb(){
+  return new Promise(function(ok,erro){
+    if(!window.indexedDB){ erro(new Error("sem IndexedDB")); return; }
+    var r=indexedDB.open(BKP_DBNAME,1);
+    r.onupgradeneeded=function(){ var d=r.result; if(!d.objectStoreNames.contains(BKP_ST_COP)) d.createObjectStore(BKP_ST_COP); if(!d.objectStoreNames.contains(BKP_ST_CFG)) d.createObjectStore(BKP_ST_CFG); };
+    r.onsuccess=function(){ ok(r.result); };
+    r.onerror=function(){ erro(r.error); };
+  });
+}
+function bkpTx(store,modo,fn){
+  return bkpIdb().then(function(db){ return new Promise(function(ok,erro){
+    var tx=db.transaction(store,modo), st=tx.objectStore(store), res;
+    try{ res=fn(st); }catch(e){ try{ tx.abort(); }catch(_){} db.close(); erro(e); return; }
+    tx.oncomplete=function(){ db.close(); ok((typeof IDBRequest!=="undefined"&&res instanceof IDBRequest)?res.result:res); };
+    tx.onerror=tx.onabort=function(){ db.close(); erro(tx.error); };
+  }); });
+}
+function bkpMov(db){ var n=impNums(db||{}); return n.rides+n.titulos+n.transf+n.desp+n.rec+n.rep+n.turnos+n.manuais+n.lotes+n.med; }
+function bkpPayloadObj(){
+  var payload={app:"RideMax",version:2,exportedAt:new Date().toISOString(),data:DB};
+  payload=JSON.parse(JSON.stringify(payload));
+  try{ if(payload.data&&payload.data.wx&&payload.data.wx.cfg) payload.data.wx.cfg.key=""; }catch(e){rmLogErr(e)}
+  return payload;
+}
+function bkpNomeArq(ext){ var d=new Date(), p=function(n){return String(n).padStart(2,"0");}; return "ridemax-backup-"+d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"-"+p(d.getHours())+p(d.getMinutes())+"."+(ext||"json"); }
+function bkpMarcarFeito(){ try{ if(DB.settings&&DB.settings.lastBackup!==todayISO()){ DB.settings.lastBackup=todayISO(); writePreserveRev(); } }catch(e){rmLogErr(e)} }
+
+/* ---- 1) cópias no aparelho ---- */
+function bkpListarCopias(){
+  return bkpTx(BKP_ST_COP,"readonly",function(st){ return st.getAll(); }).then(function(arr){
+    arr=(arr||[]).filter(function(c){ return c&&c.k; });
+    arr.sort(function(a,b){ return a.at<b.at?1:(a.at>b.at?-1:0); });
+    return arr;
+  });
+}
+function bkpSemana(iso){ var p=iso.split("-"); var d=new Date(+p[0],+p[1]-1,+p[2]); var w=(d.getDay()+6)%7; d.setDate(d.getDate()-w); return d.toISOString().slice(0,10); }
+function bkpPodar(){
+  return bkpListarCopias().then(function(arr){
+    var dias=arr.filter(function(c){ return c.tipo==="dia"; }), manter={}, sem={}, nsem=0;
+    dias.forEach(function(c,i){
+      if(i<BKP_KEEP_DIAS){ manter[c.k]=1; sem[bkpSemana(c.d)]=1; return; }
+      var w=bkpSemana(c.d);
+      if(!sem[w]&&nsem<BKP_KEEP_SEM){ sem[w]=1; nsem++; manter[c.k]=1; }
+    });
+    var apagar=dias.filter(function(c){ return !manter[c.k]; }).map(function(c){ return c.k; });
+    if(!apagar.length) return 0;
+    return bkpTx(BKP_ST_COP,"readwrite",function(st){ apagar.forEach(function(k){ st.delete(k); }); return apagar.length; });
+  });
+}
+function bkpGuardarCopia(tipo){
+  try{
+    if(DB_LOAD_BLOCKED!=null) return Promise.resolve("bloqueado");
+    if(tipo!=="restauracao"&&!bkpMov(DB)) return Promise.resolve("vazia");
+    var hoje=todayISO(), k=(tipo==="restauracao")?"restauracao":hoje;
+    var rec={k:k,tipo:tipo||"dia",d:hoje,at:new Date().toISOString(),nums:impNums(DB),ultimo:impLatest(DB)||null,json:JSON.stringify(DB)};
+    return bkpTx(BKP_ST_COP,"readwrite",function(st){ st.put(rec,k); return "ok"; }).then(function(r){ if(rec.tipo==="dia") bkpUltDiaCopia=hoje; return bkpPodar().then(function(){ return r; }); });
+  }catch(e){ rmLogErr(e,"bkp-copia"); return Promise.resolve("erro"); }
+}
+function bkpCopiaDoDia(){
+  var hoje=todayISO();
+  if(bkpUltDiaCopia===hoje) return Promise.resolve("ja");
+  return bkpTx(BKP_ST_COP,"readonly",function(st){ return st.get(hoje); }).then(function(c){
+    if(c){ bkpUltDiaCopia=hoje; return "ja"; }
+    return bkpGuardarCopia("dia");
+  }).catch(function(e){ rmLogErr(e,"bkp-dia"); return "erro"; });
+}
+async function bkpRestaurar(k){
+  var c=null;
+  try{ c=await bkpTx(BKP_ST_COP,"readonly",function(st){ return st.get(k); }); }catch(e){ rmLogErr(e,"bkp-ler"); }
+  if(!c||!c.json){ customAlert("Não achei essa cópia. Nada foi alterado.","Restaurar cópia"); return; }
+  var clean;
+  try{ clean=sanitizeDB(JSON.parse(c.json)); }catch(e){ customAlert("Essa cópia está danificada. Nada foi alterado.","Restaurar cópia"); return; }
+  var _st=0; try{ _st=readStoredRev().rev; }catch(_e){ _st=DB_MEM_REV; }
+  if(_st!==DB_MEM_REV){ try{ DB_CONFLICT_PENDING=dbSnapshot(); }catch(_e2){ DB_CONFLICT_PENDING=null; } try{ showSaveConflictModal(); }catch(_e3){rmLogErr(_e3)} return; }
+  var curN=impNums(DB), filN=impNums(clean), curL=impLatest(DB), filL=impLatest(clean);
+  var quando=(c.tipo==="restauracao")?"de antes da última restauração":("de "+isoToBR(c.d));
+  var msg="Voltar a base para a cópia "+quando+"? Tudo o que foi lançado depois dela some da base (o estado atual fica guardado como \"Antes da última restauração\", e dá para voltar).\n\nATUAL (último lançamento "+(curL?isoToBR(curL):"—")+"):\n"+impMovLine(curN)+"\n\nCÓPIA (último lançamento "+(filL?isoToBR(filL):"—")+"):\n"+impMovLine(filN);
+  var ok=await customConfirm(msg,"Restaurar cópia","Restaurar");
+  if(!ok) return;
+  var r=await bkpGuardarCopia("restauracao");
+  if(r!=="ok"&&r!=="vazia"){ customAlert("Não consegui guardar o estado atual antes de restaurar, então nada foi alterado. Faça um backup (Exportar) e tente de novo.","Restaurar cópia"); return; }
+  var old=DB;
+  DB=clean; processVehicleReset();
+  if(!save()){ DB=old; show("plataformas"); return; }
+  bkpUltDiaCopia=todayISO();
+  show("plataformas");
+  customAlert("Base restaurada para a cópia "+quando+".","Restaurar cópia");
+}
+async function bkpBaixarCopia(k){
+  try{
+    var c=await bkpTx(BKP_ST_COP,"readonly",function(st){ return st.get(k); });
+    if(!c||!c.json){ customAlert("Não achei essa cópia.","Cópias"); return; }
+    var data=JSON.parse(c.json); try{ if(data.wx&&data.wx.cfg) data.wx.cfg.key=""; }catch(_){}
+    downloadFile("ridemax-copia-"+(c.tipo==="restauracao"?"antes-restauracao-":"")+c.d+".json",JSON.stringify({app:"RideMax",version:2,exportedAt:c.at,data:data},null,1));
+  }catch(e){ rmLogErr(e,"bkp-baixar"); customAlert("Não foi possível baixar a cópia.","Cópias"); }
+}
+
+/* ---- 2) enviar backup (compartilhar do celular) ---- */
+function bkpPodeEnviar(){
+  try{ if(!navigator.share||!navigator.canShare||typeof File!=="function") return false; return navigator.canShare({files:[new File(["{}"],"teste.txt",{type:"text/plain"})]}); }catch(e){ return false; }
+}
+function bkpEnviar(){
+  var txt, nome=bkpNomeArq("txt");
+  try{ txt=JSON.stringify(bkpPayloadObj(),null,1); }catch(e){ rmLogErr(e,"bkp-env"); customAlert("Não foi possível montar o backup.","Enviar backup"); return; }
+  /* .txt: o compartilhar do Chrome Android não aceita .json; o Importar lê os dois. */
+  var f=new File([txt],nome,{type:"text/plain"});
+  if(!bkpPodeEnviar()||!navigator.canShare({files:[f]})){ downloadFile(nome.replace(/\.txt$/,".json"),txt); bkpMarcarFeito(); customAlert("Este navegador não tem o compartilhar de arquivo, então o backup foi baixado.","Enviar backup"); show(currentViewSafe()); return; }
+  navigator.share({files:[f],title:"Backup RideMax",text:"Backup do RideMax de "+isoToBR(todayISO())+". Para restaurar: Importar no app."}).then(function(){
+    bkpMarcarFeito(); customAlert("Backup enviado. Guarde onde não dependa deste celular (Google Drive, e-mail ou WhatsApp para você mesmo).","Enviar backup"); show(currentViewSafe());
+  }).catch(function(e){ if(e&&e.name==="AbortError") return; rmLogErr(e,"bkp-share"); customAlert("O envio não foi concluído: "+String((e&&e.message)||e),"Enviar backup"); });
+}
+function currentViewSafe(){ try{ return current||"plataformas"; }catch(e){ return "plataformas"; } }
+
+/* ---- 3) pasta de backup automático (computador) ---- */
+function bkpPastaSuporte(){ return typeof window.showDirectoryPicker==="function"; }
+async function bkpPastaCarregar(){
+  if(!bkpPastaSuporte()) { BKP_PASTA_ESTADO="sem-suporte"; return; }
+  try{
+    var h=await bkpTx(BKP_ST_CFG,"readonly",function(st){ return st.get("pasta"); });
+    var u=await bkpTx(BKP_ST_CFG,"readonly",function(st){ return st.get("pastaUlt"); });
+    BKP_PASTA_ULT=u||null;
+    if(!h){ BKP_PASTA=null; BKP_PASTA_ESTADO="nenhuma"; return; }
+    BKP_PASTA=h;
+    var p=await h.queryPermission({mode:"readwrite"});
+    BKP_PASTA_ESTADO=(p==="granted")?"ativa":"reativar";
+  }catch(e){ rmLogErr(e,"bkp-pasta-ler"); BKP_PASTA_ESTADO="nenhuma"; }
+}
+async function bkpPastaEscrever(){
+  if(!BKP_PASTA||BKP_PASTA_ESTADO!=="ativa") return "inativa";
+  if(DB_LOAD_BLOCKED!=null) return "bloqueado";
+  try{
+    var nome="ridemax-backup-"+todayISO()+".json";
+    var fh=await BKP_PASTA.getFileHandle(nome,{create:true});
+    var w=await fh.createWritable();
+    await w.write(JSON.stringify(bkpPayloadObj(),null,1));
+    await w.close();
+    BKP_PASTA_ULT=new Date().toISOString();
+    try{ await bkpTx(BKP_ST_CFG,"readwrite",function(st){ st.put(BKP_PASTA_ULT,"pastaUlt"); }); }catch(_){}
+    bkpMarcarFeito();
+    try{
+      var nomes=[]; for await (var ent of BKP_PASTA.values()){ if(ent.kind==="file"&&/^ridemax-backup-\d{4}-\d{2}-\d{2}\.json$/.test(ent.name)) nomes.push(ent.name); }
+      nomes.sort().reverse().slice(BKP_KEEP_ARQ).forEach(function(n){ BKP_PASTA.removeEntry(n).catch(function(){}); });
+    }catch(_e){ /* podar é opcional */ }
+    return "ok";
+  }catch(e){
+    rmLogErr(e,"bkp-pasta-gravar");
+    if(e&&(e.name==="NotAllowedError"||e.name==="SecurityError")) BKP_PASTA_ESTADO="reativar";
+    else if(e&&e.name==="NotFoundError") BKP_PASTA_ESTADO="sumiu";
+    return "erro";
+  }
+}
+async function bkpPastaEscolher(){
+  if(!bkpPastaSuporte()){ customAlert("Este navegador não deixa o site gravar numa pasta. Use o Chrome ou o Edge no computador; no celular, use Enviar backup.","Pasta de backup"); return; }
+  var h;
+  try{ h=await window.showDirectoryPicker({id:"ridemax-backup",mode:"readwrite",startIn:"documents"}); }catch(e){ if(e&&e.name==="AbortError") return; rmLogErr(e,"bkp-pasta-esc"); customAlert("Não foi possível usar essa pasta: "+String((e&&e.message)||e),"Pasta de backup"); return; }
+  try{ await bkpTx(BKP_ST_CFG,"readwrite",function(st){ st.put(h,"pasta"); }); }catch(e){ rmLogErr(e,"bkp-pasta-salvar"); }
+  BKP_PASTA=h; BKP_PASTA_ESTADO="ativa";
+  var r=await bkpPastaEscrever();
+  show("plataformas");
+  customAlert(r==="ok"?("Pronto: a pasta \""+h.name+"\" recebe o backup automaticamente a cada lançamento (um arquivo por dia, guarda os 30 últimos). Se o Chrome perguntar ao abrir o app, permita sempre."):"A pasta foi escolhida, mas a primeira gravação falhou. Veja o Diagnóstico e tente de novo.","Pasta de backup");
+}
+async function bkpPastaReativar(){
+  if(!BKP_PASTA){ return bkpPastaEscolher(); }
+  try{
+    var p=await BKP_PASTA.requestPermission({mode:"readwrite"});
+    if(p!=="granted"){ customAlert("Sem permissão, o backup na pasta fica parado. Toque de novo e escolha Permitir (de preferência \"sempre\").","Pasta de backup"); return; }
+    BKP_PASTA_ESTADO="ativa";
+    var r=await bkpPastaEscrever();
+    show(currentViewSafe());
+    if(r!=="ok") customAlert("A permissão voltou, mas a gravação falhou. Se a pasta foi apagada ou movida, escolha outra.","Pasta de backup");
+  }catch(e){ rmLogErr(e,"bkp-reativar"); BKP_PASTA_ESTADO="sumiu"; show(currentViewSafe()); }
+}
+async function bkpPastaRemover(){
+  var ok=await customConfirm("Parar o backup automático na pasta? Os arquivos que já estão lá continuam.","Pasta de backup","Parar");
+  if(!ok) return;
+  try{ await bkpTx(BKP_ST_CFG,"readwrite",function(st){ st.delete("pasta"); st.delete("pastaUlt"); }); }catch(e){ rmLogErr(e,"bkp-pasta-rem"); }
+  BKP_PASTA=null; BKP_PASTA_ESTADO="nenhuma"; BKP_PASTA_ULT=null; show("plataformas");
+}
+
+/* chamado pelo save() depois de gravar com sucesso */
+function bkpAposSalvar(){
+  try{ clearTimeout(bkpTimer); bkpTimer=setTimeout(function(){ bkpCopiaDoDia(); if(BKP_PASTA_ESTADO==="ativa") bkpPastaEscrever(); },4000); }catch(e){ rmLogErr(e,"bkp-apos"); }
+}
+
+/* ---- tela ---- */
+function bkpDataHora(iso){ try{ var d=new Date(iso); var p=function(n){return String(n).padStart(2,"0");}; return p(d.getDate())+"/"+p(d.getMonth()+1)+" "+p(d.getHours())+":"+p(d.getMinutes()); }catch(e){ return "—"; } }
+function cfgSecBkpAuto(){
+  var h='<div class="sub" id="cfgBkpAuto">Backup automático</div>';
+  h+='<div class="toolbar"><button class="btn sm green" id="bkpEnviar" type="button">Enviar backup (Drive, WhatsApp, e-mail)</button></div>';
+  h+='<div class="sub">'+(bkpPodeEnviar()?'No celular, abre o compartilhar: mande para o Google Drive ou para você mesmo. É o jeito mais simples de ter o backup fora do aparelho.':'Neste navegador o envio vira um download do arquivo.')+'</div>';
+  /* pasta */
+  var est=BKP_PASTA_ESTADO;
+  if(est==="sem-suporte"){ h+='<div class="kv"><span>Pasta de backup automático</span><b>só no Chrome/Edge do computador</b></div>'; }
+  else if(est==="ativa"){ h+='<div class="kv"><span>Pasta de backup automático</span><b>'+esc(BKP_PASTA&&BKP_PASTA.name||"—")+' · última gravação '+esc(BKP_PASTA_ULT?bkpDataHora(BKP_PASTA_ULT):"—")+'</b></div><div class="toolbar"><button class="btn sm accent" id="bkpPastaTroca" type="button">Trocar pasta</button><button class="btn sm red" id="bkpPastaRem" type="button">Parar</button></div>'; }
+  else if(est==="reativar"||est==="sumiu"){ h+='<div class="card warn"><h3>Backup na pasta parado</h3><div class="sub">'+(est==="sumiu"?'A pasta não foi encontrada (apagada ou movida). Escolha outra.':'O navegador pede permissão de novo a cada abertura, até você marcar "Permitir sempre". Toque para reativar.')+'</div><div class="btnrow">'+(est==="sumiu"?'<button class="btn sm accent" id="bkpPastaTroca" type="button">Escolher pasta</button>':'<button class="btn sm accent" id="bkpPastaReat" type="button">Reativar backup na pasta</button>')+'<button class="btn sm red" id="bkpPastaRem" type="button">Parar</button></div></div>'; }
+  else { h+='<div class="toolbar"><button class="btn sm accent" id="bkpPastaTroca" type="button">Escolher pasta de backup automático</button></div><div class="sub">No computador: escolha uma pasta (de preferência sincronizada com Google Drive ou OneDrive) e o app grava o backup sozinho a cada lançamento.</div>'; }
+  /* cópias */
+  h+='<div class="sub">Cópias diárias neste aparelho</div><div id="bkpCopias"><div class="sub">carregando…</div></div>';
+  h+='<div class="sub">O app guarda sozinho uma cópia por dia (7 dias + 4 semanas). Serve para desfazer um erro — apagou algo ou importou o arquivo errado. Não substitui o backup: se o celular sumir ou o navegador for limpo, as cópias vão junto.</div>';
+  setTimeout(bkpPreencherLista,0);
+  return h;
+}
+function bkpPreencherLista(){
+  var box=document.getElementById("bkpCopias"); if(!box) return;
+  bkpListarCopias().then(function(arr){
+    var b2=document.getElementById("bkpCopias"); if(!b2) return;
+    if(!arr.length){ b2.innerHTML='<div class="sub">Nenhuma cópia ainda — a primeira é feita quando houver lançamentos.</div>'; return; }
+    var h='<div class="tblwrap"><table class="tbl"><tr><th style="text-align:left">Cópia</th><th style="text-align:left">Conteúdo</th><th>Ações</th></tr><tbody>';
+    arr.forEach(function(c){
+      var n=c.nums||{};
+      var rot=(c.tipo==="restauracao")?("Antes da última restauração ("+bkpDataHora(c.at)+")"):(isoToBR(c.d)+(c.d===todayISO()?" (hoje)":""));
+      h+='<tr><td class="l">'+esc(rot)+'</td><td class="l">'+esc((n.rides||0)+" corridas · "+(n.desp||0)+" despesas · "+(n.titulos||0)+" títulos"+(c.ultimo?" · último lanç. "+isoToBR(c.ultimo):""))+'</td><td><button class="btn sm accent" type="button" data-bkprest="'+esc(c.k)+'">Restaurar</button> <button class="btn sm" type="button" data-bkpbaixar="'+esc(c.k)+'">Baixar</button></td></tr>';
+    });
+    h+='</tbody></table></div>';
+    b2.innerHTML=h;
+  }).catch(function(e){ rmLogErr(e,"bkp-lista"); var b3=document.getElementById("bkpCopias"); if(b3) b3.innerHTML='<div class="sub">Cópias indisponíveis neste navegador.</div>'; });
+}
+function bkpBannerPasta(){
+  if(BKP_PASTA_ESTADO!=="reativar"&&BKP_PASTA_ESTADO!=="sumiu") return "";
+  return '<div class="card warn"><h3>Backup automático na pasta parado</h3><div class="sub">'+(BKP_PASTA_ESTADO==="sumiu"?"A pasta de backup não foi encontrada. Escolha outra em Configurações › Backup.":"O navegador pediu permissão de novo. Um toque reativa.")+'</div><div class="btnrow"><button class="btn sm accent" id="'+(BKP_PASTA_ESTADO==="sumiu"?"bkpPastaTroca":"bkpPastaReat")+'" type="button">'+(BKP_PASTA_ESTADO==="sumiu"?"Escolher pasta":"Reativar")+'</button></div></div>';
+}
+try{
+  document.addEventListener("click",function(ev){
+    var t=ev&&ev.target; if(!t) return;
+    var b=t.closest?t.closest("button"):t; if(!b) return;
+    if(b.id==="bkpEnviar") bkpEnviar();
+    else if(b.id==="bkpPastaTroca") bkpPastaEscolher();
+    else if(b.id==="bkpPastaReat") bkpPastaReativar();
+    else if(b.id==="bkpPastaRem") bkpPastaRemover();
+    else if(b.dataset&&b.dataset.bkprest) bkpRestaurar(b.dataset.bkprest);
+    else if(b.dataset&&b.dataset.bkpbaixar) bkpBaixarCopia(b.dataset.bkpbaixar);
+  });
+  bkpCopiaDoDia();
+  bkpPastaCarregar().then(function(){
+    if(BKP_PASTA_ESTADO==="ativa") bkpPastaEscrever();
+    if(BKP_PASTA_ESTADO==="reativar"||BKP_PASTA_ESTADO==="sumiu"){ try{ if(currentViewSafe()==="dashboard") show("dashboard"); }catch(_){} }
+  });
+}catch(e){ rmLogErr(e,"bkp-init"); }
+try{ window.RM.bkpGuardarCopia=bkpGuardarCopia; window.RM.bkpListarCopias=bkpListarCopias; window.RM.bkpRestaurar=bkpRestaurar; window.RM.bkpCopiaDoDia=bkpCopiaDoDia; window.RM.bkpPastaEstado=function(){ return BKP_PASTA_ESTADO; }; }catch(e){ rmLogErr(e); }
 
 } /* fim rmApp */
 })();
