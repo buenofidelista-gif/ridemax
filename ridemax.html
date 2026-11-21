@@ -1351,6 +1351,30 @@ body.cron-on .f3-fixo{bottom:calc(140px + env(safe-area-inset-bottom))}
 .turno-row .turno-btn{flex:1}
 .turno-btn.pausa{border-color:var(--yellow);color:var(--yellow)}
 .turno-btn.ret{border-color:var(--green);background:var(--green);color:#0f1116}
+/* ---------- BLOQUEIO POR PIN ---------- */
+#pinTela{position:fixed;inset:0;z-index:1000;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}
+#pinTela[hidden]{display:none}
+body.pin-travado #app,body.pin-travado #cronBar,body.pin-travado #qrBk,body.pin-travado #crBk,body.pin-travado #qrToast{visibility:hidden}
+.pin-info{margin-top:10px;text-align:left;font-size:14px;line-height:1.5;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px}
+.pin-info[hidden]{display:none}
+body.pin-aberto{overflow:hidden}
+.pin-box{width:100%;max-width:340px;text-align:center}
+.pin-logo{font-size:30px}
+.pin-box h2{margin:6px 0 2px;font-size:22px}
+.pin-sub{color:var(--muted);font-size:15px;min-height:22px}
+.pin-dots{display:flex;justify-content:center;gap:14px;margin:22px 0 8px;min-height:18px}
+.pin-dots span{width:14px;height:14px;border-radius:50%;border:2px solid var(--muted)}
+.pin-dots span.on{background:var(--text);border-color:var(--text)}
+.pin-msg{color:var(--red);font-size:14px;min-height:20px;margin-bottom:8px}
+.pin-teclas{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:8px auto 16px;max-width:300px}
+.pin-teclas button{height:64px;border-radius:32px;border:1px solid var(--border);background:var(--card);color:var(--text);font:inherit;font-size:26px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pin-teclas button:active{background:var(--accent)}
+.pin-teclas [data-pk=bio],.pin-teclas [data-pk=del]{background:transparent;border-color:transparent;font-size:24px}
+.pin-acoes{display:flex;flex-direction:column;align-items:center;gap:6px}
+.pin-ok{min-height:48px;min-width:200px;border:0;border-radius:var(--r);background:var(--green);color:#0f1116;font:inherit;font-size:17px;font-weight:800;cursor:pointer}
+.pin-link{background:none;border:0;color:var(--blue);font:inherit;font-size:15px;min-height:44px;cursor:pointer}
+.pin-link[hidden]{display:none}
+@media print{ #pinTela{display:none!important} }
 #man-topo a{color:var(--blue)}
 @media(min-width:861px){ #mbar,#navBk,#mSyncBtn{display:none!important} }
 @media print{ #mbar,#navBk,#mSyncBtn{display:none!important} }
@@ -6996,7 +7020,7 @@ function cfgSecAnnual(){
   return h;
 }
 function settingsCard(){
-  return '<div class="card"><h3>Configurações</h3>'+cfgSecEnergia()+cfgSecBackup()+cfgSecBkpAuto()+cfgSecSync()+cfgSecLembretes()+cfgSecMeiDas()+cfgEncargosHTML()+cfgSecManut()+cfgSecVeiculo()+cfgSecAnnual()+'<div class="sub">Veículos</div>'+cfgSecVeiculos()+'</div>';
+  return '<div class="card"><h3>Configurações</h3>'+cfgSecEnergia()+cfgSecPin()+cfgSecBackup()+cfgSecBkpAuto()+cfgSecSync()+cfgSecLembretes()+cfgSecMeiDas()+cfgEncargosHTML()+cfgSecManut()+cfgSecVeiculo()+cfgSecAnnual()+'<div class="sub">Veículos</div>'+cfgSecVeiculos()+'</div>';
 }
 function wireSettings(){
   try{
@@ -7182,7 +7206,7 @@ function wireCatCard(){
   };
 }
 var cfgTab="plataformas";
-var CFG_TABS=[["plataformas","Plataformas"],["categorias","Categorias"],["contas","Contas"],["centros","Centros de custo"],["mei","MEI e DAS"],["manut","Manutenção e gastos anuais"],["veiculos","Veículos"],["backup","Backup e armazenamento"],["energia","Tipo de energia"]];
+var CFG_TABS=[["plataformas","Plataformas"],["categorias","Categorias"],["contas","Contas"],["centros","Centros de custo"],["mei","MEI e DAS"],["manut","Manutenção e gastos anuais"],["veiculos","Veículos"],["seguranca","Segurança"],["backup","Backup e armazenamento"],["energia","Tipo de energia"]];
 function rPlat(){
   try{ if(window.matchMedia&&window.matchMedia("(min-width:1100px)").matches){ document.body.classList.add("fit-lock"); } }catch(e){rmLogErr(e)}
   var h='<div class="fit-screen"><div class="toolbar seg" id="cfgTabs" role="tablist">';
@@ -7201,6 +7225,7 @@ function renderCfg(){
   if(cfgTab==="centros"){ try{ window.__cfgBox=box; }catch(e){rmLogErr(e)} rCentros(); return; }
   if(cfgTab==="categorias"){ box.innerHTML=catCard()+'<div class="card"><h3>Encargos do Contas a pagar</h3>'+cfgEncargosHTML()+'</div>'; wireCatCard(); wireSettings(); return; }
   if(cfgTab==="mei"){ box.innerHTML='<div class="card"><h3>MEI e DAS</h3>'+cfgSecMeiDas()+'</div><div class="card"><h3>Comprovante de renda</h3><div class="sub">PDF com a receita mês a mês (3, 6 ou 12 meses), para aluguel, financiamento ou crédito.</div><div class="toolbar"><button type="button" class="btn sm green" id="crBtn2">Gerar comprovante de renda (PDF)</button></div></div><div class="card"><h3>Imposto de renda (IRPF)</h3><div class="sub">Relatório de apoio para a declaração: corridas mês a mês com a parte tributável, bens em 31/12, proventos e vendas. Não calcula o imposto nem substitui o contador.</div><div class="toolbar"><button type="button" class="btn sm green" id="irBtn2">Gerar relatório para o IRPF (PDF)</button></div></div>'; wireSettings(); return; }
+  if(cfgTab==="seguranca"){ box.innerHTML='<div class="card"><h3>Segurança</h3>'+cfgSecPin()+'</div>'; wireSettings(); return; }
   if(cfgTab==="veiculos"){ box.innerHTML='<div class="card"><h3>Veículos</h3>'+cfgSecVeiculos()+'</div>'; wireSettings(); return; }
   if(cfgTab==="manut"){ box.innerHTML='<div class="card"><h3>Manutenção e gastos anuais</h3><div class="toolbar"><span>Carro atual: <b>'+esc(veicNome(veicAtual()))+'</b></span><button type="button" class="btn sm accent" id="veicIrBtn">Trocar ou ver carros</button></div>'+cfgSecManut()+cfgSecVeiculo()+cfgSecAnnual()+'</div>'; wireSettings(); return; }
   if(cfgTab==="backup"){ box.innerHTML='<div class="card"><h3>Backup, armazenamento e lembretes</h3>'+cfgSecBackup()+cfgSecBkpAuto()+cfgSecSync()+cfgSecLembretes()+'</div>'; wireSettings(); return; }
@@ -7490,6 +7515,7 @@ function rManual(){
     {t:"Previsto, realizado e os 90 dias",ps:["O fluxo de caixa mostra lado a lado o que já aconteceu e o que está previsto, nunca somados.","O previsto usa o vencimento para o que é a pagar, e a data ESTIMADA do repasse para o que é a receber. Essa data sai da média dos repasses anteriores daquela plataforma; sem pelo menos dois repasses conciliados, não há estimativa e o valor aparece à parte, sem data.","A projeção de 90 dias mostra o menor saldo do período e em que dia ele cai. É o indicador mais útil do app: é ele que avisa que a conta vai faltar antes de faltar."]},
     {t:"Backup, descartes e limpeza",ps:["Exportar baixa tudo num arquivo. Importar SUBSTITUI a base, e antes disso o app baixa sozinho um backup do estado anterior.","Backup automático (Configurações › Backup): no celular, Enviar backup abre o compartilhar — mande para o Google Drive ou para você mesmo no WhatsApp/e-mail. No computador (Chrome/Edge), escolha uma pasta de backup, de preferência sincronizada com Drive ou OneDrive, e o app grava o arquivo do dia sozinho a cada lançamento, guardando os 30 últimos. Se o navegador pedir permissão de novo, um toque em Reativar resolve.","Cópias diárias: o app também guarda sozinho, neste aparelho, uma cópia por dia (7 dias + 4 semanas), com Restaurar e Baixar. Serve para desfazer um erro; não substitui o backup, porque some junto se o celular sumir ou o navegador for limpo. Restaurar guarda antes o estado atual como Antes da última restauração.","Se o arquivo tiver registro inválido, ele é descartado e RELATADO, com indicação do que foi. Se um título perder uma baixa inválida e voltar a ficar em aberto, isso aparece em destaque — não é perda silenciosa.","A limpeza da base apaga o movimento e preserva os cadastros. Ela pede backup, data de corte e confirmação digitada. Atenção: as séries são cadastro e NÃO são apagadas.","Os dados ficam no banco do navegador (IndexedDB), com espaço de centenas de MB. Cada navegador, aparelho e endereço tem a sua base: o arquivo aberto do disco e o site publicado são bases diferentes, ligadas só pelo backup. Limpar os dados do site ou desinstalar o app apaga a base daquele aparelho.","Configurações › Backup mostra o espaço usado e o Diagnóstico: a contagem de erros internos da sessão e o botão para baixar o log. O esperado é zero.","Se a base salva estiver danificada, o app guarda uma cópia antes de abrir uma nova; sem espaço para a cópia, ele bloqueia a gravação até você baixar os dados brutos. Nada é apagado às cegas."]},
     {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu (no celular, em Mais), ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","No celular, a barra de baixo tem Início, Corridas (histórico), o + verde do meio (corrida rápida), Dinheiro (resumo financeiro) e Mais, que abre o menu completo; o voltar do celular fecha o menu. O botão de sincronizar fica no topo, ao lado do título.","No celular, o Início abre com o painel do dia: ganho do dia de trabalho, barra da meta diária, R$ por hora, por corrida, km, turno aberto e os últimos 7 dias. O Histórico mostra as corridas em cartões agrupados por dia, com o total de cada dia; toque numa corrida para Editar ou Excluir. O aviso de backup tem um × que adia até amanhã.","Formulários no celular: Nova corrida, Recarga e Despesa mostram primeiro o essencial — plataforma ou categoria em botões, valor grande — e guardam o resto em Mais detalhes. Na Nova corrida o início já vem com a hora atual e o preço do passageiro só aparece com Pago em dinheiro. O botão Salvar fica preso embaixo da tela.","Tabelas no celular: as que não cabem na tela (Contas a pagar, Lotes, Saldos, Manutenção, Categorias, Top 10 da Previsão) viram cartões, com a primeira coluna como título e as outras como rótulo e valor; os botões de cada linha continuam no cartão. Neste manual, toque no título de uma seção para abrir ou fechar.","Telas longas no celular (Início, Financeiro, Recarga, Previsão): os 2 primeiros blocos vêm abertos e os outros recolhidos; toque no título do bloco para abrir ou fechar — o app lembra a sua escolha neste aparelho.","O + verde (no computador, o botão + Corrida no canto de baixo ou a tecla N) lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Corrida com cronômetro: no Início toque em Iniciar corrida (ou, na corrida rápida, Iniciar com cronômetro). Uma faixa mostra o tempo e os km; toque em Encerrar e a corrida rápida abre com início, fim e km preenchidos — só falta o valor. Os km vêm do GPS, mas o celular só entrega a posição com o RideMax na tela: se você usar o app da Uber/99 na frente, o trecho perdido entra em linha reta e o km aparece como estimado. Se o app fechar no meio, a corrida continua de onde estava.","Turno com um toque: no Início, Iniciar turno pede só o odômetro (vem sugerido o último conhecido) e a hora. Com o turno aberto, Encerrar turno mostra o resumo — duração, corridas e ganho — e pede o odômetro final. Só pode haver um turno aberto por vez.","Pausa no turno: para algo pessoal, toque em Pausar (pede o odômetro) e depois em Retomar (pede de novo). O tempo da pausa sai das horas e do R$/hora; os km rodados na pausa saem do km do turno; e no custo por km da Análise sai também a parte da energia proporcional a esses km. O DRE continua com a despesa inteira. Se começar uma corrida com o turno pausado, o app pergunta se quer retomar.","Tela ligada: durante a corrida com cronômetro a tela não bloqueia sozinha (enquanto o RideMax estiver na tela). O botão ☀ no topo deixa a tela ligada sempre que o app estiver aberto — fica amarelo quando está ativo. Gasta mais bateria; vale com o celular no carregador.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Backup, armazenamento e lembretes, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
+    {t:"Bloqueio por PIN",ps:["Configurações › Segurança › Criar PIN (4 a 6 números; repetidos e sequências são recusados). O app passa a pedir o PIN ao abrir e ao voltar depois do tempo escolhido fora do app — na hora, 1, 5 ou 15 minutos. Onde o aparelho permitir, dá para ativar a digital ou o rosto; o PIN continua valendo.","O PIN vale só para este aparelho: não vai para o backup nem para a sincronização, e não fica guardado em texto. Cinco erros seguidos geram uma espera, que dobra a cada nova série. Esqueceu o PIN? Não há como recuperar: limpe os dados do app neste aparelho e restaure pela sincronização ou por um backup.","É uma trava de tela, contra quem pega o celular desbloqueado — não é criptografia dos dados."]},
     {t:"Celular e computador juntos",ps:["Configurações › Backup, armazenamento e lembretes › Sincronizar. Os dois aparelhos usam a mesma conta Google; os dados ficam numa pasta privada do app no seu Drive. A primeira configuração (ID do cliente) está no manual, seção 7.6.","Toque em Sincronizar (no topo do menu) ao começar e ao terminar o dia. A junção é por lançamento: o que foi incluído, editado ou apagado em cada aparelho é respeitado. Se o mesmo campo foi editado nos dois, fica a versão do aparelho que sincronizou por último.","Aparelho novo, sem lançamentos, recebe tudo da nuvem. Se os dois já têm lançamentos e nunca sincronizaram, o app pergunta o que fazer. Antes de aplicar a junção, o app guarda uma cópia em Antes da última restauração."]},
     {t:"Comprovante de renda",ps:["Para alugar imóvel, financiar ou pedir crédito: Financeiro › DRE › Comprovante de renda (PDF), ou Configurações › MEI e DAS. Escolha 3, 6 ou 12 meses; o mês atual entra só se você marcar, e sai como parcial.","O PDF traz, mês a mês, corridas, receita bruta, despesas do trabalho e rendimento líquido, mais o total por plataforma e as médias mensais (calculadas só sobre os meses com movimento). Os números são os do DRE por competência, no centro de custo do trabalho.","É uma declaração sua, assinada por você: o próprio PDF diz isso e indica os extratos das plataformas como prova. Lançamentos faltando = renda menor no papel, então confira antes de entregar. Nome, CPF, CNPJ e cidade ficam guardados para a próxima vez."]},
     {t:"Imposto de renda (IRPF)",ps:["Financeiro › DRE › Relatório IRPF (PDF), ou Configurações › MEI e DAS. Escolha o ano-calendário e a forma de trabalho. O PDF junta o que a declaração pede e o app já sabe: corridas mês a mês, bens em 31/12 pelo custo, proventos pagos no ano e vendas em bolsa.","Autônomo, sem CNPJ: 60% da receita bruta das corridas é tributável (regra do transporte de passageiros) e entra pelo Carnê-Leão, mês a mês; os outros 40% vão como não tributáveis. MEI: 16% da receita bruta é a parcela isenta presumida, limitada ao lucro; o lucro acima disso é tributável.","É relatório de apoio: não calcula o imposto e não substitui o contador. Os números oficiais são os dos informes das plataformas, bancos e corretoras — mês sem lançamento no app sai zerado no relatório."]},
@@ -13338,6 +13364,153 @@ try{
   });
 }catch(e){ rmLogErr(e,"pausa-init"); }
 try{ window.RM.turnoAbrirPausa=turnoAbrirPausa; window.RM.turnoAbrirRetomar=turnoAbrirRetomar; window.RM.shiftStats=shiftStats; window.RM.shiftKmPessoal=shiftKmPessoal; window.RM.shiftPausaAberta=shiftPausaAberta; }catch(e){ rmLogErr(e); }
+
+/* ---------- BLOQUEIO POR PIN (e digital/rosto opcional) ----------
+   - O PIN fica só neste aparelho (localStorage "rm_pin"), nunca no backup nem na
+     sincronização. Guardado como PBKDF2-SHA256 (sal aleatório, 150 mil iterações).
+   - Pede ao abrir e ao voltar depois do tempo escolhido em segundo plano.
+   - 5 erros seguidos: espera de 30 s, que dobra a cada nova série de erros.
+   - Digital/rosto: WebAuthn com autenticador do próprio aparelho (verificação local).
+   - É trava de tela, não criptografia: não protege contra quem tem acesso técnico
+     ao navegador. */
+var PIN_KEY="rm_pin", PIN_TENT="rm_pin_tent", PIN_ITER=150000, pinTravado=false, pinOcultoEm=null, pinEntrada="", pinModo=null, pinPrimeiro=null, pinCb=null;
+function pinCfg(){ try{ var o=JSON.parse(localStorage.getItem(PIN_KEY)||"null"); return (o&&o.hash&&o.salt)?o:null; }catch(e){ return null; } }
+function pinGravaCfg(o){ try{ if(o) localStorage.setItem(PIN_KEY,JSON.stringify(o)); else localStorage.removeItem(PIN_KEY); return true; }catch(e){ return false; } }
+function pinB64(buf){ var b=new Uint8Array(buf), s=""; for(var i=0;i<b.length;i++) s+=String.fromCharCode(b[i]); return btoa(s); }
+function pinDeB64(t){ var s=atob(t), b=new Uint8Array(s.length); for(var i=0;i<s.length;i++) b[i]=s.charCodeAt(i); return b; }
+function pinSuporte(){ return !!(window.crypto&&crypto.subtle&&window.isSecureContext!==false); }
+function pinDeriva(pin,saltB64,iter){
+  var enc=new TextEncoder();
+  return crypto.subtle.importKey("raw",enc.encode(String(pin)),{name:"PBKDF2"},false,["deriveBits"]).then(function(k){
+    return crypto.subtle.deriveBits({name:"PBKDF2",salt:pinDeB64(saltB64),iterations:iter||PIN_ITER,hash:"SHA-256"},k,256);
+  }).then(pinB64);
+}
+function pinCriarHash(pin){ var salt=pinB64(crypto.getRandomValues(new Uint8Array(16))); return pinDeriva(pin,salt,PIN_ITER).then(function(h){ return {salt:salt,hash:h,iter:PIN_ITER}; }); }
+function pinConfere(pin){ var c=pinCfg(); if(!c) return Promise.resolve(true); return pinDeriva(pin,c.salt,c.iter||PIN_ITER).then(function(h){ return h===c.hash; }); }
+function pinTent(){ try{ return JSON.parse(localStorage.getItem(PIN_TENT)||"{}")||{}; }catch(e){ return {}; } }
+function pinTentGrava(o){ try{ localStorage.setItem(PIN_TENT,JSON.stringify(o)); }catch(e){} }
+function pinEsperaSeg(){ var t=pinTent(); return t.ate&&t.ate>Date.now()?Math.ceil((t.ate-Date.now())/1000):0; }
+function pinTempoMin(){ var c=pinCfg(); var m=c&&c.apos!=null?Number(c.apos):1; return (m===0||m===1||m===5||m===15)?m:1; }
+
+/* ---- tela de bloqueio / teclado ---- */
+function pinTelaGarante(){
+  var t=document.getElementById("pinTela"); if(t) return t;
+  t=document.createElement("div"); t.id="pinTela"; t.hidden=true; t.setAttribute("role","dialog"); t.setAttribute("aria-modal","true"); t.setAttribute("aria-labelledby","pinTit");
+  t.innerHTML='<div class="pin-box"><div class="pin-logo" aria-hidden="true">🚗⚡</div><h2 id="pinTit">RideMax</h2><div class="pin-sub" id="pinSub"></div><div class="pin-dots" id="pinDots" aria-hidden="true"></div><div class="pin-msg" id="pinMsg" role="alert" aria-live="assertive"></div>'
+   +'<div class="pin-teclas" id="pinTeclas">'+[1,2,3,4,5,6,7,8,9].map(function(n){ return '<button type="button" data-pk="'+n+'">'+n+'</button>'; }).join("")+'<button type="button" data-pk="bio" id="pinBio" aria-label="Usar digital ou rosto">☝</button><button type="button" data-pk="0">0</button><button type="button" data-pk="del" aria-label="Apagar">⌫</button></div>'
+   +'<div class="pin-acoes"><button type="button" id="pinOk" class="pin-ok">Entrar</button><button type="button" id="pinCancel" class="pin-link" hidden>Cancelar</button><button type="button" id="pinEsqueci" class="pin-link">Esqueci o PIN</button></div><div class="pin-info" id="pinInfo" hidden></div></div>';
+  document.body.appendChild(t);
+  t.addEventListener("click",function(ev){ var b=ev.target.closest?ev.target.closest("button"):null; if(!b) return;
+    if(b.dataset.pk==="del"){ pinEntrada=pinEntrada.slice(0,-1); pinDots(); }
+    else if(b.dataset.pk==="bio"){ pinBioEntrar(); }
+    else if(b.dataset.pk){ if(pinEntrada.length<6){ pinEntrada+=b.dataset.pk; pinDots(); if(pinModo==="desbloq"&&pinEntrada.length>=(pinCfg()&&pinCfg().len||4)) pinEnviar(); } }
+    else if(b.id==="pinOk") pinEnviar();
+    else if(b.id==="pinCancel") pinFecharTela(false);
+    else if(b.id==="pinEsqueci") pinEsqueci();
+  });
+  document.addEventListener("keydown",function(ev){ var tt=document.getElementById("pinTela"); if(!tt||tt.hidden) return; if(/^\d$/.test(ev.key)){ ev.preventDefault(); if(pinEntrada.length<6){ pinEntrada+=ev.key; pinDots(); if(pinModo==="desbloq"&&pinEntrada.length>=(pinCfg()&&pinCfg().len||4)) pinEnviar(); } } else if(ev.key==="Backspace"){ ev.preventDefault(); pinEntrada=pinEntrada.slice(0,-1); pinDots(); } else if(ev.key==="Enter"){ ev.preventDefault(); pinEnviar(); } else if(ev.key==="Escape"&&pinModo!=="desbloq"){ pinFecharTela(false); } },true);
+  return t;
+}
+function pinDots(){ var d=document.getElementById("pinDots"); if(!d) return; var n=(pinModo==="desbloq"&&pinCfg())?(pinCfg().len||4):Math.max(4,pinEntrada.length); var h=""; for(var i=0;i<Math.max(n,pinEntrada.length);i++) h+='<span class="'+(i<pinEntrada.length?"on":"")+'"></span>'; d.innerHTML=h; }
+function pinMsg(t){ var m=document.getElementById("pinMsg"); if(m) m.textContent=t||""; }
+function pinAbrirTela(modo,sub,cb){
+  var t=pinTelaGarante(); pinModo=modo; pinEntrada=""; pinPrimeiro=null; pinCb=cb||null;
+  document.getElementById("pinSub").textContent=sub; pinMsg(""); pinDots();
+  document.getElementById("pinCancel").hidden=(modo==="desbloq");
+  document.getElementById("pinEsqueci").hidden=(modo!=="desbloq"); document.getElementById("pinInfo").hidden=true;
+  var c=pinCfg(); document.getElementById("pinBio").style.visibility=(modo==="desbloq"&&c&&c.bio)?"visible":"hidden";
+  t.hidden=false; document.body.classList.add("pin-aberto");
+  if(modo==="desbloq"){ document.body.classList.add("pin-travado"); var w=pinEsperaSeg(); if(w) pinMsg("Muitas tentativas. Aguarde "+w+" s."); }
+  try{ document.getElementById("pinOk").focus(); }catch(e){}
+}
+function pinFecharTela(ok){ var t=document.getElementById("pinTela"); if(t) t.hidden=true; document.body.classList.remove("pin-aberto"); if(ok||pinModo!=="desbloq") document.body.classList.remove("pin-travado"); var cb=pinCb; pinCb=null; pinEntrada=""; if(cb) cb(!!ok); }
+function pinEnviar(){
+  var p=pinEntrada;
+  if(pinModo==="desbloq"){
+    var w=pinEsperaSeg(); if(w){ pinMsg("Muitas tentativas. Aguarde "+w+" s."); pinEntrada=""; pinDots(); return; }
+    if(p.length<4) { pinMsg("Digite o PIN."); return; }
+    pinConfere(p).then(function(ok){
+      if(ok){ pinTentGrava({}); pinTravado=false; pinFecharTela(true); return; }
+      var t=pinTent(); t.n=(t.n||0)+1; if(t.n>=5){ t.serie=(t.serie||0)+1; t.ate=Date.now()+30000*Math.pow(2,t.serie-1); t.n=0; } pinTentGrava(t);
+      pinEntrada=""; pinDots(); try{ if(navigator.vibrate) navigator.vibrate([60,40,60]); }catch(e){}
+      var w2=pinEsperaSeg(); pinMsg(w2?("PIN errado. Muitas tentativas: aguarde "+w2+" s."):("PIN errado. Tentativas antes da espera: "+(5-t.n)+"."));
+    });
+    return;
+  }
+  if(pinModo==="conferir"){ if(p.length<4){ pinMsg("Digite o PIN atual."); return; } pinConfere(p).then(function(ok){ if(ok){ pinFecharTela(true); } else { pinEntrada=""; pinDots(); pinMsg("PIN atual errado."); } }); return; }
+  if(pinModo==="criar"){
+    if(!/^\d{4,6}$/.test(p)){ pinMsg("Use de 4 a 6 números."); return; }
+    if(/^(\d)\1+$/.test(p)||"0123456789".indexOf(p)>=0||"9876543210".indexOf(p)>=0){ pinMsg("PIN fácil demais (repetido ou sequência). Escolha outro."); pinEntrada=""; pinDots(); return; }
+    if(pinPrimeiro==null){ pinPrimeiro=p; pinEntrada=""; pinDots(); document.getElementById("pinSub").textContent="Digite o mesmo PIN de novo"; pinMsg(""); return; }
+    if(p!==pinPrimeiro){ pinPrimeiro=null; pinEntrada=""; pinDots(); document.getElementById("pinSub").textContent="Crie um PIN de 4 a 6 números"; pinMsg("Os dois PINs não batem. Comece de novo."); return; }
+    var ant=pinCfg();
+    pinCriarHash(p).then(function(h){ h.len=p.length; h.apos=ant&&ant.apos!=null?ant.apos:1; h.bio=null; if(!pinGravaCfg(h)){ pinMsg("Não foi possível guardar o PIN neste navegador."); return; } pinTentGrava({}); pinFecharTela(true); });
+  }
+}
+function pinEsqueci(){
+  /* mostra dentro da tela do PIN: uma janela comum ficaria atrás do bloqueio */
+  var i=document.getElementById("pinInfo"); if(!i) return;
+  if(!i.hidden){ i.hidden=true; return; }
+  i.textContent="O PIN não pode ser recuperado: ele não fica guardado em lugar nenhum. Se você usa a sincronização com o Google Drive ou tem um backup, dá para limpar este aparelho e recuperar os dados de lá — o que não foi sincronizado nem está no backup se perde. Para limpar, no Chrome: ⋮ › Configurações › Configurações do site › endereço do RideMax › Limpar dados. Depois abra o app e configure a sincronização ou use Importar.";
+  i.hidden=false;
+}
+/* ---- digital / rosto (WebAuthn, autenticador do aparelho) ---- */
+function pinBioSuporte(){ try{ if(!window.PublicKeyCredential||!PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) return Promise.resolve(false); return PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(); }catch(e){ return Promise.resolve(false); } }
+function pinBioAtivar(){
+  var c=pinCfg(); if(!c){ customAlert("Crie um PIN primeiro.","Digital"); return; }
+  pinBioSuporte().then(function(ok){
+    if(!ok){ customAlert("Este aparelho ou navegador não oferece digital/rosto para sites. O PIN continua funcionando.","Digital"); return; }
+    var uidB=crypto.getRandomValues(new Uint8Array(16));
+    return navigator.credentials.create({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),rp:{name:"RideMax"},user:{id:uidB,name:"ridemax",displayName:"RideMax"},pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required",residentKey:"discouraged"},timeout:60000,attestation:"none"}}).then(function(cred){
+      var cc=pinCfg(); if(!cc) return; cc.bio=pinB64(cred.rawId); pinGravaCfg(cc); show("plataformas"); try{ qrToast("☝ Digital/rosto ativado para abrir o RideMax",3500); }catch(e){}
+    });
+  }).catch(function(e){ if(e&&e.name==="NotAllowedError") return; rmLogErr(e,"pin-bio"); customAlert("Não foi possível ativar: "+String((e&&e.message)||e),"Digital"); });
+}
+function pinBioEntrar(){
+  var c=pinCfg(); if(!c||!c.bio) return;
+  try{
+    navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),allowCredentials:[{type:"public-key",id:pinDeB64(c.bio)}],userVerification:"required",timeout:60000}}).then(function(a){
+      if(a){ pinTentGrava({}); pinTravado=false; pinFecharTela(true); }
+    }).catch(function(e){ if(e&&e.name!=="NotAllowedError") rmLogErr(e,"pin-bio-get"); pinMsg("Digital não confirmada. Use o PIN."); });
+  }catch(e){ pinMsg("Use o PIN."); }
+}
+/* ---- travar ---- */
+function pinTravar(){ if(!pinCfg()) return; pinTravado=true; try{ crFechar(); }catch(e){} try{ qrClose(); }catch(e){} pinAbrirTela("desbloq","Digite seu PIN",function(){ try{ show(current); }catch(e){} }); var c=pinCfg(); if(c&&c.bio) setTimeout(function(){ if(pinTravado&&!document.hidden) pinBioEntrar(); },350); }
+/* ---- configurações ---- */
+function cfgSecPin(){
+  var c=pinCfg();
+  var h='<div class="sub" id="cfgPin">Bloqueio por PIN</div>';
+  if(!pinSuporte()){ return h+'<div class="sub">Este navegador não oferece a criptografia necessária (abra pelo endereço https do app).</div>'; }
+  h+='<div class="kv"><span>Situação</span><b>'+(c?("ativado · PIN de "+(c.len||4)+" dígitos"+(c.bio?" · digital/rosto":"")):"desativado")+'</b></div>';
+  if(c){
+    h+='<div class="toolbar"><span>Pedir o PIN depois de</span><select id="pinApos">'+[[0,"sair do app (na hora)"],[1,"1 min fora do app"],[5,"5 min fora do app"],[15,"15 min fora do app"]].map(function(o){ return '<option value="'+o[0]+'"'+(pinTempoMin()===o[0]?" selected":"")+'>'+o[1]+'</option>'; }).join("")+'</select></div>';
+    h+='<div class="toolbar"><button type="button" class="btn sm accent" id="pinTravarJa">🔒 Bloquear agora</button><button type="button" class="btn sm accent" id="pinTrocar">Trocar PIN</button>'+(c.bio?'<button type="button" class="btn sm" id="pinBioOff">Desativar digital/rosto</button>':'<button type="button" class="btn sm accent" id="pinBioOn">Ativar digital/rosto</button>')+'<button type="button" class="btn sm red" id="pinRemover">Remover PIN</button></div>';
+  } else {
+    h+='<div class="toolbar"><button type="button" class="btn sm green" id="pinCriar">Criar PIN</button></div>';
+  }
+  h+='<div class="sub">O PIN vale só para este aparelho (não vai para o backup nem para a sincronização). Ele impede que alguém com o celular desbloqueado abra o RideMax; não é criptografia. Esqueceu o PIN? Não há como recuperar: é preciso limpar os dados do app neste aparelho e restaurar pela sincronização ou por um backup.</div>';
+  return h;
+}
+try{
+  document.addEventListener("click",function(ev){ var b=ev.target&&ev.target.closest?ev.target.closest("button"):null; if(!b) return;
+    if(b.id==="pinCriar") pinAbrirTela("criar","Crie um PIN de 4 a 6 números",function(ok){ if(ok){ show("plataformas"); try{ qrToast("🔒 PIN criado. O RideMax vai pedir o PIN ao abrir.",3500); }catch(e){} } });
+    else if(b.id==="pinTrocar") pinAbrirTela("conferir","Digite o PIN atual",function(ok){ if(ok) pinAbrirTela("criar","Crie o novo PIN (4 a 6 números)",function(ok2){ if(ok2){ show("plataformas"); try{ qrToast("PIN trocado",2500); }catch(e){} } }); });
+    else if(b.id==="pinRemover") pinAbrirTela("conferir","Digite o PIN para remover",function(ok){ if(ok){ pinGravaCfg(null); pinTentGrava({}); show("plataformas"); try{ qrToast("PIN removido",2500); }catch(e){} } });
+    else if(b.id==="pinTravarJa") pinTravar();
+    else if(b.id==="pinBioOn") pinBioAtivar();
+    else if(b.id==="pinBioOff"){ var c=pinCfg(); if(c){ c.bio=null; pinGravaCfg(c); show("plataformas"); } }
+  });
+  document.addEventListener("change",function(ev){ var t=ev.target; if(t&&t.id==="pinApos"){ var c=pinCfg(); if(c){ c.apos=Number(t.value); pinGravaCfg(c); } } });
+  document.addEventListener("visibilitychange",function(){
+    if(!pinCfg()) return;
+    if(document.hidden){ pinOcultoEm=Date.now(); return; }
+    if(pinTravado) return;
+    if(pinOcultoEm!=null&&(Date.now()-pinOcultoEm)>=pinTempoMin()*60000) pinTravar();
+    pinOcultoEm=null;
+  });
+  if(pinCfg()) pinTravar();
+}catch(e){ rmLogErr(e,"pin-init"); }
+try{ window.RM.pinCfg=pinCfg; window.RM.pinTravar=pinTravar; window.RM.pinTravado=function(){ return pinTravado; }; }catch(e){ rmLogErr(e); }
 
 } /* fim rmApp */
 })();
