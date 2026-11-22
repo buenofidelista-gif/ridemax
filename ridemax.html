@@ -5237,7 +5237,8 @@ function rMetas(){
   function prog(){
     var gg=DB.goals, m2=DB.goalMode, html="";
     var todayN=statsToday().n;
-    [["🌅 Hoje",m2==="liquido"?gv.tL:gv.tB,gv.tB,gv.tL,gg.daily,todayN+" corrida(s) hoje","#4caf7d"],["📅 Semana",m2==="liquido"?gv.wL:gv.wB,gv.wB,gv.wL,gg.weekly,"Últimos 7 dias","#5a9fd4"],["📆 Mês",m2==="liquido"?gv.mL:gv.mB,gv.mB,gv.mL,gg.monthly,"Últimos 30 dias","#d79a2b"]].forEach(function(r){
+    var mcv=mesCalVals();
+    [["🌅 Hoje",m2==="liquido"?gv.tL:gv.tB,gv.tB,gv.tL,gg.daily,todayN+" corrida(s) hoje","#4caf7d"],["📅 Semana",m2==="liquido"?gv.wL:gv.wB,gv.wB,gv.wL,gg.weekly,"Últimos 7 dias","#5a9fd4"],["📆 Mês",m2==="liquido"?mcv.L:mcv.B,mcv.B,mcv.L,gg.monthly,mcv.rot,"#d79a2b"]].forEach(function(r){
       html+='<div style="margin:12px 0"><b>'+r[0]+'</b> <span style="color:var(--muted);font-size:12px">'+esc(r[5])+'</span><br>';
       if(r[4]>0){ var pct=r[1]/r[4]*100; html+='<div class="bar-row">'+bar(r[1],r[4],400,r[6],16)+'<span style="color:'+r[6]+'">'+BRL(r[1])+' / '+BRL(r[4])+' ('+pct.toFixed(0)+'%) '+(pct>=100?"":"")+'</span></div><div class="sub">bruto '+BRL(r[2])+' · líquido '+BRL(r[3])+(r[1]<0?" · abaixo de zero":"")+'</div>'; }
       else html+='<span style="color:var(--muted)">'+BRL(r[1])+' (meta não definida)</span>';
@@ -5249,8 +5250,9 @@ function rMetas(){
       var avg=(gm==="liquido"?gv2.wL:gv2.wB)/7, el=document.getElementById("gPace"), h="";
       [["Diária",DB.goals.daily,1],["Semanal",DB.goals.weekly,7],["Mensal",DB.goals.monthly,30]].forEach(function(x){
         if(!(x[1]>0)){ h+='<div class="kv"><span>'+x[0]+' (sem meta)</span><b>–</b></div>'; return; }
-        var cur=x[2]===1?(gm==="liquido"?gv2.tL:gv2.tB):(x[2]===7?(gm==="liquido"?gv2.wL:gv2.wB):(gm==="liquido"?gv2.mL:gv2.mB));
+        var cur=x[2]===1?(gm==="liquido"?gv2.tL:gv2.tB):(x[2]===7?(gm==="liquido"?gv2.wL:gv2.wB):(function(){ var _m=mesCalVals(); return gm==="liquido"?_m.L:_m.B; })());
         if(cur>=x[1]){ h+='<div class="kv"><span>'+x[0]+'</span><b style="color:#4caf7d">atingida</b></div>'; }
+        else if(x[2]===30){ var _mc=null; try{ _mc=metaMesCalc(); }catch(_e){} h+='<div class="kv"><span>Mensal</span><b>faltam '+BRL(x[1]-cur)+((_mc&&_mc.porDia!=null)?' · '+BRL(_mc.porDia)+'/dia em '+_mc.rest+' dia(s) de trabalho':' · sem dias de trabalho no mês')+'</b></div>'; }
         else if(avg>0){ var d=(x[1]-cur)/avg; h+='<div class="kv"><span>'+x[0]+'</span><b>faltam '+BRL(x[1]-cur)+' · ~'+(d<1?"hoje":Math.ceil(d)+" dias")+'</b></div>'; }
         else h+='<div class="kv"><span>'+x[0]+'</span><b>sem ritmo ainda</b></div>';
       });
@@ -14101,6 +14103,13 @@ try{ window.RM.turnoResumoDados=turnoResumoDados; window.RM.turnoResumoAbrir=tur
    Dias de trabalho: escolhidos em Metas, ou automáticos (dias da semana em que rodou em pelo
    menos metade das vezes nas últimas 8 semanas; sem histórico, seg a sáb). Só leitura. */
 var MM_DIA=["seg","ter","qua","qui","sex","sáb","dom"], MM_MES=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+function mesCalVals(){
+  var hoje=todayISO(), mes=hoje.slice(0,7), B=0, E=0;
+  (DB.rides||[]).forEach(function(r){ if(r&&r.date&&r.date.slice(0,7)===mes&&r.date<=hoje) B+=rideTotal(r); });
+  (DB.expenses||[]).forEach(function(x){ if(x&&x.date&&x.date.slice(0,7)===mes&&x.date<=hoje) E+=Number(x.amount)||0; });
+  var n=MM_MES[Number(mes.slice(5,7))-1];
+  return {B:B,L:B-E,rot:n.charAt(0).toUpperCase()+n.slice(1)+" (1º a hoje)"};
+}
 function mmWd(iso){ var p=String(iso).split("-"); return (new Date(+p[0],+p[1]-1,+p[2]).getDay()+6)%7; }
 function mmDiasAuto(){
   var hoje=todayISO(), ini=somaDiasISO(hoje,-56), trab={}, prim=null;
@@ -14179,7 +14188,7 @@ function metaMesCardPintar(){
   h+='<div class="sub" style="margin-top:10px">Dias em que você trabalha'+(D.auto?' — <b>automático</b>, pelo seu histórico das últimas 8 semanas':'')+'. Toque para mudar:</div>';
   h+='<div class="mm-dias">'+MM_DIA.map(function(n,i){ return '<button type="button" data-mmd="'+i+'" class="'+(D.dias.indexOf(i)>=0?"on":"")+'" aria-pressed="'+(D.dias.indexOf(i)>=0)+'">'+n+'</button>'; }).join("")+'</div>';
   if(!D.auto) h+='<button type="button" class="btn sm accent" id="mmAuto">Voltar ao automático</button>';
-  h+='<div class="sub">O mês aqui é o do calendário (1º a '+(c?c.ultimo:"31")+'). A barra "📆 Mês" do Progresso usa os últimos 30 dias.</div>';
+  h+='<div class="sub">O mês aqui é o do calendário (1º a '+(c?c.ultimo:"31")+').</div>';
   el.innerHTML=h;
   el.querySelectorAll("[data-mmd]").forEach(function(b){ b.onclick=function(){
     var cur=mmDias().dias, i=Number(b.dataset.mmd), k=cur.indexOf(i);
