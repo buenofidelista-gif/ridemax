@@ -1813,7 +1813,7 @@ function workdayISO(now){ var d=(now instanceof Date)?now:new Date(); if(d.getHo
 function isoToBR(iso){ if(!iso) return "–"; var p=String(iso).split("-"); return p.length===3 ? p[2]+"/"+p[1]+"/"+p[0] : "–"; }
 function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function brGroup(d){ return String(d).replace(/\B(?=(\d{3})+(?!\d))/g,"."); }
-function brDec(v,dec){ var n=Number(v); if(!isFinite(n)) n=0; var neg=n<0, f=Math.abs(n).toFixed(dec).split("."); return (neg?"-":"")+brGroup(f[0])+","+f[1]; }
+function brDec(v,dec){ var n=Number(v); if(!isFinite(n)) n=0; var neg=n<0, f=Math.abs(n).toFixed(dec).split("."); return (neg?"-":"")+brGroup(f[0])+(f.length>1?","+f[1]:""); }
 function BRL(v){ return "R$ "+brDec(v,2); }
 function BRLd(v,dec){ return "R$ "+brDec(v,dec); }
 function normName(s){ try{ return String(s==null?"":s).trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); }catch(e){ return String(s==null?"":s).trim().toLowerCase(); } }
@@ -3997,7 +3997,7 @@ metas:"Quanto você quer ganhar e quanto falta para chegar lá. Olha a receita d
 plataformas:"Todos os cadastros ficam aqui: Plataformas, Categorias (cada categoria com seu grupo no DRE), Contas, Centros de custo, MEI e DAS, Manutenção e gastos anuais, Veículos, Segurança (PIN), Backup e armazenamento, Tipo de energia. Botões de outras telas que levam a Contas ou Centros de custo abrem a aba certa daqui.",
 analise:"Os números operacionais: custo por km, ganho por hora, consumo. A energia recarregada em casa só entra no custo depois que a conta de luz é lançada e apurada. Até isso acontecer, o custo por km fica sem ela, e o app mostra quantos kWh estão de fora em vez de chutar um valor. Deduções manuais (taxas) não entram no rateio do card por plataforma.",
 repasses:"A conferência do repasse: agrupa as corridas de uma plataforma por janela e mostra o que era esperado. O repasse se lança só aqui: com “Dar baixa no Financeiro” marcado, o app cria o lote do período e já concilia — o dinheiro entra na conta da plataforma e os valores a receber saem do Contas a pagar. Desmarcado, a tela só confere. O que restar após os ajustes costuma ser virada de fechamento: confira no próximo repasse.",
-investimentos:"As contas de tipo investimento, com os aportes e os resgates. O aporte é uma transferência comum: dinheiro saindo de uma conta e entrando na de investimento. O patrimônio das contas é saldo; na Carteira de ativos, o valor de mercado usa as cotações que você carrega (Carregar cotações) e o CDB é calculado pelo CDI informado — sem cotação carregada, o ativo fica pelo preço médio. Desdobramento/grupamento: excluir evento que deixaria venda acima da posição é bloqueado. O aporte é feito na tela de Transferência: escolha a conta de origem e a conta de investimento como destino. Acompanhar: a soma dos alvos tem de dar 100.",
+investimentos:"As contas de tipo investimento, com os aportes e os resgates. O aporte é uma transferência comum: dinheiro saindo de uma conta e entrando na de investimento. Total investido = dinheiro nas contas de investimento + valor dos ativos (cotação carregada; sem cotação, preço médio; CDB pelo CDI). Comprar um ativo troca dinheiro por ativo: o patrimônio não cai. Desdobramento/grupamento: excluir evento que deixaria venda acima da posição é bloqueado. O aporte é feito na tela de Transferência: escolha a conta de origem e a conta de investimento como destino. Acompanhar: a soma dos alvos tem de dar 100.",
    lixeira:"O que foi excluído fica aqui e pode ser restaurado, com os saldos voltando a refletir. Registro conciliado precisa ser desconciliado antes de excluir. Registro que faz parte de um lote conciliado precisa que o lote seja desfeito primeiro.",
    backup:"Fazer backup baixa um arquivo com tudo. Restaurar backup SUBSTITUI a base atual — antes de substituir, o app baixa sozinho um backup do estado anterior. Registros inválidos do arquivo são descartados e relatados, com a indicação de quais foram, para você poder relançar.",
     limpeza:"Apaga todo o movimento e preserva os cadastros. Serve para zerar os dados de teste antes do primeiro dia de trabalho real. Pede backup, data de corte e confirmação digitada, nessa ordem. Atenção: as séries de recorrente e parcelado são cadastro e NÃO são apagadas — as de teste precisam ser excluídas à mão.",
@@ -4129,7 +4129,7 @@ function show(v){
   try{ chartReg.length=0; }catch(e){rmLogErr(e)}
   try{ applyStyle(); }catch(e){rmLogErr(e)}
   try{ updateNavActive(v); }catch(e){rmLogErr(e)}
-  var titles={dashboard:["Dashboard",""],nova:["Nova Corrida","Registre uma corrida individualmente"],historico:["Histórico de Corridas","Consulte e gerencie todas as corridas registradas"],metas:["Metas de Ganhos","Defina objetivos e acompanhe o progresso"],despesas:["Controle de Despesas","Registre gastos para calcular o lucro real"],recarga:["Recarga Elétrica","Energia, custos e eficiência do veículo elétrico"],financeiro:["Painel Financeiro","Resumo, DRE, Análise, Repasses e Lotes"],contas:["Contas","Contas, saldos iniciais e saldos calculados"],centros:["Centros de custo","Cadastre centros por finalidade"],transferencias:["Transferência","Mova valores entre contas"],contaspagar:["Contas a pagar","Títulos, baixas e aging por vencimento"],saldos:["Saldos","Saldo calculado de cada conta e total geral"],investimentos:["Investimentos","Aportes e resgates por transferência — patrimônio é saldo, sem cotação"],conciliacao:["Conciliação","Confira o extrato item a item — sem ajuste automático"],extrato:["Extrato","Saldo anterior, movimentos com saldo corrido e saldo final, por conta"],fluxo:["Fluxo de caixa","Previsto × realizado por período + projeção de 90 dias"],relcat:["Lançamentos por categoria","Rateio por categoria e centro de custo — só leitura"],estilo:["Aparência","Tema, cores e densidade"],previsao:["Previsão Inteligente","Horários recomendados pelo seu histórico"],clima:["Clima","Previsão 7 dias · confiabilidade · localização"],plataformas:["Configurações","Plataformas, categorias, contas, centros e preferências"],lixeira:["Lixeira","Itens excluídos ficam aqui por 30 dias"],limpeza:["Limpeza da base","Rotina destrutiva: apaga o movimento e zera os saldos iniciais"]};
+  var titles={dashboard:["Dashboard",""],nova:["Nova Corrida","Registre uma corrida individualmente"],historico:["Histórico de Corridas","Consulte e gerencie todas as corridas registradas"],metas:["Metas de Ganhos","Defina objetivos e acompanhe o progresso"],despesas:["Controle de Despesas","Registre gastos para calcular o lucro real"],recarga:["Recarga Elétrica","Energia, custos e eficiência do veículo elétrico"],financeiro:["Painel Financeiro","Resumo, DRE, Análise, Repasses e Lotes"],contas:["Contas","Contas, saldos iniciais e saldos calculados"],centros:["Centros de custo","Cadastre centros por finalidade"],transferencias:["Transferência","Mova valores entre contas"],contaspagar:["Contas a pagar","Títulos, baixas e aging por vencimento"],saldos:["Saldos","Saldo calculado de cada conta e total geral"],investimentos:["Investimentos","Carteira, proventos e acompanhamento — dinheiro em conta + valor dos ativos"],conciliacao:["Conciliação","Confira o extrato item a item — sem ajuste automático"],extrato:["Extrato","Saldo anterior, movimentos com saldo corrido e saldo final, por conta"],fluxo:["Fluxo de caixa","Previsto × realizado por período + projeção de 90 dias"],relcat:["Lançamentos por categoria","Rateio por categoria e centro de custo — só leitura"],estilo:["Aparência","Tema, cores e densidade"],previsao:["Previsão Inteligente","Horários recomendados pelo seu histórico"],clima:["Clima","Previsão 7 dias · confiabilidade · localização"],plataformas:["Configurações","Plataformas, categorias, contas, centros e preferências"],lixeira:["Lixeira","Itens excluídos ficam aqui por 30 dias"],limpeza:["Limpeza da base","Rotina destrutiva: apaga o movimento e zera os saldos iniciais"]};
   titles.manual=["Manual","Como o app pensa — leitura"];
   // MANUAL (parte 3): tela só leitura; sem "?" no topo (ajudaChaveAtual retorna null).
   pageTitle.textContent=titles[v][0]; pageSub.textContent=titles[v][1];
@@ -4609,18 +4609,20 @@ function dashPatMinData(){
 function dashPatrimonioHTML(){
   var ativas=[];
   try{ ativas=(DB.contas||[]).filter(function(c){ return c&&c.ativa; }).sort(finSortNome); }catch(e){ ativas=[]; }
-  var h='<div class="card dash-block"><h3>PATRIMÔNIO — quanto se tem<button type="button" class="infoBtn" data-tip="Saldo de todas as contas ativas, sem cotação, rentabilidade ou valor de mercado. Só leitura: nada aqui grava ou altera." aria-label="Sobre este bloco">i</button></h3>';
+  var h='<div class="card dash-block"><h3>PATRIMÔNIO — quanto se tem<button type="button" class="infoBtn" data-tip="Dinheiro em todas as contas ativas mais o valor dos ativos (ações, FII, ETF, Tesouro, CDB) — pela cotação carregada; sem cotação, pelo preço médio; CDB pelo CDI. Comprar um ativo troca dinheiro por ativo: o patrimônio não cai. Só leitura." aria-label="Sobre este bloco">i</button></h3>';
   if(!ativas.length){ h+='<div class="empty">Nenhuma conta ativa. Cadastre em Contas.</div></div>'; return h; }
   h+='<div class="dash-scroll">';
   var tot=0, totInv=0;
   try{ for(var i=0;i<ativas.length;i++){ tot=Math.round((tot+saldoConta(ativas[i]))*100)/100; } }catch(e){rmLogErr(e)}
   try{ for(var j=0;j<ativas.length;j++){ if(ativas[j]&&ativas[j].tipo==="investimento") totInv=Math.round((totInv+saldoConta(ativas[j]))*100)/100; } }catch(e){rmLogErr(e)}
+  var _atv={valor:0,n:0}; try{ _atv=invAtivosValor(null); }catch(e){rmLogErr(e)}
+  var cxInv=totInv; tot=Math.round((tot+_atv.valor)*100)/100; totInv=Math.round((totInv+_atv.valor)*100)/100;
   var totLiq=Math.round((tot-totInv)*100)/100;
   var pct=(tot!==0)?(totInv/tot*100):null;
   var nInv=0; try{ for(var k=0;k<ativas.length;k++){ if(ativas[k]&&ativas[k].tipo==="investimento") nInv++; } }catch(e){rmLogErr(e)}
   h+='<div class="cards c4">'
-    +statCard("\uD83D\uDCB0",BRL(tot),"Patrimônio total",tot<0?"#e0695c":"",ativas.length+" conta(s) ativa(s)")
-    +statCard("\uD83D\uDCC8",BRL(totInv),"Em investimento",totInv<0?"#e0695c":"",nInv+" conta(s)")
+    +statCard("\uD83D\uDCB0",BRL(tot),"Patrimônio total",tot<0?"#e0695c":"",ativas.length+" conta(s) ativa(s)"+(_atv.n?" + ativos":""))
+    +statCard("\uD83D\uDCC8",BRL(totInv),"Em investimento",totInv<0?"#e0695c":"",_atv.n?(BRL(_atv.valor)+" em ativos + "+BRL(cxInv)+" em conta"):(nInv+" conta(s)"))
     +statCard("\uD83D\uDCA7",BRL(totLiq),"Líquido nas demais",totLiq<0?"#e0695c":"","total - investido")
     +statCard("\uD83D\uDCCA",(pct==null?"–":pct.toFixed(1).replace(".",",")+"%"),"Parcela em investimento",(pct!=null&&pct<0)?"#e0695c":"",(pct==null?"sem total":BRL(totInv)+" de "+BRL(tot)))
     +'</div>';
@@ -4638,6 +4640,7 @@ function dashPatrimonioHTML(){
       if(minD&&fins[f].fim<minD) continue;
       var v=0;
       for(var a=0;a<ativas.length;a++){ try{ v=Math.round((v+concSaldoAte(ativas[a],fins[f].fim))*100)/100; }catch(e){rmLogErr(e)} }
+      try{ var _fimA=fins[f].fim>todayISO()?null:fins[f].fim; v=Math.round((v+invAtivosValor(_fimA).valor)*100)/100; }catch(e){rmLogErr(e)}
       serie.push({fim:fins[f].fim,label:fins[f].label,valor:Math.round(v*100)/100});
     }
   }catch(e){ serie=[]; }
@@ -8806,6 +8809,14 @@ function rSaldos(){
    ou API. Saldo lido de saldoConta, que já existe. */
 var invPeriodo="30";
 if(typeof window.__invTab!=="number") window.__invTab=0;
+/* Valor dos ativos (ações, FII, ETF, Tesouro, CDB) numa data — a mesma conta da Carteira:
+   cotação carregada (ou histórico do mês, no passado); sem preço, pelo custo; CDB pelo CDI.
+   Patrimônio = dinheiro nas contas + este valor. */
+function invAtivosValor(ate,contaId){
+  var hoje=todayISO(), hist=!!(ate&&ate<hoje), tot=0, custo=0, n=0;
+  try{ var map=invPosicoes(contaId||null); Object.keys(map).forEach(function(k){ var p=map[k]; var v=null; try{ v=invPosValorAtual(p.conta,p.codigo,hist?ate:null,hist); }catch(e){ v=null; } if(!v||v.vazia) return; tot+=Number(v.valor)||0; custo+=Number(v.custo)||0; n++; }); }catch(e){ rmLogErr(e,"inv-ativos"); }
+  return {valor:Math.round(tot*100)/100,custo:Math.round(custo*100)/100,n:n};
+}
 function invContas(){ return (DB.contas||[]).filter(function(c){ return c&&c.tipo==="investimento"; }).sort(finSortNome); }
 function invRange(){
   if(invPeriodo==="todos") return null;
@@ -9000,6 +9011,7 @@ function invProvTabHTML(){
     +'<label class="f">Código *<input id="invPCod" maxlength="12" placeholder="ex: PETR4" style="text-transform:uppercase"><span class="tip">ex: PETR4.</span></label>'
     +'<label class="f">Tipo *<select id="invPTipo">'+_tipoOpts+'</select></label>'
     +'<label class="f">Valor por cota (R$) *<input id="invPValor" inputmode="decimal" placeholder="ex: 1,50"><span class="tip">ex: 1,50 por cota/ação.</span></label>'
+    +'<div class="sub" id="invPPrev" style="grid-column:1/-1;font-size:14px"></div>'
     +'<label class="f" id="invPIrWrap">IR do JCP (%) *<input id="invPIr" inputmode="decimal" value="15"><span class="tip">ex: 15 — só vale para JCP; outros tipos ignoram.</span></label>'
     +'<div class="msg-ok" id="invPMsg"></div><div class="btnrow inv-actions"><button class="btn green" id="invPSave">Salvar provento</button></div></div></div><div class="inv-prov-right">'
   h+='<div class="card inv-list-card"><h3>⏳ A receber ('+rec.length+') · '+BRL(totR)+'<button type="button" class="infoBtn" data-tip="Pagamento futuro: agenda, fora do saldo." aria-label="Sobre este bloco">i</button></h3>'
@@ -9266,6 +9278,7 @@ function invAcompTabHTML(){
       +'<div class="tblwrap"><table class="tbl"><thead><tr><th style="text-align:left">Classe</th><th>Atual</th><th>Alvo</th><th>Diferença</th></tr></thead><tbody>'
       +'<tr><td class="l"><b>🧯 Reserva de emergência</b><br><span style="font-size:11px;color:var(--muted)">fora do alvo</span></td><td style="white-space:nowrap"><b>'+BRL(dt.reserva.valor)+'</b></td><td style="white-space:nowrap">—</td><td style="white-space:nowrap">—</td></tr>'
       +_row("Renda fixa",dt.fixa)+_row("Renda variável",dt.variavel)
+      +(function(){ var cx=0; try{ invContas().forEach(function(c){ if(c.ativa) cx+=saldoConta(c); }); }catch(e){} cx=Math.round(cx*100)/100; return Math.abs(cx)>0.004?'<tr><td class="l"><b>💵 Dinheiro na corretora</b><br><span style="font-size:11px;color:var(--muted)">fora do alvo · ainda não aplicado</span></td><td style="white-space:nowrap"><b>'+BRL(cx)+'</b></td><td style="white-space:nowrap">—</td><td style="white-space:nowrap">—</td></tr>':""; })()
       +'</tbody></table></div></div>';
   }
   var _apTxt=(typeof window.__invAporteTxt==="string")?window.__invAporteTxt:"";
@@ -9422,8 +9435,11 @@ function invEvolucao(){
       else{ var cot=null; try{ cot=invHistPreco(pairs[i].codigo,fim); }catch(e){ cot=null; } if(cot>0){ v=Math.round(p.qtd*cot*100)/100; } else { v=p.total; pc=true; } }
       pat=Math.round((pat+v)*100)/100; if(pc) custo=true;
     }
+    /* dinheiro nas contas de investimento + aporte = transferências líquidas para elas */
+    var _apT=0, _invIds={}; try{ invContas().forEach(function(c){ _invIds[c.id]=1; if(validISO(c.dataSaldoInicial)&&c.dataSaldoInicial<=fim){ _apT+=Number(c.saldoInicial)||0; pat=Math.round((pat+concSaldoAte(c,fim))*100)/100; } }); (DB.transferencias||[]).forEach(function(t){ if(!t||!validISO(t.data)||t.data>fim) return; var di=!!_invIds[t.contaDestino], oi=!!_invIds[t.contaOrigem]; if(di&&!oi) _apT+=Number(t.valor)||0; else if(oi&&!di) _apT-=Number(t.valor)||0; }); }catch(e){rmLogErr(e)}
     var ap=0;
     for(i=0;i<movs.length;i++){ var _m2=movs[i]; if(!_m2||!validISO(_m2.data)||_m2.data>fim) continue; var _vv=Math.round(Number(_m2.qtd)*Number(_m2.preco)*100)/100; if(!(_vv>0)) continue; if(_m2.op==="compra") ap=Math.round((ap+_vv)*100)/100; else if(_m2.op==="venda") ap=Math.round((ap-_vv)*100)/100; }
+    ap=Math.round(_apT*100)/100;
     meses.push({key:keys[k],rotulo:invMesRotulo(keys[k],hoje),fim:fim,patrimonio:pat,aporte:ap,rendimento:Math.round((pat-ap)*100)/100,peloCusto:custo});
   }
   return {vazia:meses.length===0,meses:meses};
@@ -9474,7 +9490,7 @@ function invEvolucaoTabHTML(){
   if(ev.vazia||!ev.meses.length) return h+'<div class="empty">Sem movimento de investimento ainda. Registre uma compra na aba Carteira.</div></div>';
   var nh=0, hmin="", hmax="";
   try{ var _hl=(DB.invHist||[]).slice().sort(function(a,b){ return a.data<b.data?-1:(a.data>b.data?1:0); }); nh=_hl.length; if(nh){ hmin=_hl[0].data; hmax=_hl[nh-1].data; } }catch(e){rmLogErr(e)}
-  try{ var _evoTip='Posicao no fim de cada mes (o mes corrente vai ate hoje e sai marcado). Preco da cotacao mais recente ate o fim do mes; sem cotacao, entra pelo custo. Tesouro usa o preco do hist do mes; CDB usa a mesma conta do CDI ate o fim do mes (dias uteis seg-sex, sem feriados — estimativa; bruto, sem IR); sem preco/CDI, pelo custo. Aporte liquido acumulado = compras menos vendas ate a data, em valor; rendimento = patrimonio menos aporte.'+(nh?(' Historico: '+nh+' arquivo(s)'+(hmin?(' de '+isoToBR(hmin).slice(0,5)+' a '+isoToBR(hmax).slice(0,5)):'')+'.'):' Sem historico de cotacoes: tudo pelo custo.'); h=h.replace('id="invEvoInfo"','id="invEvoInfo" data-tip="'+esc(_evoTip)+'"'); }catch(e){rmLogErr(e)}
+  try{ var _evoTip='Posicao no fim de cada mes (o mes corrente vai ate hoje e sai marcado). Preco da cotacao mais recente ate o fim do mes; sem cotacao, entra pelo custo. Tesouro usa o preco do hist do mes; CDB usa a mesma conta do CDI ate o fim do mes (dias uteis seg-sex, sem feriados — estimativa; bruto, sem IR); sem preco/CDI, pelo custo. Patrimonio = dinheiro nas contas de investimento + valor dos ativos. Aporte acumulado = o que voce transferiu para as contas de investimento (com o saldo inicial delas) menos o que tirou; rendimento = patrimonio menos aporte, ou seja, valorizacao, lucro das vendas, proventos e juros do CDB.'+(nh?(' Historico: '+nh+' arquivo(s)'+(hmin?(' de '+isoToBR(hmin).slice(0,5)+' a '+isoToBR(hmax).slice(0,5)):'')+'.'):' Sem historico de cotacoes: tudo pelo custo.'); h=h.replace('id="invEvoInfo"','id="invEvoInfo" data-tip="'+esc(_evoTip)+'"'); }catch(e){rmLogErr(e)}
   h+='<canvas class="chart" id="invEvChart" height="250"></canvas><div id="invEvEmpty"></div>';
   h+='<div class="tblwrap"><table class="tbl" id="invEvTab"><thead><tr><th style="text-align:left">Mes</th><th>Patrimonio</th><th>Aporte acum.</th><th>Rendimento</th><th>Preco</th></tr></thead><tbody id="invEvRows">';
   ev.meses.forEach(function(m){
@@ -9543,7 +9559,7 @@ function rInvest(){
   var perLabel=(invPeriodo==="todos")?"Todo o período":(invPeriodo==="mes"?"Este mês":(invPeriodo==="90"?"Últimos 90 dias":"Últimos 30 dias"));
   var perioTxt=rg?(" de "+isoToBR(rg.ini)+" a "+isoToBR(rg.fim)):" (todo o período)";
   var _invTab=(window.__invTab===3)?3:((window.__invTab===1)?1:((window.__invTab===2)?2:0));
-  var html='<div class="fit-screen inv-screen inv-tab'+_invTab+'"><div class="card inv-bar"><h3>Investimentos — patrimônio é saldo<button type="button" class="infoBtn" data-tip="Patrimônio aqui é saldo, não valor de mercado. Sem cotação, sem rentabilidade, sem rendimento estimado. Aporte é transferência para a conta de investimento; resgate é transferência saindo dela. Só leitura: nada aqui grava — a escrita continua na tela de Transferência." aria-label="Sobre este bloco">i</button></h3>'
+  var html='<div class="fit-screen inv-screen inv-tab'+_invTab+'"><div class="card inv-bar"><h3>Investimentos<button type="button" class="infoBtn" data-tip="Total investido = dinheiro nas contas de investimento + valor dos ativos (cotação carregada; sem cotação, preço médio; CDB pelo CDI). Aporte é transferência para a conta de investimento; resgate é transferência saindo dela." aria-label="Sobre este bloco">i</button></h3>'
     +'<div class="inv-bar-row"><div class="toolbar seg" id="invTabs"><button type="button" data-t="0" class="'+(_invTab===0?"on":"")+'">💼 Carteira</button><button type="button" data-t="1" class="'+(_invTab===1?"on":"")+'">👀 Observação</button><button type="button" data-t="2" class="'+(_invTab===2?"on":"")+'">💰 Proventos</button><button type="button" data-t="3" class="'+(_invTab===3?"on":"")+'">📊 Acompanhar</button></div>'
     +'<div class="toolbar"><span>Período:</span><select id="invPer"><option value="mes">Este mês</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="todos">Todo o período</option></select></div><span class="tip">'+esc(perLabel+perioTxt)+'</span>'
     +'<span class="sub" id="invCotTopo">'+esc((function(){ var _c=invCotacoesGet(); if(!_c) return "sem cotações carregadas"; var _dd=""; try{ _dd=isoToBR(_c.data).slice(0,5); }catch(e){rmLogErr(e)} var _n=0; try{ _n=Object.keys(_c.dados||{}).length; }catch(e){rmLogErr(e)} var _id=invCotIdadeDias(); var _t="cotações de "+_dd+" · "+_n+" ativo(s)"; if(_id!=null&&_id>1) _t+=" · ⚠️ desatualizada ("+_id+" dias)"; return _t; })())+'</span>'
@@ -9743,6 +9759,13 @@ function rInvest(){
     var _pt=document.getElementById("invPTipo"), _irW=document.getElementById("invPIrWrap");
     var _syncIr=function(){ try{ _irW.style.display=(_pt.value==="jcp")?"":"none"; }catch(e){rmLogErr(e)} };
     if(_pt){ _pt.onchange=_syncIr; _syncIr(); }
+    var _pPrev=function(){ try{ var el=document.getElementById("invPPrev"); if(!el) return; var vpc=parseBR(document.getElementById("invPValor").value); var dc=brToISO(document.getElementById("invPDataCom").value); var cod=String(document.getElementById("invPCod").value||"").trim().toUpperCase(); var ct=document.getElementById("invPConta").value; var tp=document.getElementById("invPTipo").value;
+        if(!(vpc>0)||!dc||!cod){ el.textContent=""; return; }
+        var irv=parseBR((document.getElementById("invPIr")||{}).value); var pr={conta:ct,codigo:cod,dataCom:dc,tipo:tp,valorPorCota:vpc,ir:isFinite(irv)?irv:15};
+        var q=invProvQtd(pr), b=invProvBruto(pr), l=invProvLiquido(pr);
+        el.innerHTML=q>0?('= <b>'+esc(brGroup(String(Math.round(q*10000)/10000).replace(".",",")))+'</b> cota(s) em '+esc(isoToBR(dc))+' × '+esc(BRL(vpc))+' = <b>'+esc(BRL(b))+'</b> bruto'+(tp==="jcp"?' · líquido <b>'+esc(BRL(l))+'</b> (IR '+esc(brDec(invProvIrPct(pr),0))+'%)':'')):'<span style="color:#e0695c">Sem '+esc(cod)+' nesta conta em '+esc(isoToBR(dc))+' (data-com): o provento ficaria zerado.</span>';
+      }catch(e){ rmLogErr(e,"prov-prev"); } };
+    ["invPValor","invPDataCom","invPCod","invPConta","invPTipo","invPIr"].forEach(function(k){ var e=document.getElementById(k); if(e){ e.addEventListener("input",_pPrev); e.addEventListener("change",_pPrev); } });
     var _pSave=document.getElementById("invPSave");
     if(_pSave){ _pSave.onclick=async function(){
       var msg=document.getElementById("invPMsg");
@@ -9811,19 +9834,22 @@ function rInvest(){
   var totAp=0, totRs=0;
   ap.forEach(function(t){ totAp=Math.round((totAp+Number(t.valor))*100)/100; });
   rs.forEach(function(t){ totRs=Math.round((totRs+Number(t.valor))*100)/100; });
+  var _atvC={valor:0,custo:0,n:0}; try{ _atvC=invAtivosValor(null); }catch(e){rmLogErr(e)}
+  var _totGeral=Math.round((totInv+_atvC.valor)*100)/100;
   html+='<div class="cards c4 inv-stats">'
-    +statCard("💹",BRL(totInv),"Total investido",totInv<0?"#e0695c":"",invs.length+" conta(s)")
+    +statCard("💹",BRL(_totGeral),"Total investido",_totGeral<0?"#e0695c":"",BRL(_atvC.valor)+" em ativos + "+BRL(totInv)+" em conta")
     +statCard("📥",BRL(totAp),"Total aportado no período","#5a9fd4",ap.length+" aporte(s)")
     +statCard("📤",(totRs>0?"-":"")+BRL(totRs),"Total resgatado no período","#8f96a3",rs.length+" resgate(s)")
     +statCard("🧮",BRL(Math.round((totAp-totRs)*100)/100),"Aportes − resgates no período","#8f96a3",perLabel)
     +'</div>';
   html+='<div class="card inv-contas"><h3>Contas de investimento ('+invs.length+')<button type="button" class="infoBtn" data-tip="Saldo de cada uma, lido da mesma função da tela de Saldos." aria-label="Sobre este bloco">i</button></h3>'
-    +'<div class="tblwrap"><table class="tbl"><thead><tr><th style="text-align:left">Conta</th><th>Saldo</th></tr></thead><tbody>';
+    +'<div class="tblwrap"><table class="tbl"><thead><tr><th style="text-align:left">Conta</th><th>Dinheiro em conta</th><th>Ativos</th><th>Total</th></tr></thead><tbody>';
   invs.forEach(function(c){
     var s=0; try{ s=saldoConta(c); }catch(e){ s=0; }
-    html+='<tr><td class="l">'+esc(c.nome)+(c.ativa?"":' <span class="mtag">inativa</span>')+'</td><td style="white-space:nowrap;color:'+(s<0?"#e0695c":"#4caf7d")+'"><b>'+BRL(s)+'</b></td></tr>';
+    var av=0; try{ av=invAtivosValor(null,c.id).valor; }catch(e){ av=0; }
+    html+='<tr><td class="l">'+esc(c.nome)+(c.ativa?"":' <span class="mtag">inativa</span>')+'</td><td style="white-space:nowrap;color:'+(s<0?"#e0695c":"")+'">'+BRL(s)+'</td><td style="white-space:nowrap">'+BRL(av)+'</td><td style="white-space:nowrap;color:#4caf7d"><b>'+BRL(Math.round((s+av)*100)/100)+'</b></td></tr>';
   });
-  html+='</tbody></table></div><div class="kv"><span>Total investido</span><b>'+BRL(totInv)+'</b></div></div>';
+  html+='</tbody></table></div><div class="kv"><span>Total investido (dinheiro em conta + ativos)</span><b>'+BRL(_totGeral)+'</b></div>'+(_atvC.n?'<div class="sub">Ativos pela cotação carregada; sem cotação, pelo preço médio; CDB pelo CDI.</div>':'')+'</div>';
   html+='<div class="inv-cart-main inv-noform">';
   /* FASE 8B — exportar/carregar ficam na barra do topo (inv-bar), sem card no meio (só leitura de mercado). */
   /* FASE 8A — compra/venda de ativos (troca dinheiro↔ativo, sem DRE). */
