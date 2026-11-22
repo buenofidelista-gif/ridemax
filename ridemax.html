@@ -1442,6 +1442,33 @@ body.rv-aberto{overflow:hidden}
   .hist-bar>.f6-grade{order:6}
 }
 #man-topo a{color:var(--blue)}
+/* ---------- META DO MÊS POR DIA ---------- */
+.dh-mes{font-size:14px;color:var(--muted);margin-top:8px;line-height:1.45}
+.dh-mes b{color:var(--text)}
+.mm-big{font-size:26px;font-weight:800;line-height:1.15;margin:4px 0}
+.mm-up{color:var(--green)}
+.mm-dn{color:#e0695c}
+.mm-dias{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.mm-dias button{flex:1 0 40px;min-height:40px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--input);color:var(--muted);font:inherit;font-size:14px;cursor:pointer}
+.mm-dias button.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700}
+body[data-sol="1"] .mm-dias button.on{background:#000!important;color:#fff!important}
+/* ---------- RESUMO DO TURNO ---------- */
+.tres-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:var(--f-sm)}
+.tres-val{font-size:32px;font-weight:800;line-height:1.1;margin:6px 0 2px}
+.tres-liq{font-size:15px;margin-bottom:10px}
+.tres-liq b{font-size:18px}
+.tres-g{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.tres-g>div{background:var(--input);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;min-width:0}
+.tres-g b{display:block;font-size:18px}
+.tres-g span{display:block;font-size:12px;color:var(--muted)}
+.tres-g i{display:block;font-style:normal;font-size:12px;margin-top:2px}
+.tres-up{color:var(--green)}
+.tres-dn{color:#e0695c}
+.tres-eq{color:var(--muted)}
+.tres-nota{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4}
+.tres-meta{margin:8px 0;padding:8px 10px;border-radius:var(--r-sm);background:var(--input);border:1px solid var(--border);font-size:14px}
+.dh-tres{display:block;width:100%;margin-top:8px;text-align:left;background:transparent;border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);padding:8px 10px;font:inherit;font-size:var(--f-sm);cursor:pointer;min-height:40px}
+body[data-sol="1"] .tres-g>div,body[data-sol="1"] .tres-meta{background:#fff!important;border:2px solid #000!important;color:#000!important}
 @media(min-width:861px){ #mbar,#navBk,#mSyncBtn{display:none!important} }
 @media print{ #mbar,#navBk,#mSyncBtn{display:none!important} }
 </style>
@@ -2133,6 +2160,7 @@ function sanitizeDB(d, rawBackup){
     d.goals.daily=Math.max(0,Number(d.goals.daily)||0);
     d.goals.weekly=Math.max(0,Number(d.goals.weekly)||0);
     d.goals.monthly=Math.max(0,Number(d.goals.monthly)||0);
+    if(Array.isArray(d.goals.dias)){ var _gd=[]; d.goals.dias.forEach(function(x){ x=Number(x); if(x>=0&&x<=6&&Math.round(x)===x&&_gd.indexOf(x)<0) _gd.push(x); }); _gd.sort(); if(_gd.length) d.goals.dias=_gd; else delete d.goals.dias; } else if(d.goals.dias!==undefined) delete d.goals.dias;
   }catch(e){
     _fail("goals");
     try{ d.goals={daily:0,weekly:0,monthly:0}; d.goalMode="bruto"; }catch(_){rmLogErr(_)}
@@ -4668,6 +4696,7 @@ function rDash(){
   } else {
     html+='<div class="kv"><span>Ganho da semana</span><b>Sem meta semanal cadastrada — defina em Metas.</b></div>';
   }
+  try{ html+=metaMesDashHTML(); }catch(_eMM){ rmLogErr(_eMM,"meta-mes-dash"); }
   html+='<h3 style="margin:12px 0 4px">Pendências em aberto</h3>';
   if(isComb) html+='<div class="kv"><span>Energia de casa</span><b>Modo combustão — sem medição de casa.</b></div>';
   else if(kwh>0.05) html+='<div class="kv"><span>Energia de casa ainda sem custo apurado</span><b>'+kwh.toFixed(1).replace(".",",")+' kWh em aberto</b></div>';
@@ -5081,7 +5110,7 @@ function renderShifts(box){
     +'<label class="f">Od\u00F4metro final (km)<input id="shFOdoE" inputmode="decimal" placeholder="opcional" value="'+esc(ed?brN(ed.odo_end):"")+'"></label>'
     +'<label class="f">Observa\u00E7\u00E3o<input id="shFNotes" value="'+esc(ed?(ed.notes||""):"")+'"></label>'
     +(ed&&Array.isArray(ed.pausas)&&ed.pausas.length?turnoPausasEditHTML(ed):"")+'<div class="msg-ok" id="shFMsg"></div><div class="btnrow"><button class="btn green" id="shFSave">'+(ed?"\uD83D\uDCBE Salvar altera\u00E7\u00F5es":"\u2705 Salvar turno")+'</button><button class="btn sm accent" id="shFCancel"'+(ed?"":" hidden")+'>Cancelar</button></div></div>'
-    +'<div class="toolbar hist-bar"><span>Per\u00EDodo:</span><select id="shFilt"><option>7 dias</option><option>30 dias</option><option>90 dias</option><option>Todos</option></select><span id="shTot" style="color:var(--muted)"></span><span style="flex:1"></span><button class="btn yellow sm" id="shEdit">\u270F\uFE0F Editar</button><button class="btn sm hist-del" id="shDel">Excluir</button></div>'
+    +'<div class="toolbar hist-bar"><span>Per\u00EDodo:</span><select id="shFilt"><option>7 dias</option><option>30 dias</option><option>90 dias</option><option>Todos</option></select><span id="shTot" style="color:var(--muted)"></span><span style="flex:1"></span><button class="btn accent sm" id="shRes">📋 Resumo</button><button class="btn yellow sm" id="shEdit">\u270F\uFE0F Editar</button><button class="btn sm hist-del" id="shDel">Excluir</button></div>'
     +'<div class="card hist-list-card"><div class="tblwrap"><table class="tbl"><thead><tr><th>Data</th><th>In\u00EDcio</th><th>Fim</th><th>Dura\u00E7\u00E3o</th><th>Km total</th><th>Km pass.</th><th>Aprov.</th><th>Corridas</th><th>Ganho</th><th>R$/h</th></tr></thead><tbody id="shBody"></tbody></table></div><div id="shPager"></div><div class="sub" id="shNote"></div></div>';
   var sel=document.getElementById("shFilt"); sel.value=window.__shiftFilter;
   var selected=null;
@@ -5167,6 +5196,12 @@ function renderShifts(box){
     document.getElementById("shBody").querySelectorAll("tr[data-id]").forEach(function(tr){ tr.onclick=function(){ selected=tr.dataset.id; refresh(); }; });
   }
   sel.onchange=function(){ window.__shiftPage=1; refresh(); }; refresh();
+  document.getElementById("shRes").onclick=function(){
+    if(!selected){ customAlert("Selecione um turno clicando na linha.","Turnos"); return; }
+    var _sR=(DB.shifts||[]).filter(function(x){ return x.id===selected; })[0];
+    if(!_sR) return; if(!_sR.end_time){ customAlert("Este turno ainda está aberto. O resumo aparece quando ele for encerrado.","Turnos"); return; }
+    turnoResumoAbrir(_sR.id,false);
+  };
   document.getElementById("shEdit").onclick=function(){
     if(!selected){ customAlert("Selecione um turno clicando na linha.","Turnos"); return; }
     window.__shiftEditId=selected; renderShifts(box);
@@ -5194,6 +5229,7 @@ function rMetas(){
     +'<label class="f">📆 Meta Mensal (R$)<input id="gM" inputmode="decimal" value="'+esc(g.monthly||"")+'"></label>'
     +'<label class="f">Base da meta<div class="seg" id="gSeg"><button type="button" data-m="bruto" class="'+(mode==="bruto"?"on":"")+'">Bruto (ganhos)</button><button type="button" data-m="liquido" class="'+(mode==="liquido"?"on":"")+'">Líquido (ganhos − despesas)</button></div></label>'
     +'<div class="msg-ok" id="gMsg"></div><div class="btnrow metas-actions"><button class="btn green" id="gSave">Salvar Metas</button></div></div>'
+    +'<div class="card" id="mmCard"></div>'
     +'<div class="card"><h3>⏱ Ritmo atual</h3><div id="gPace"></div><div class="sub">Projeção pela média diária dos últimos 7 dias.</div></div>'
     +'<div class="card"><h3>Como usar as metas</h3><p class="tip">• A base bruto compara só os ganhos; a base líquido = ganhos do período − despesas do mesmo período (energia da Recarga fica de fora — use a DRE para o resultado completo).</p><p class="tip">• A previsão IA leva em conta seu histórico para sugerir horários.</p><p class="tip">• Comece com 70% do que quer ganhar e ajuste aos poucos.</p><p class="tip">• Semana = últimos 7 dias corridos, não semana do calendário.</p></div></div>'
     +'<div class="card metas-side"><h3>Progresso Atual <span style="font-weight:400">· base ativa: '+(mode==="liquido"?"líquido":"bruto")+'</span></h3><div id="gProg" class="metas-list"></div></div></div></div>';
@@ -5222,6 +5258,7 @@ function rMetas(){
     })();
   }
   prog();
+  try{ metaMesCardPintar(); }catch(_eMM){ rmLogErr(_eMM,"meta-mes-card"); }
   document.getElementById("gSave").onclick=function(){
     var vals=[["daily","gD"],["weekly","gW"],["monthly","gM"]];
     for(var i=0;i<vals.length;i++){ var s=document.getElementById(vals[i][1]).value.trim(); if(s==="")s="0"; var v=parseBR(s); if(!(v>=0)){ customAlert("Valor inválido para a meta.","Metas"); return; } DB.goals[vals[i][0]]=v; }
@@ -5556,7 +5593,7 @@ function rRec(){
     document.getElementById("rBody").querySelectorAll("tr[data-id]").forEach(function(tr){ tr.onclick=function(){ rsel=tr.dataset.id; refresh(); }; });
   }
   rf.onchange=function(){ rPage=1; refresh(); }; refresh();
-  document.getElementById("rDel").onclick=function(){
+  document.getElementById("rDel").onclick=async function(){
     if(!rsel){ customAlert("Selecione um(a) "+(isF?"abastecimento":"recarga")+" clicando na linha.",enName); return; }
     var ix=DB.recharges.findIndex(function(r){return r.id===rsel;});
     if(ix<0) return;
@@ -5564,6 +5601,10 @@ function rRec(){
     var _lk=(_rec.local==="rua")?tituloDaRecarga(_rec.id):null;
     if(_rec.local==="casa"&&typeof luzRecargaApurada==="function"&&luzRecargaApurada(_rec.id)){ customAlert("Recarga em casa j\u00E1 apurada na conta de luz. Para excluir, exclua o t\u00EDtulo da conta de luz (o per\u00EDodo reabre e o custo zera).",enName); return; }
     if(_lk&&tituloTemBaixa(_lk)){ customAlert("Esta recarga já gerou um título com baixa(s) no Contas a pagar ("+BRL(tituloPago(_lk))+" baixado). Desfaça a baixa antes de excluir.",enName); return; }
+    var _okR=false; try{ _okR=await customConfirm("Excluir "+(isF?"o abastecimento":"a recarga")+" de "+isoToBR(_rec.date)+" ("+brDec(Number(_rec.kwh)||0,1)+" "+qtyShort()+", "+BRL(_rec.cost)+")? Vai para a Lixeira"+(_lk?", junto com o título em aberto no Contas a pagar":"")+".",enName,"Excluir"); }catch(_e){ _okR=false; }
+    if(!_okR) return;
+    ix=DB.recharges.findIndex(function(r){return r.id===rsel;}); if(ix<0) return;
+    _rec=DB.recharges[ix]; _lk=(_rec.local==="rua")?tituloDaRecarga(_rec.id):null; if(_lk&&tituloTemBaixa(_lk)) return;
     var trashId=null;
     if(_lk){ var _li=DB.titulos.indexOf(_lk); if(_li>=0){ moveToTrash("titulo",_lk); DB.titulos.splice(_li,1); } }
     if(_rec.local==="casa") retirarRecargaDoPeriodo(_rec.id);
@@ -6217,8 +6258,9 @@ function rRep(){
   platSel.onchange=function(){ if(repEditId) return; var sg=suggestRepPeriod(platSel.value); document.getElementById("pStart").value=isoToBR(sg.start); document.getElementById("pEnd").value=isoToBR(sg.end); };
   document.getElementById("pCancel").onclick=function(){ repEditId=null; rRep(); };
   document.querySelectorAll("[data-repedit]").forEach(function(b){ b.onclick=function(){ repEditId=b.dataset.repedit; rRep(); try{ document.getElementById("repFormT").scrollIntoView(); }catch(e){rmLogErr(e)} }; });
-  document.querySelectorAll("[data-repdel]").forEach(function(b){ b.onclick=function(){
+  document.querySelectorAll("[data-repdel]").forEach(function(b){ b.onclick=async function(){
     var ix=(DB.repasses||[]).findIndex(function(x){return x.id===b.dataset.repdel;});
+    if(ix>=0){ var _pR=DB.repasses[ix], _okP=false; try{ _okP=await customConfirm("Excluir o repasse "+platName(_pR.platform_id)+" de "+BRL(_pR.amount)+" ("+isoToBR(_pR.start)+" a "+isoToBR(_pR.end)+")? Vai para a Lixeira.","Excluir repasse","Excluir"); }catch(_e){ _okP=false; } if(!_okP) return; ix=(DB.repasses||[]).findIndex(function(x){return x.id===b.dataset.repdel;}); }
     var trashId=null;
     if(ix>=0){ moveToTrash("repasse",DB.repasses[ix]); DB.repasses.splice(ix,1); try{ trashId=DB.trash[DB.trash.length-1].id; }catch(e){rmLogErr(e)} }
     if(repEditId===b.dataset.repdel) repEditId=null;
@@ -7213,7 +7255,9 @@ function wireSettings(){
     var _oldM2=st.maint.slice(), _oldR2=(st.maintRemoved||[]).slice();
     st.maint.push({id:uid(),name:n.slice(0,40),interval:iv,lastDone:null,scope:(sc==="ev"||sc==="fuel")?sc:"both",cost:null}); if(st.maintRemoved){ var _k2=n.slice(0,40).trim().toLowerCase(); st.maintRemoved=st.maintRemoved.filter(function(k){return k!==_k2;}); } if(!save()){ st.maint=_oldM2; st.maintRemoved=_oldR2; } show("plataformas");
   };
-  document.querySelectorAll("[data-anndel]").forEach(function(b){ b.onclick=function(){
+  document.querySelectorAll("[data-anndel]").forEach(function(b){ b.onclick=async function(){
+    var _aR=(st.annual||[]).filter(function(x){return x.id===b.dataset.anndel;})[0]; if(!_aR) return;
+    var _okA=false; try{ _okA=await customConfirm("Remover o gasto anual '"+_aR.name+"' ("+BRL(_aR.annual)+"/ano)? A provisão mensal dele deixa de contar. Não vai para a Lixeira: para voltar, cadastre de novo.","Gastos anuais","Remover"); }catch(_e){ _okA=false; } if(!_okA) return;
     var _oldAn=(st.annual||[]).slice(); st.annual=(st.annual||[]).filter(function(x){return x.id!==b.dataset.anndel;}); if(!save()){ st.annual=_oldAn; } show("plataformas");
   }; });
   var _annAdd=document.getElementById("sAnnAdd");
@@ -8369,9 +8413,12 @@ function rDre(){
     mb+='<div class="mrow2"><div><b>'+isoToBR(x.date)+'</b> · '+esc(x.desc)+'<br><span class="mtag">'+esc(dreGroupName(x.gid))+' · '+esc(_mc2)+'</span></div><div style="text-align:right;white-space:nowrap"><b>'+sig+BRL(x.amount)+'</b> <button class="btn sm yellow" data-me="'+esc(x.id)+'">✏️</button> <button class="btn sm rowdel" data-md="'+esc(x.id)+'">🗑</button></div></div>';
   });
   document.getElementById("mBody").innerHTML=mb||'<div class="empty">Nenhum lançamento manual neste período.</div>';
-  document.querySelectorAll("[data-md]").forEach(function(b){ b.onclick=function(){
+  document.querySelectorAll("[data-md]").forEach(function(b){ b.onclick=async function(){
     var _delId=b.dataset.md;
     var ix=DB.dre_manual.findIndex(function(x){return x.id===_delId;});
+    if(ix<0) return;
+    var _xM=DB.dre_manual[ix], _okM=false; try{ _okM=await customConfirm("Excluir o lançamento manual '"+String(_xM.desc||"").slice(0,50)+"' de "+BRL(_xM.amount)+" ("+isoToBR(_xM.date)+")? Vai para a Lixeira.","Excluir lançamento","Excluir"); }catch(_e){ _okM=false; } if(!_okM) return;
+    ix=DB.dre_manual.findIndex(function(x){return x.id===_delId;});
     var trashId=null, _del=null, _trashIx=-1;
     /* E1: mantém o vínculo repasse->DRE (dreId/dreAmount) mesmo com o lançamento na Lixeira; a tela de repasses avalia na renderização. */
     if(ix>=0){ _del=DB.dre_manual[ix]; moveToTrash("dre",DB.dre_manual[ix]); DB.dre_manual.splice(ix,1); try{ _trashIx=DB.trash.length-1; trashId=DB.trash[_trashIx].id; }catch(e){ trashId=null; } }
@@ -8508,6 +8555,8 @@ function rContas(){
     var _cou=contaUso(c.id); if(_cou.total>0||contaTemMov(c.id)){ customAlert(contaUsoTxt(c,_cou),"Contas"); return; }
     var ix=(DB.contas||[]).indexOf(c);
     if(ix<0) return;
+    var _okK=false; try{ _okK=await customConfirm("Excluir a conta '"+(c.nome||"")+"'? Vai para a Lixeira.","Excluir conta","Excluir"); }catch(_e){ _okK=false; } if(!_okK) return;
+    ix=(DB.contas||[]).indexOf(c); if(ix<0) return;
     var trashId=null;
     moveToTrash("conta",c); DB.contas.splice(ix,1);
     try{ trashId=DB.trash[DB.trash.length-1].id; }catch(e){ trashId=null; }
@@ -8638,6 +8687,8 @@ function rTransf(){
     if(ix<0) return;
     var rec=DB.transferencias[ix];
     if(isConciliado(rec)){ customAlert("Este registro já está conciliado. Desconcile antes de excluir.","Excluir transferência"); return; }
+    var _okT=false; try{ _okT=await customConfirm("Excluir a transferência de "+BRL(rec.valor)+" ("+contaNome(rec.contaOrigem)+" → "+contaNome(rec.contaDestino)+", "+isoToBR(rec.data)+")? Sai das duas contas e vai para a Lixeira.","Excluir transferência","Excluir"); }catch(_e){ _okT=false; } if(!_okT) return;
+    ix=(DB.transferencias||[]).indexOf(rec); if(ix<0) return;
     var trashId=null;
     moveToTrash("transferencia",rec); DB.transferencias.splice(ix,1);
     try{ trashId=DB.trash[DB.trash.length-1].id; }catch(e){ trashId=null; }
@@ -11198,7 +11249,10 @@ function rTitulos(){
         return;
       }
       if(_ch!=="esta") return;
+    } else {
+      var _okTi=false; try{ _okTi=await customConfirm("Excluir o título '"+String(rec.descricao||"").slice(0,50)+"' de "+BRL(rec.valor)+" (vence "+isoToBR(rec.vencimento)+")? Vai para a Lixeira."+(isTituloContaLuz(rec)?" O período da conta de luz reabre e o custo das recargas em casa volta a zero.":""),"Excluir título","Excluir"); }catch(_e){ _okTi=false; } if(!_okTi) return;
     }
+    ix=DB.titulos.indexOf(rec); if(ix<0) return;
     var trashId=null;
     var _snapMedD=null, _snapCostsD=null, _snapLoteD=null;
     try{ _snapMedD=JSON.stringify(DB.medicoesEnergia||[]); }catch(e){rmLogErr(e)}
@@ -11213,7 +11267,7 @@ function rTitulos(){
     rTitulos();
     if(trashId) showUndoBar(trashId);
   }; });
-  document.querySelectorAll("[data-bxund]").forEach(function(b){ b.onclick=function(){
+  document.querySelectorAll("[data-bxund]").forEach(function(b){ b.onclick=async function(){
     var parts=String(b.dataset.bxund||"").split(":");
     var t=tituloById(parts[0]); if(!t) return;
     var ix=tituloBaixas(t).findIndex(function(x){ return x.id===parts[1]; });
@@ -11222,6 +11276,8 @@ function rTitulos(){
     /* CAUSA 1 — baixa de título em lote conciliado: quem desfaz é o lote, pelo caminho do lote. */
     var _lcBx=loteConciliadoDoTitulo(t.id); if(_lcBx){ customAlert("Esta baixa faz parte do "+loteNome(_lcBx)+" (conciliado). Não desfaça a baixa isoladamente. Para desfazer, abra Financeiro > Lotes, abra o "+loteNome(_lcBx)+" e use Desfazer conciliação.","Contas a pagar"); return; }
     if(rec.conciliado===1||rec.conciliado===true){ customAlert("Esta baixa já está conciliada. Desconcile antes de desfazer.","Contas a pagar"); return; }
+    var _okB=false; try{ _okB=await customConfirm("Desfazer a baixa de "+BRL(rec.valor)+" de "+isoToBR(rec.data)+" do título '"+String(t.descricao||"").slice(0,50)+"'? O título volta a ficar em aberto e o saldo da conta "+contaNome(rec.conta)+" é refeito sem ela. A baixa vai para a Lixeira.","Desfazer baixa","Desfazer"); }catch(_e){ _okB=false; } if(!_okB) return;
+    ix=tituloBaixas(t).indexOf(rec); if(ix<0) return;
     var trashId=null;
     moveToTrash("baixa",{tituloId:t.id,tituloDesc:t.descricao,baixa:rec}); t.baixas.splice(ix,1); tituloRecalc(t);
     try{ trashId=DB.trash[DB.trash.length-1].id; }catch(e){ trashId=null; }
@@ -11630,7 +11686,7 @@ async function qrSubmit(again){
   finally{ qrBusy=false; }
 }
 try{ qrEnsureDom(); qrFabSync(); }catch(e){ rmLogErr(e,"qr-init"); }
-try{ if(/[?&]rapida=1/.test(location.search)){ setTimeout(function(){ qrOpen(); },400); } }catch(e){ rmLogErr(e); }
+/* ?rapida=1 agora é tratado em "ATALHOS NO ÍCONE" (fim do app), junto com os outros atalhos */
 try{ window.RM.qrOpen=qrOpen; window.RM.veiculoDepKm=veiculoDepKm; window.RM.veiculoAluguelPeriodo=veiculoAluguelPeriodo; window.RM.custoKmStats=custoKmStats; window.RM.qrClose=qrClose; }catch(e){ rmLogErr(e); }
 
 
@@ -12914,7 +12970,9 @@ function dashHeroHTML(){
     var gW=Number(DB.goals&&DB.goals.weekly)||0, sw=statsPeriod(7);
     h+='<div class="dh-sem">Últimos 7 dias: <b>'+esc(BRL(liq?sw.e-expensesTotal(7):sw.e))+'</b>'+(gW>0?(' de '+esc(BRL(gW))+' na meta semanal'):'')+'</div>';
   }catch(e){}
+  try{ h+=metaMesHeroHTML(); }catch(_eMM){ rmLogErr(_eMM,"meta-mes-hero"); }
   try{ h+=cronHeroHTML(); }catch(_eC){}
+  try{ h+=turnoResumoLinkHTML(); }catch(_eRL){ rmLogErr(_eRL,"turno-res-link"); }
   try{ h+=turnoHeroHTML(); }catch(_eT){ rmLogErr(_eT,"turno-hero"); }
   h+='</div>';
   return h;
@@ -13361,8 +13419,8 @@ function turnoAbrirFim(){
     if(!save()){ op.end_time=old.end_time; op.odo_end=old.odo_end; if(_pa){ _pa.fd=_paOld.fd; _pa.fim=_paOld.fim; _pa.of=_paOld.of; } try{ msg.textContent=SAVE_FAIL_MSG; }catch(e){ customAlert(SAVE_FAIL_MSG,"Turno"); } return; }
     crFechar();
     var km=(oe!=null&&op.odo_start!=null)?(oe-Number(op.odo_start)):null; try{ if(km!=null) km=Math.max(0,km-shiftKmPessoal(op)); }catch(_eK){}
-    try{ qrToast("■ Turno encerrado · "+(dm!=null?fmtDur(dm):"")+(km!=null&&km>=0?" · "+brGroup(String(Math.round(km)))+" km":"")+" · "+BRL(st.gain||0),4500); }catch(e){}
     show(current);
+    try{ turnoResumoAbrir(op.id,true); }catch(_eR){ rmLogErr(_eR,"turno-resumo"); try{ qrToast("■ Turno encerrado · "+(dm!=null?fmtDur(dm):"")+(km!=null&&km>=0?" · "+brGroup(String(Math.round(km)))+" km":"")+" · "+BRL(st.gain||0),4500); }catch(e){} }
   };
 }
 try{
@@ -13931,6 +13989,206 @@ try{
   _f6obs.observe(document.getElementById("viewCtn"),{childList:true,subtree:true});
   f6Botoes();
 }catch(e){ rmLogErr(e,"f6-init"); }
+
+/* ---------- ATALHOS NO ÍCONE (manifest "shortcuts") ----------
+   Segurar o ícone do app instalado mostra: Iniciar corrida, Turno, Corrida rápida, Despesa.
+   Cada um abre o app com ?atalho=… (a corrida rápida segue com ?rapida=1, que já existia).
+   Com PIN ligado, a ação só acontece depois do desbloqueio. O parâmetro sai do endereço
+   na hora, para recarregar a página não repetir a ação. */
+var ATALHOS=["corrida","turno","despesa","rapida"];
+function atalhoLer(){ try{ var q=new URLSearchParams(location.search); if(q.get("rapida")==="1") return "rapida"; var a=q.get("atalho"); return ATALHOS.indexOf(a)>=0?a:null; }catch(e){ return null; } }
+function atalhoLimparUrl(){ try{ var q=new URLSearchParams(location.search); q.delete("atalho"); q.delete("rapida"); var t=q.toString(); history.replaceState(history.state,"",location.pathname+(t?"?"+t:"")+location.hash); }catch(e){} }
+function atalhoExec(a){
+  if(a==="corrida"){ if(current!=="dashboard") show("dashboard"); cronIniciar(); }
+  else if(a==="turno"){ if(current!=="dashboard") show("dashboard"); var op=openShift(); if(op&&shiftPausaAberta(op)) turnoAbrirRetomar(); else turnoAbrirInicio(); }
+  else if(a==="despesa"){ show("despesas"); setTimeout(function(){ try{ var v=document.getElementById("dAmt"); if(v){ v.scrollIntoView({block:"center"}); v.focus(); } }catch(e){} },200); }
+  else if(a==="rapida"){ qrOpen(); }
+}
+try{
+  var _atl=atalhoLer();
+  if(_atl){ atalhoLimparUrl(); var _atN=0;
+    var _atEsp=function(){ if(pinTravado){ if(_atN++<2400) setTimeout(_atEsp,250); return; } try{ atalhoExec(_atl); }catch(e){ rmLogErr(e,"atalho"); } };
+    setTimeout(_atEsp,400); }
+}catch(e){ rmLogErr(e,"atalho-init"); }
+try{ window.RM.atalhoExec=atalhoExec; }catch(e){ rmLogErr(e); }
+
+/* ---------- RESUMO AO ENCERRAR O TURNO ----------
+   Bruto, custo estimado (km do turno × custo/km dos últimos 30 dias, o mesmo da Análise:
+   energia, despesas, depreciação e aluguel), líquido estimado, R$/h, R$/km, aproveitamento,
+   e comparação com a média dos outros turnos encerrados nos últimos 30 dias (mín. 3).
+   Só leitura: não grava nada. Sem odômetro, usa os km das corridas e avisa. */
+function turnoResumoDados(s){
+  var st=shiftStats(s), ki=shiftKmInfo(s);
+  var km=(st.km!=null&&st.km>0)?st.km:null, kmFonte="odometro";
+  if(km==null&&st.kmPass>0){ km=st.kmPass; kmFonte="corridas"; }
+  if(km==null) kmFonte="nenhum";
+  var ck=null; try{ ck=custoKmStats(30); }catch(e){ ck=null; }
+  var custoKm=(ck&&ck.custo!=null&&isFinite(ck.custo)&&ck.custo>0)?ck.custo:null;
+  var custo=(km!=null&&custoKm!=null)?km*custoKm:null;
+  var liq=(custo!=null)?st.gain-custo:null;
+  var d={s:s,st:st,km:km,kmFonte:kmFonte,custoKm:custoKm,custo:custo,liq:liq,
+    rh:(st.durH>0)?st.gain/st.durH:null, rhLiq:(st.durH>0&&liq!=null)?liq/st.durH:null,
+    rkm:(km!=null&&km>0)?st.gain/km:null, porCorr:st.n?st.gain/st.n:null,
+    aprov:(st.km!=null&&st.km>0)?Math.min(1,st.kmPass/st.km):null, kmPess:ki.kmPess||0, media:null};
+  /* média dos outros turnos encerrados nos últimos 30 dias */
+  try{
+    var ini=sinceISO(30), fim=todayISO(), outros=shiftsInRange(ini,fim).filter(function(x){ return x.end_time&&x.id!==s.id; });
+    var H=0,G=0,KG=0,KM=0,LQ=0,LH=0,n=0;
+    outros.forEach(function(x){ var t=shiftStats(x); if(!(t.durH>0)) return; n++; H+=t.durH; G+=t.gain;
+      var k=(t.km!=null&&t.km>0)?t.km:(t.kmPass>0?t.kmPass:null);
+      if(k!=null){ KG+=t.gain; KM+=k; if(custoKm!=null){ LQ+=t.gain-k*custoKm; LH+=t.durH; } } });
+    if(n>=3) d.media={n:n,rh:H>0?G/H:null,rkm:KM>0?KG/KM:null,rhLiq:LH>0?LQ/LH:null,ganho:G/n,horas:H/n};
+  }catch(e){ rmLogErr(e,"tres-media"); }
+  return d;
+}
+function turnoResumoCmp(v,m){
+  if(v==null||m==null||!(m>0)) return "";
+  var p=(v/m-1)*100, r=Math.round(p);
+  if(Math.abs(p)<3) return '<i class="tres-eq">= sua média ('+esc(BRL(m))+')</i>';
+  return '<i class="'+(p>0?"tres-up":"tres-dn")+'">'+(p>0?"▲ ":"▼ ")+Math.abs(r)+'% vs média '+esc(BRL(m))+'</i>';
+}
+function turnoResumoHTML(d,fechou){
+  var s=d.s, st=d.st, m=d.media;
+  var h='<h3>'+(fechou?"Turno encerrado":"Resumo do turno")+'<button type="button" class="qrx" id="crX" aria-label="Fechar">×</button></h3>';
+  h+='<div class="tres-top"><span>'+esc(f2DiaNome(s.date))+' · '+esc(s.start_time||"")+'–'+esc(s.end_time||"")+'</span><span>'+esc(fmtDur(st.durMin))+' trabalhadas'+(st.pausaMin>0?' · pausas '+esc(fmtDur(st.pausaMin)):"")+'</span></div>';
+  h+='<div class="tres-val">'+esc(BRL(st.gain))+'</div>';
+  if(d.liq!=null) h+='<div class="tres-liq">Líquido estimado: <b style="color:'+(d.liq>=0?"var(--green)":"#e0695c")+'">'+esc(BRL(d.liq))+'</b> <span style="color:var(--muted)">(custo '+esc(BRL(d.custo))+')</span></div>';
+  else h+='<div class="tres-liq" style="color:var(--muted)">'+(d.kmFonte==="nenhum"?"Sem km neste turno: informe o odômetro para ver o líquido.":"Custo por km ainda sem dados: lance recargas e despesas para ver o líquido.")+'</div>';
+  h+='<div class="tres-g">';
+  h+='<div><b>'+(d.rh!=null?esc(BRL(d.rh)):"—")+'</b><span>por hora (bruto)</span>'+(m?turnoResumoCmp(d.rh,m.rh):"")+'</div>';
+  h+='<div><b>'+(d.rhLiq!=null?esc(BRL(d.rhLiq)):"—")+'</b><span>por hora (líquido)</span>'+(m?turnoResumoCmp(d.rhLiq,m.rhLiq):"")+'</div>';
+  h+='<div><b>'+(d.rkm!=null?esc(BRL(d.rkm)):"—")+'</b><span>por km rodado</span>'+(m?turnoResumoCmp(d.rkm,m.rkm):"")+'</div>';
+  h+='<div><b>'+st.n+'</b><span>corrida'+(st.n===1?"":"s")+(d.porCorr!=null?' · '+esc(BRL(d.porCorr))+' cada':"")+'</span></div>';
+  h+='<div><b>'+(d.km!=null?esc(brGroup(String(Math.round(d.km))))+' km':"—")+'</b><span>'+(d.kmFonte==="corridas"?"km das corridas":"km do turno")+'</span></div>';
+  h+='<div><b>'+(d.aprov!=null?Math.round(d.aprov*100)+'%':"—")+'</b><span>com passageiro</span></div>';
+  h+='</div>';
+  try{ var meta=Number(DB.goals&&DB.goals.daily)||0; if(meta>0){ var gDia=0; (DB.rides||[]).forEach(function(r){ if(r&&r.date===s.date) gDia+=rideTotal(r); });
+    var liqM=(DB.goalMode==="liquido"); if(liqM){ (DB.expenses||[]).forEach(function(x){ if(x&&x.date===s.date) gDia-=Number(x.amount)||0; }); }
+    h+='<div class="tres-meta">Meta do dia'+(liqM?" (líquido)":"")+': '+(gDia>=meta-0.004?'<b style="color:var(--green)">batida</b> · '+esc(BRL(gDia))+' de '+esc(BRL(meta)):'faltaram <b>'+esc(BRL(meta-gDia))+'</b> · '+esc(BRL(gDia))+' de '+esc(BRL(meta)))+'</div>'; } }catch(e){ rmLogErr(e,"tres-meta"); }
+  var notas=[];
+  if(d.custoKm!=null) notas.push("Custo estimado = km × seu custo médio de "+BRL(d.custoKm)+"/km nos últimos 30 dias (energia, despesas e, se cadastrados, depreciação e aluguel do carro). O DRE continua com as despesas reais.");
+  if(d.kmFonte==="corridas") notas.push("Sem odômetro no turno: usei os km das corridas, que não contam o deslocamento vazio.");
+  if(d.kmPess>0) notas.push(brGroup(String(Math.round(d.kmPess)))+" km de pausa pessoal ficaram fora.");
+  if(m) notas.push("Média: "+m.n+" outro(s) turno(s) encerrado(s) nos últimos 30 dias.");
+  else notas.push("A comparação com a sua média aparece com 3 ou mais turnos encerrados nos últimos 30 dias.");
+  h+='<div class="tres-nota">'+notas.map(esc).join("<br>")+'</div>';
+  h+='<div class="btnrow" style="margin-top:var(--s3)"><button type="button" class="btn green" id="veicCancel" style="flex:1;min-height:48px">OK</button></div>';
+  return h;
+}
+function turnoResumoAbrir(id,fechou){
+  var s=(DB.shifts||[]).filter(function(x){ return x.id===id; })[0]; if(!s||!s.end_time) return;
+  veicSheet(turnoResumoHTML(turnoResumoDados(s),!!fechou));
+}
+/* último turno encerrado de hoje ou de ontem, para o link no painel do dia */
+function turnoUltimoFechado(){
+  var lim=somaDiasISO(todayISO(),-1), best=null;
+  (DB.shifts||[]).forEach(function(x){ if(!x||!x.end_time||!(x.date>=lim)) return; var k=x.date+" "+(x.start_time||""); if(!best||k>best.k) best={k:k,s:x}; });
+  return best?best.s:null;
+}
+function turnoResumoLinkHTML(){
+  try{ if(openShift()) return ""; }catch(e){}
+  var s=turnoUltimoFechado(); if(!s) return "";
+  var g=0; try{ g=shiftStats(s).gain; }catch(e){}
+  return '<button type="button" class="dh-tres" data-turno-res="'+esc(s.id)+'">📋 Resumo do último turno ('+esc(f2DiaNome(s.date))+', '+esc(BRL(g))+') ›</button>';
+}
+try{ document.addEventListener("click",function(ev){ var b=ev.target&&ev.target.closest?ev.target.closest("[data-turno-res]"):null; if(!b) return; ev.preventDefault(); ev.stopPropagation(); turnoResumoAbrir(b.dataset.turnoRes,false); },true); }catch(e){ rmLogErr(e,"tres-init"); }
+try{ window.RM.turnoResumoDados=turnoResumoDados; window.RM.turnoResumoAbrir=turnoResumoAbrir; }catch(e){ rmLogErr(e); }
+
+/* ---------- META DO MÊS: QUANTO FALTA POR DIA ----------
+   Mês do calendário (1º ao último dia), na base da meta (bruto, ou líquido = ganhos − despesas,
+   como o resto das metas). Por dia = o que faltava ATÉ ONTEM ÷ dias de trabalho de hoje até o
+   fim do mês; assim o valor do dia não muda enquanto você roda, e "hoje" mostra quanto falta nele.
+   Dias de trabalho: escolhidos em Metas, ou automáticos (dias da semana em que rodou em pelo
+   menos metade das vezes nas últimas 8 semanas; sem histórico, seg a sáb). Só leitura. */
+var MM_DIA=["seg","ter","qua","qui","sex","sáb","dom"], MM_MES=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+function mmWd(iso){ var p=String(iso).split("-"); return (new Date(+p[0],+p[1]-1,+p[2]).getDay()+6)%7; }
+function mmDiasAuto(){
+  var hoje=todayISO(), ini=somaDiasISO(hoje,-56), trab={}, prim=null;
+  (DB.rides||[]).forEach(function(r){ if(!r||!r.date) return; if(prim==null||r.date<prim) prim=r.date; if(r.date>=ini&&r.date<hoje) trab[r.date]=1; });
+  if(!prim||prim>somaDiasISO(hoje,-14)) return [0,1,2,3,4,5];
+  var tot=[0,0,0,0,0,0,0], fez=[0,0,0,0,0,0,0], d=(prim>ini?prim:ini);
+  while(d<hoje){ var w=mmWd(d); tot[w]++; if(trab[d]) fez[w]++; d=somaDiasISO(d,1); }
+  var out=[]; for(var i=0;i<7;i++){ if(tot[i]>0&&fez[i]/tot[i]>=0.5) out.push(i); }
+  return out.length?out:[0,1,2,3,4,5];
+}
+function mmDias(){ var g=DB.goals||{}; if(Array.isArray(g.dias)&&g.dias.length) return {dias:g.dias.slice(),auto:false}; return {dias:mmDiasAuto(),auto:true}; }
+function mmDiasTxt(d){
+  if(d.length===7) return "todos os dias"; if(!d.length) return "nenhum dia";
+  var seq=true; for(var i=1;i<d.length;i++) if(d[i]!==d[i-1]+1) seq=false;
+  if(seq&&d.length>=3) return MM_DIA[d[0]]+" a "+MM_DIA[d[d.length-1]];
+  return d.map(function(x){ return MM_DIA[x]; }).join(", ");
+}
+function metaMesCalc(){
+  var meta=Number(DB.goals&&DB.goals.monthly)||0; if(!(meta>0)) return null;
+  var hoje=todayISO(), mes=hoje.slice(0,7), liq=(DB.goalMode==="liquido");
+  var antes=0, hojeG=0;
+  (DB.rides||[]).forEach(function(r){ if(!r||!r.date||r.date.slice(0,7)!==mes||r.date>hoje) return; var t=rideTotal(r); if(r.date===hoje) hojeG+=t; else antes+=t; });
+  if(liq) (DB.expenses||[]).forEach(function(x){ if(!x||!x.date||x.date.slice(0,7)!==mes||x.date>hoje) return; var v=Number(x.amount)||0; if(x.date===hoje) hojeG-=v; else antes-=v; });
+  var ganho=antes+hojeG, falta=meta-ganho;
+  var p=hoje.split("-"), ult=new Date(+p[0],+p[1],0).getDate(), D=mmDias(), dias=D.dias;
+  var hojeTrab=dias.indexOf(mmWd(hoje))>=0||hojeG!==0;
+  var rest=hojeTrab?1:0;
+  for(var dd=+p[2]+1;dd<=ult;dd++){ if(dias.indexOf(mmWd(mes+"-"+String(dd).padStart(2,"0")))>=0) rest++; }
+  var faltaAntes=meta-antes, porDia=(rest>0&&faltaAntes>0)?faltaAntes/rest:null;
+  /* média por dia trabalhado: últimos 30 dias, sem hoje */
+  var ini=somaDiasISO(hoje,-30), G=0, dset={};
+  (DB.rides||[]).forEach(function(r){ if(r&&r.date>=ini&&r.date<hoje){ G+=rideTotal(r); dset[r.date]=1; } });
+  if(liq) (DB.expenses||[]).forEach(function(x){ if(x&&x.date>=ini&&x.date<hoje) G-=Number(x.amount)||0; });
+  var nd=Object.keys(dset).length, media=nd>=3?G/nd:null;
+  return {meta:meta,liq:liq,mesNome:MM_MES[+p[1]-1],ganho:ganho,falta:falta,batida:falta<=0.004,rest:rest,hojeTrab:hojeTrab,porDia:porDia,
+    hojeG:hojeG,faltaHoje:(porDia!=null&&hojeTrab)?porDia-hojeG:null,media:media,nDiasMedia:nd,dias:dias,auto:D.auto,ultimo:ult,pct:ganho/meta*100};
+}
+function mmCmpTxt(c){
+  if(c.porDia==null||c.media==null||!(c.media>0)) return "";
+  var r=c.porDia/c.media;
+  if(r<=1) return '<span class="mm-up">dentro da sua média de '+esc(BRL(c.media))+'/dia</span>';
+  return '<span class="mm-dn">'+Math.round((r-1)*100)+'% acima da sua média de '+esc(BRL(c.media))+'/dia</span>';
+}
+function metaMesHeroHTML(){
+  var c=metaMesCalc(); if(!c) return "";
+  var M=c.mesNome.charAt(0).toUpperCase()+c.mesNome.slice(1);
+  if(c.batida) return '<div class="dh-mes">'+esc(M)+': <b style="color:var(--green)">meta do mês batida</b> · '+esc(BRL(c.ganho))+' de '+esc(BRL(c.meta))+'</div>';
+  var h='<div class="dh-mes">'+esc(M)+': <b>'+esc(BRL(c.ganho))+'</b> de '+esc(BRL(c.meta))+' · faltam <b>'+esc(BRL(c.falta))+'</b><br>';
+  if(c.porDia==null) h+='Não sobram dias de trabalho no mês ('+esc(mmDiasTxt(c.dias))+').';
+  else { h+='≈ <b>'+esc(BRL(c.porDia))+'/dia</b> em '+c.rest+' dia'+(c.rest===1?"":"s")+' de trabalho'+(c.hojeTrab?' (com hoje)':'');
+    var cmp=mmCmpTxt(c); if(cmp) h+=' · '+cmp;
+    if(c.faltaHoje!=null) h+='<br>Hoje: '+(c.faltaHoje<=0.004?'<b style="color:var(--green)">a parte do mês de hoje já foi</b>':'faltam <b>'+esc(BRL(c.faltaHoje))+'</b> para a parte de hoje'); }
+  return h+'</div>';
+}
+function metaMesDashHTML(){
+  var c=metaMesCalc(); if(!c) return "";
+  var h='<div class="kv"><span>Meta de '+esc(c.mesNome)+' (base '+(c.liq?"líquido":"bruto")+')</span><b>'+esc(BRL(c.ganho))+' de '+esc(BRL(c.meta))+' ('+Math.round(c.pct)+'%)</b></div>';
+  h+='<div class="bar-row"><b style="width:70px">Mês</b>'+bar(Math.max(0,c.ganho),c.meta,220,"#9b7fc4",12)+'</div>';
+  if(c.batida) h+='<div class="sub" style="color:var(--green)">Meta do mês batida.</div>';
+  else if(c.porDia==null) h+='<div class="sub">Faltam '+esc(BRL(c.falta))+' e não sobram dias de trabalho no mês.</div>';
+  else h+='<div class="sub">Faltam '+esc(BRL(c.falta))+' · ≈ <b>'+esc(BRL(c.porDia))+'/dia</b> em '+c.rest+' dia(s) de trabalho'+(c.hojeTrab?" (com hoje)":"")+(mmCmpTxt(c)?' · '+mmCmpTxt(c):'')+'</div>';
+  return h;
+}
+function metaMesCardPintar(){
+  var el=document.getElementById("mmCard"); if(!el) return;
+  var c=metaMesCalc(), D=mmDias();
+  var h='<h3>📆 Meta do mês por dia</h3>';
+  if(!c) h+='<div class="sub">Defina a <b>Meta Mensal</b> acima para ver quanto precisa fazer por dia até o fim do mês.</div>';
+  else if(c.batida) h+='<div class="mm-big mm-up">Meta de '+esc(c.mesNome)+' batida</div><div class="sub">'+esc(BRL(c.ganho))+' de '+esc(BRL(c.meta))+' ('+Math.round(c.pct)+'%).</div>';
+  else {
+    h+='<div class="sub">'+esc(c.mesNome.charAt(0).toUpperCase()+c.mesNome.slice(1))+': '+esc(BRL(c.ganho))+' de '+esc(BRL(c.meta))+' · faltam '+esc(BRL(c.falta))+'</div>';
+    if(c.porDia==null) h+='<div class="mm-big mm-dn">Sem dias de trabalho restantes</div>';
+    else { h+='<div class="mm-big">'+esc(BRL(c.porDia))+' por dia</div><div class="sub">em '+c.rest+' dia(s) de trabalho até '+c.ultimo+'/'+todayISO().slice(5,7)+(c.hojeTrab?' (contando hoje)':'')+(mmCmpTxt(c)?' · '+mmCmpTxt(c):'')+'</div>';
+      if(c.faltaHoje!=null) h+='<div class="kv"><span>Hoje</span><b>'+(c.faltaHoje<=0.004?'parte de hoje feita ('+esc(BRL(c.hojeG))+')':'faltam '+esc(BRL(c.faltaHoje))+' (feito '+esc(BRL(c.hojeG))+')')+'</b></div>'; }
+  }
+  h+='<div class="sub" style="margin-top:10px">Dias em que você trabalha'+(D.auto?' — <b>automático</b>, pelo seu histórico das últimas 8 semanas':'')+'. Toque para mudar:</div>';
+  h+='<div class="mm-dias">'+MM_DIA.map(function(n,i){ return '<button type="button" data-mmd="'+i+'" class="'+(D.dias.indexOf(i)>=0?"on":"")+'" aria-pressed="'+(D.dias.indexOf(i)>=0)+'">'+n+'</button>'; }).join("")+'</div>';
+  if(!D.auto) h+='<button type="button" class="btn sm accent" id="mmAuto">Voltar ao automático</button>';
+  h+='<div class="sub">O mês aqui é o do calendário (1º a '+(c?c.ultimo:"31")+'). A barra "📆 Mês" do Progresso usa os últimos 30 dias.</div>';
+  el.innerHTML=h;
+  el.querySelectorAll("[data-mmd]").forEach(function(b){ b.onclick=function(){
+    var cur=mmDias().dias, i=Number(b.dataset.mmd), k=cur.indexOf(i);
+    if(k>=0){ if(cur.length===1){ customAlert("Deixe pelo menos um dia de trabalho marcado.","Metas"); return; } cur.splice(k,1); } else cur.push(i);
+    cur.sort(); var old=DB.goals.dias; DB.goals.dias=cur; if(!save()){ if(old===undefined) delete DB.goals.dias; else DB.goals.dias=old; customAlert(SAVE_FAIL_MSG,"Metas"); }
+    metaMesCardPintar(); }; });
+  var ba=document.getElementById("mmAuto"); if(ba) ba.onclick=function(){ var old=DB.goals.dias; delete DB.goals.dias; if(!save()){ DB.goals.dias=old; } metaMesCardPintar(); };
+}
+try{ window.RM.metaMesCalc=metaMesCalc; window.RM.mmDiasAuto=mmDiasAuto; }catch(e){ rmLogErr(e); }
 
 } /* fim rmApp */
 })();
