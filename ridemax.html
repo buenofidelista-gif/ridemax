@@ -1480,7 +1480,7 @@ body[data-sol="1"] .tres-g>div,body[data-sol="1"] .tres-meta{background:#fff!imp
     <div class="side-sep"></div>
     <div id="navCtn"></div>
     <div class="side-sep"></div>
-    <div class="sidebtns"><button id="expBtn" type="button">Exportar</button><button id="impBtn" type="button">Importar</button></div>
+    <div class="sidebtns"><button id="expBtn" type="button">Fazer backup</button><button id="impBtn" type="button">Restaurar backup</button></div>
     <div class="side-foot">salvo no navegador<br>localStorage</div>
   </aside>
   <main id="main">
@@ -3136,7 +3136,7 @@ function markFileOwner(){ if(!isFileProto()) return; try{ RMS.setItem(LS_FILE_KE
   setTimeout(function(){
     try{
       openModal("Base gravada por outro arquivo","Os dados deste navegador foram gravados por último pelo arquivo:\n"+prev+"\n\nVocê abriu agora:\n"+cur+"\n\nArquivos .html abertos direto do disco podem compartilhar o mesmo armazenamento: o que for salvo aqui altera a base do outro arquivo também. Se eles deveriam ser bases separadas, exporte um backup antes de lançar.",[{label:"Exportar backup",cls:"yellow",val:"dl"},{label:"Entendi, usar esta base",cls:"accent",val:"ok"}]).then(function(v){
-        if(v==="dl"){ try{ var n=exportBackup(); customAlert("Backup baixado como "+n,"Exportar"); }catch(e){rmLogErr(e)} }
+        if(v==="dl"){ try{ var n=exportBackup(); customAlert("Backup baixado como "+n,"Backup"); }catch(e){rmLogErr(e)} }
         markFileOwner();
       });
     }catch(e){ rmLogErr(e,"aviso-arquivo"); }
@@ -3736,21 +3736,21 @@ var NAV_GROUPS=[
   {id:"g-dash",icon:"",label:"Dashboard",single:"dashboard"},
   {id:"g-uber",icon:"",label:"Uber",tabs:[
     {view:"nova"},{view:"historico"},{view:"recarga"},{view:"metas"},
-    {view:"previsao"},{view:"clima"},{view:"plataformas"},
+    {view:"previsao"},{view:"clima"},
     {view:"financeiro",finTab:2,icon:"",label:"Análise"},
     {view:"financeiro",finTab:3,icon:"",label:"Repasses"},
-    {view:"despesas",atalho:1,icon:"",label:"Lançar despesa"}
+    {view:"despesas"}
   ]},
   {id:"g-fin",icon:"",label:"Financeiro",tabs:[
     {view:"financeiro",finTab:0,icon:"",label:"Resumo"},
-    {view:"contas"},{view:"centros"},{view:"transferencias"},{view:"saldos"},
+    {view:"transferencias"},{view:"saldos"},
     {view:"contaspagar"},
     {view:"financeiro",finTab:4,icon:"",label:"Lotes"},
     {view:"financeiro",finTab:1,icon:"",label:"DRE"},
-    {view:"relcat"},{view:"extrato"},{view:"fluxo"},{view:"conciliacao"},
-    {view:"despesas"}
+    {view:"relcat"},{view:"extrato"},{view:"fluxo"},{view:"conciliacao"}
   ]},
  {id:"g-inv",icon:"",label:"Investimentos",single:"investimentos"},
+ {id:"g-cfg",icon:"",label:"Configurações",single:"plataformas"},
  {id:"g-estilo",icon:"",label:"Aparência",single:"estilo"},
   {id:"g-manual",icon:"",label:"Manual",single:"manual"},
  {id:"g-lix",icon:"",label:"Lixeira",single:"lixeira"}
@@ -3821,7 +3821,7 @@ function updateNavActive(v){
   });
 }
 buildNav();
-document.getElementById("expBtn").onclick=function(){ var n=exportBackup(); customAlert("Backup baixado como "+n,"Exportar"); };
+document.getElementById("expBtn").onclick=function(){ var n=exportBackup(); customAlert("Backup baixado como "+n,"Backup"); };
 function impBaixasTotal(db){ var n=0; try{ (db.titulos||[]).forEach(function(t){ n+=((t&&t.baixas)||[]).length; }); }catch(e){rmLogErr(e)} return n; }
 function impLatest(db){
   var m=null;
@@ -3865,7 +3865,7 @@ document.getElementById("impFile").addEventListener("change",function(){
       var _impN=0, _impTxt="", _impDet="";
       try{ _impN=droppedTotal(); if(_impN>0){ _impTxt=droppedSummary(); } try{ _impDet=droppedDetail(); }catch(_e2){ _impDet=""; } }catch(_e){ _impN=0; _impTxt=""; _impDet=""; }
       if(!clean.platforms.length&&!clean.rides.length&&!clean.shifts.length&&!clean.expenses.length&&!clean.recharges.length&&!(clean.repasses&&clean.repasses.length)&&!(clean.dre_manual&&clean.dre_manual.length)&&!(clean.contas&&clean.contas.length)&&!(clean.centros&&clean.centros.length)&&!(clean.transferencias&&clean.transferencias.length)&&!(clean.titulos&&clean.titulos.length)&&!(clean.series&&clean.series.length)&&!(clean.medicoesEnergia&&clean.medicoesEnergia.length)&&!(clean.lotes&&clean.lotes.length)&&!(clean.concAjustes&&clean.concAjustes.length)){
-        customAlert("Arquivo sem dados v\u00E1lidos. Nada foi alterado.","Importar"); return;
+        customAlert("Arquivo sem dados v\u00E1lidos. Nada foi alterado.","Restaurar backup"); return;
       }
       var _impStored=0; try{ _impStored=readStoredRev().rev; }catch(_e){ _impStored=DB_MEM_REV; }
       if(_impStored!==DB_MEM_REV){
@@ -3884,7 +3884,7 @@ document.getElementById("impFile").addEventListener("change",function(){
       var _msg="Esta importa\u00E7\u00E3o vai SUBSTITUIR a base atual pelos dados do arquivo. Um backup do estado atual ser\u00E1 baixado antes de aplicar.\n\nATUAL (base agora, \u00FAltimo lan\u00E7amento "+_curLTx+"):\n"+impMovLine(_curN)+"\n"+impCadLine(_curN)+"\n\nARQUIVO (exportado em "+_expTx+", \u00FAltimo lan\u00E7amento "+_filLTx+"):\n"+impMovLine(_filN)+"\n"+impCadLine(_filN);
       if(_impN>0){ _msg+="\n\nRegistros inv\u00E1lidos no arquivo que ser\u00E3o ignorados: "+_impN+" ("+_impTxt+")"; }
       if(_filT<_curT){ _msg+="\n\n\u26A0\uFE0F ATEN\u00C7\u00C3O: o arquivo tem MENOS registros ("+_filT+") que a base atual ("+_curT+"). Confira se \u00E9 o arquivo certo."; }
-      var _ok=await customConfirm(_msg,"Importar","Continuar");
+      var _ok=await customConfirm(_msg,"Restaurar backup","Continuar");
       if(!_ok){
         try{ resetDropped(); }catch(_e5){rmLogErr(_e5)}
         document.getElementById("impFile").value="";
@@ -3895,8 +3895,8 @@ document.getElementById("impFile").addEventListener("change",function(){
       show("dashboard");
       var _impMsg="Importa\u00E7\u00E3o conclu\u00EDda. Um backup do estado anterior foi baixado antes.";
       if(_impN>0){ _impMsg+=" Registros inv\u00E1lidos ignorados: "+_impTxt; if(_impDet){ _impMsg+="\n\n"+_impDet; } }
-      customAlert(_impMsg,"Importar");
-    }catch(e){ customAlert("Arquivo inv\u00E1lido: n\u00E3o foi poss\u00EDvel ler o JSON.","Importar"); }
+      customAlert(_impMsg,"Restaurar backup");
+    }catch(e){ customAlert("Arquivo inv\u00E1lido: n\u00E3o foi poss\u00EDvel ler o JSON.","Restaurar backup"); }
     document.getElementById("impFile").value="";
   };
   rd.readAsText(f);
@@ -3967,7 +3967,7 @@ analise:"Os números operacionais: custo por km, ganho por hora, consumo. A ener
 repasses:"A conferência do repasse: agrupa as corridas de uma plataforma por janela e mostra o que era esperado. Esta tela CONFERE — ela não baixa título nem mexe em conta nenhuma. Quem baixa é o Lote, no Financeiro. São duas telas com propósitos diferentes e é normal consultar as duas. O que restar após os ajustes costuma ser virada de fechamento: confira no próximo repasse.",
 investimentos:"As contas de tipo investimento, com os aportes e os resgates. O aporte é uma transferência comum: dinheiro saindo de uma conta e entrando na de investimento. Patrimônio aqui é saldo, não valor de mercado — o app não tem cotação nem calcula rentabilidade. Desdobramento/grupamento: excluir evento que deixaria venda acima da posição é bloqueado. O aporte é feito na tela de Transferência: escolha a conta de origem e a conta de investimento como destino. Acompanhar: a soma dos alvos tem de dar 100.",
    lixeira:"O que foi excluído fica aqui e pode ser restaurado, com os saldos voltando a refletir. Registro conciliado precisa ser desconciliado antes de excluir. Registro que faz parte de um lote conciliado precisa que o lote seja desfeito primeiro.",
-   backup:"Exportar baixa um arquivo com tudo. Importar SUBSTITUI a base atual — antes de substituir, o app baixa sozinho um backup do estado anterior. Registros inválidos do arquivo são descartados e relatados, com a indicação de quais foram, para você poder relançar.",
+   backup:"Fazer backup baixa um arquivo com tudo. Restaurar backup SUBSTITUI a base atual — antes de substituir, o app baixa sozinho um backup do estado anterior. Registros inválidos do arquivo são descartados e relatados, com a indicação de quais foram, para você poder relançar.",
     limpeza:"Apaga todo o movimento e preserva os cadastros. Serve para zerar os dados de teste antes do primeiro dia de trabalho real. Pede backup, data de corte e confirmação digitada, nessa ordem. Atenção: as séries de recorrente e parcelado são cadastro e NÃO são apagadas — as de teste precisam ser excluídas à mão.",
   previsao:"Ranqueia os horários por R$ por hora usando só o histórico do próprio app: data, horário, ganhos e gorjetas. Dá mais peso ao que é recente e só opina sobre um horário com pelo menos 5 corridas registradas. Funciona offline, sem chave e sem internet. Ela NÃO prevê demanda, não sabe de evento na cidade e não consulta nada de fora: ela recombina o que você já ganhou.",
   clima:"Busca opcional da previsão do tempo, desligada por padrão. Exige chave própria do OpenWeatherMap, internet e a sua cidade. A chave fica só neste navegador e não entra no backup. O clima não altera ganho, meta nem previsão de horários: só mostra a previsão e o quanto ela é confiável. Sem chave ou sem internet, o app funciona igual."
@@ -4084,6 +4084,7 @@ try{
   })();
 }catch(e){rmLogErr(e)}
 function show(v){
+  if(v==="contas"||v==="centros"){ try{ cfgTab=v; }catch(e){rmLogErr(e)} v="plataformas"; }
   current=v;
   try{ if(typeof qrFabSync==="function") qrFabSync(); }catch(e){rmLogErr(e)}
   try{ if(typeof navFechar==="function") navFechar(); if(typeof mbarSync==="function") mbarSync(); }catch(e){rmLogErr(e)}
@@ -7443,7 +7444,7 @@ function rTrash(){
   try{ document.body.classList.add("fit-lock"); }catch(e){rmLogErr(e)}
   var kinds={"todas":"Todas","ride":"Corridas","expense":"Despesas","recharge":"Recargas","dre":"DRE","shift":"Turnos","repasse":"Repasses","transferencia":"Transferências","conta":"Contas","titulo":"Contas a pagar","baixa":"Baixas","concAjuste":"Ajustes conciliação","invMov":"Movimentos de investimento","invWatch":"Observação","invProv":"Proventos","invEvento":"Eventos (desdob./grup.)"};
   var opts=Object.keys(kinds).map(function(k){ return '<option value="'+esc(k)+'"'+(trashFilter===k?" selected":"")+'>'+kinds[k]+'</option>'; }).join("");
-  viewCtn.innerHTML='<div class="card"><h3>Itens excluídos — recuperáveis por 30 dias</h3><div class="toolbar"><span>Tipo:</span><select id="tF">'+opts+'</select><span style="flex:1"></span><button class="btn sm accent" id="tExp">Baixar backup</button><button class="btn sm rowdel" id="tEmpty">Esvaziar lixeira</button></div><div class="tblwrap"><table class="tbl"><thead><tr><th>Tipo</th><th class="l">Resumo</th><th>Excluído em</th><th>Ações</th></tr></thead><tbody id="tBody"></tbody></table></div><div id="tPager"></div></div>';
+  viewCtn.innerHTML='<div class="card"><h3>Itens excluídos — recuperáveis por 30 dias</h3><div class="toolbar"><span>Tipo:</span><select id="tF">'+opts+'</select><span style="flex:1"></span><button class="btn sm accent" id="tExp">Fazer backup agora</button><button class="btn sm rowdel" id="tEmpty">Esvaziar lixeira</button></div><div class="tblwrap"><table class="tbl"><thead><tr><th>Tipo</th><th class="l">Resumo</th><th>Excluído em</th><th>Ações</th></tr></thead><tbody id="tBody"></tbody></table></div><div id="tPager"></div></div>';
   var sel=document.getElementById("tF");
   function kindName(k){ return kinds[k]||k; }
   function refresh(){
@@ -7600,7 +7601,7 @@ function rLimpeza(){
   g+='<div class="cols"><div class="card"><h3>Será apagado</h3><div class="sub">Movimento + Lixeira. Números da base agora.</div><div class="tblwrap"><table class="tbl"><tbody>'+limCountRows(del)+'</tbody></table></div></div>';
   g+='<div class="card"><h3>Será preservado</h3><div class="sub">Cadastro e configurações. Contagens agora.</div><div class="tblwrap"><table class="tbl"><tbody>'+limCountRows(keep)+'</tbody></table></div><div class="tip">Todas as contas ficam com a data de corte abaixo e saldo inicial zero — depois você digita o saldo real de cada uma.</div></div></div>';
   g+='<div class="card formgrid"><h3>Três travas, em ordem</h3><div class="sub">1) exporte o backup aqui · 2) informe a data de corte · 3) digite '+LIM_WORD+'. Sem as três, o botão não funciona.</div>';
-  g+='<div class="btnrow"><button class="btn accent" id="limExp">1) Exportar backup agora</button></div><div class="tip" id="limExpMsg">Backup ainda não exportado nesta tela.</div>';
+  g+='<div class="btnrow"><button class="btn accent" id="limExp">1) Fazer backup agora</button></div><div class="tip" id="limExpMsg">Backup ainda não exportado nesta tela.</div>';
   g+='<label class="f">2) Data de corte (primeiro dia de trabalho)<input type="date" id="limCorte" value="'+esc(t)+'"></label><div class="tip">Aplicada a todas as contas; o saldo inicial de cada uma vai a zero.</div>';
   g+='<label class="f">3) Confirmação — digite '+LIM_WORD+'<input id="limConf" autocomplete="off" placeholder="'+esc(LIM_WORD)+'"></label>';
   g+='<div class="msg-ok" id="limMsg"></div>';
@@ -7663,7 +7664,7 @@ function rManual(){
     {t:"Conciliação",ps:["Conciliar é conferir contra o extrato do banco, item a item. Você digita o saldo do extrato, marca o que encontrou, e o que sobra é pendência.","A diferença se resolve LANÇANDO o que faltou: a tarifa esquecida, o PIX que ninguém anotou, a duplicidade a excluir. Nunca com um ajuste criado para o saldo fechar.","Ajuste existe para um caso só: diferença investigada e não identificada. E exige observação escrita."]},
     {t:"Data de corte e saldo inicial",ps:["Cada conta tem uma data de corte, que é a data do saldo inicial. O saldo só conta movimento dessa data em diante.","Baixa e transferência com data anterior ao corte são bloqueadas.","Corrida em dinheiro com data anterior ao corte é permitida, porque pode ser carga histórica — mas o app avisa na hora e deixa um indicador na conta, dizendo quantos movimentos estão fora do saldo e quanto somam. Se isso aparecer sem você esperar, provavelmente a data está errada."]},
     {t:"Previsto, realizado e os 90 dias",ps:["O fluxo de caixa mostra lado a lado o que já aconteceu e o que está previsto, nunca somados.","O previsto usa o vencimento para o que é a pagar, e a data ESTIMADA do repasse para o que é a receber. Essa data sai da média dos repasses anteriores daquela plataforma; sem pelo menos dois repasses conciliados, não há estimativa e o valor aparece à parte, sem data.","A projeção de 90 dias mostra o menor saldo do período e em que dia ele cai. É o indicador mais útil do app: é ele que avisa que a conta vai faltar antes de faltar."]},
-    {t:"Backup, descartes e limpeza",ps:["Foto do recibo: na despesa, toque em 📷 Foto do recibo (câmera ou galeria), até 3 por despesa. A foto é reduzida e comprimida (uns 200 KB) e fica só neste aparelho — não vai no backup nem na sincronização. Despesa com foto mostra 📎 na lista; toque para ver, enviar, baixar ou excluir. Em Configurações › Backup, Baixar fotos (ZIP) junta todas para guardar fora do aparelho.","Exportar baixa tudo num arquivo. Importar SUBSTITUI a base, e antes disso o app baixa sozinho um backup do estado anterior.","Backup automático (Configurações › Backup): no celular, Enviar backup abre o compartilhar — mande para o Google Drive ou para você mesmo no WhatsApp/e-mail. No computador (Chrome/Edge), escolha uma pasta de backup, de preferência sincronizada com Drive ou OneDrive, e o app grava o arquivo do dia sozinho a cada lançamento, guardando os 30 últimos. Se o navegador pedir permissão de novo, um toque em Reativar resolve.","Cópias diárias: o app também guarda sozinho, neste aparelho, uma cópia por dia (7 dias + 4 semanas), com Restaurar e Baixar. Serve para desfazer um erro; não substitui o backup, porque some junto se o celular sumir ou o navegador for limpo. Restaurar guarda antes o estado atual como Antes da última restauração.","Se o arquivo tiver registro inválido, ele é descartado e RELATADO, com indicação do que foi. Se um título perder uma baixa inválida e voltar a ficar em aberto, isso aparece em destaque — não é perda silenciosa.","A limpeza da base apaga o movimento e preserva os cadastros. Ela pede backup, data de corte e confirmação digitada. Atenção: as séries são cadastro e NÃO são apagadas.","Os dados ficam no banco do navegador (IndexedDB), com espaço de centenas de MB. Cada navegador, aparelho e endereço tem a sua base: o arquivo aberto do disco e o site publicado são bases diferentes, ligadas só pelo backup. Limpar os dados do site ou desinstalar o app apaga a base daquele aparelho.","Configurações › Backup mostra o espaço usado e o Diagnóstico: a contagem de erros internos da sessão e o botão para baixar o log. O esperado é zero.","Se a base salva estiver danificada, o app guarda uma cópia antes de abrir uma nova; sem espaço para a cópia, ele bloqueia a gravação até você baixar os dados brutos. Nada é apagado às cegas."]},
+    {t:"Backup, descartes e limpeza",ps:["Foto do recibo: na despesa, toque em 📷 Foto do recibo (câmera ou galeria), até 3 por despesa. A foto é reduzida e comprimida (uns 200 KB) e fica só neste aparelho — não vai no backup nem na sincronização. Despesa com foto mostra 📎 na lista; toque para ver, enviar, baixar ou excluir. Em Configurações › Backup, Baixar fotos (ZIP) junta todas para guardar fora do aparelho.","Fazer backup baixa tudo num arquivo. Restaurar backup SUBSTITUI a base, e antes disso o app baixa sozinho um backup do estado anterior.","Backup automático (Configurações › Backup): no celular, Enviar backup abre o compartilhar — mande para o Google Drive ou para você mesmo no WhatsApp/e-mail. No computador (Chrome/Edge), escolha uma pasta de backup, de preferência sincronizada com Drive ou OneDrive, e o app grava o arquivo do dia sozinho a cada lançamento, guardando os 30 últimos. Se o navegador pedir permissão de novo, um toque em Reativar resolve.","Cópias diárias: o app também guarda sozinho, neste aparelho, uma cópia por dia (7 dias + 4 semanas), com Restaurar e Baixar. Serve para desfazer um erro; não substitui o backup, porque some junto se o celular sumir ou o navegador for limpo. Restaurar guarda antes o estado atual como Antes da última restauração.","Se o arquivo tiver registro inválido, ele é descartado e RELATADO, com indicação do que foi. Se um título perder uma baixa inválida e voltar a ficar em aberto, isso aparece em destaque — não é perda silenciosa.","A limpeza da base apaga o movimento e preserva os cadastros. Ela pede backup, data de corte e confirmação digitada. Atenção: as séries são cadastro e NÃO são apagadas.","Os dados ficam no banco do navegador (IndexedDB), com espaço de centenas de MB. Cada navegador, aparelho e endereço tem a sua base: o arquivo aberto do disco e o site publicado são bases diferentes, ligadas só pelo backup. Limpar os dados do site ou desinstalar o app apaga a base daquele aparelho.","Configurações › Backup mostra o espaço usado e o Diagnóstico: a contagem de erros internos da sessão e o botão para baixar o log. O esperado é zero.","Se a base salva estiver danificada, o app guarda uma cópia antes de abrir uma nova; sem espaço para a cópia, ele bloqueia a gravação até você baixar os dados brutos. Nada é apagado às cegas."]},
     {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu (no celular, em Mais), ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","No celular, a barra de baixo tem Início, Corridas (histórico), o + verde do meio (corrida rápida), Dinheiro (resumo financeiro) e Mais, que abre o menu completo; o voltar do celular fecha o menu. O botão de sincronizar fica no topo, ao lado do título.","No celular, o Início abre com o painel do dia: ganho do dia de trabalho, barra da meta diária, R$ por hora, por corrida, km, turno aberto e os últimos 7 dias. O Histórico mostra as corridas em cartões agrupados por dia, com o total de cada dia; toque numa corrida para Editar ou Excluir. O aviso de backup tem um × que adia até amanhã.","Busca: no Histórico de corridas e na lista de despesas, o campo Buscar procura em todo o histórico (ignora o período) — valor (27,50 ou 27), data (21/11, novembro, sexta), plataforma ou categoria, observação, horário, km, dinheiro, gorjeta. Várias palavras combinam (uber sexta); acento e maiúscula não importam.","Previsão da meta no painel do dia: com 30 min de trabalho, o app calcula o seu ritmo de hoje — com turno aberto, ganho do turno ÷ horas trabalhadas (sem pausas); sem turno, ganho do dia ÷ tempo trabalhado desde a 1ª corrida (esperas de até 1 h contam; paradas maiores, não) — e diz a que horas a meta deve ser batida. Também compara o horário de agora com a sua média (mapa de calor da Previsão) e aponta o melhor horário que ainda vem hoje, só quando há 3 ou mais corridas naquele horário. O quadrinho /h em corrida conta só o tempo dentro das corridas, por isso é maior que o ritmo do dia.","Formulários no celular: Nova corrida, Recarga e Despesa mostram primeiro o essencial — plataforma ou categoria em botões, valor grande — e guardam o resto em Mais detalhes. Na Nova corrida o início já vem com a hora atual e o preço do passageiro só aparece com Pago em dinheiro. O botão Salvar fica preso embaixo da tela.","Tabelas no celular: as que não cabem na tela (Contas a pagar, Lotes, Saldos, Manutenção, Categorias, Top 10 da Previsão) viram cartões, com a primeira coluna como título e as outras como rótulo e valor; os botões de cada linha continuam no cartão. Neste manual, toque no título de uma seção para abrir ou fechar.","Telas longas no celular (Início, Financeiro, Recarga, Previsão): os 2 primeiros blocos vêm abertos e os outros recolhidos; toque no título do bloco para abrir ou fechar — o app lembra a sua escolha neste aparelho.","O + verde (no computador, o botão + Corrida no canto de baixo ou a tecla N) lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Corrida com cronômetro: no Início toque em Iniciar corrida (ou, na corrida rápida, Iniciar com cronômetro). Uma faixa mostra o tempo e os km; toque em Encerrar e a corrida rápida abre com início, fim e km preenchidos — só falta o valor. Os km vêm do GPS, mas o celular só entrega a posição com o RideMax na tela: se você usar o app da Uber/99 na frente, o trecho perdido entra em linha reta e o km aparece como estimado. Se o app fechar no meio, a corrida continua de onde estava.","Turno com um toque: no Início, Iniciar turno pede só o odômetro (vem sugerido o último conhecido) e a hora. Com o turno aberto, Encerrar turno mostra o resumo — duração, corridas e ganho — e pede o odômetro final. Só pode haver um turno aberto por vez.","Pausa no turno: para algo pessoal, toque em Pausar (pede o odômetro) e depois em Retomar (pede de novo). O tempo da pausa sai das horas e do R$/hora; os km rodados na pausa saem do km do turno; e no custo por km da Análise sai também a parte da energia proporcional a esses km. O DRE continua com a despesa inteira. Se começar uma corrida com o turno pausado, o app pergunta se quer retomar.","Modo sol: para ler com o celular no suporte em dia claro, o menu Mais tem ◐ Modo sol, que liga um tema de alto contraste — fundo branco, texto preto, bordas escuras. Em Aparência dá para deixar Ligado, Desligado ou Automático de dia (6h às 18h). Vale só para este aparelho e não muda o tema escolhido.","Tela ligada: durante a corrida com cronômetro a tela não bloqueia sozinha (enquanto o RideMax estiver na tela). O botão ☀ no topo deixa a tela ligada sempre que o app estiver aberto — fica amarelo quando está ativo. Gasta mais bateria; vale com o celular no carregador.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Backup, armazenamento e lembretes, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
     {t:"Bloqueio por PIN",ps:["No menu (Mais, no celular), toque em 🔒 Bloqueio por PIN — ou Configurações › Segurança — e em Criar PIN (4 a 6 números; repetidos e sequências são recusados). O app passa a pedir o PIN ao abrir e ao voltar depois do tempo escolhido fora do app — na hora, 1, 5 ou 15 minutos. Onde o aparelho permitir, dá para ativar a digital ou o rosto; o PIN continua valendo.","O PIN vale só para este aparelho: não vai para o backup nem para a sincronização, e não fica guardado em texto. Cinco erros seguidos geram uma espera, que dobra a cada nova série. Esqueceu o PIN? Não há como recuperar: limpe os dados do app neste aparelho e restaure pela sincronização ou por um backup.","É uma trava de tela, contra quem pega o celular desbloqueado — não é criptografia dos dados."]},
     {t:"Celular e computador juntos",ps:["Configurações › Backup, armazenamento e lembretes › Sincronizar. Os dois aparelhos usam a mesma conta Google; os dados ficam numa pasta privada do app no seu Drive. A primeira configuração (ID do cliente) está no manual, seção 7.6.","Toque em Sincronizar (no topo do menu) ao começar e ao terminar o dia. A junção é por lançamento: o que foi incluído, editado ou apagado em cada aparelho é respeitado. Se o mesmo campo foi editado nos dois, fica a versão do aparelho que sincronizou por último.","Aparelho novo, sem lançamentos, recebe tudo da nuvem. Se os dois já têm lançamentos e nunca sincronizaram, o app pergunta o que fazer. Antes de aplicar a junção, o app guarda uma cópia em Antes da última restauração."]},
@@ -7756,7 +7757,6 @@ function rStyle(){
   var html=solCardHTML()+'<div class="card"><h3>Temas prontos</h3><div class="sub">Combinações de tema + destaque num toque. Dá para ajustar depois nos cartões abaixo.</div><div class="seg" id="stPreset">';
   THEME_PRESETS.forEach(function(p){ html+='<button type="button" data-p="'+esc(p[0])+'" class="'+(pCur===p[0]?"on":"")+'">'+p[1]+'</button>'; });
   html+='</div></div>';
-  html+='<div class="card"><h3>Tema</h3><div class="sub">Claro ou escuro — vale para todas as telas, tabelas e gráficos. A escolha é salva no navegador.</div><div class="seg" id="stTheme"><button type="button" data-t="dark" class="'+(th==="dark"?"on":"")+'">Escuro</button><button type="button" data-t="light" class="'+(th==="light"?"on":"")+'">Claro</button></div></div>';
   html+='<div class="card"><h3>Cor de destaque</h3><div class="sub">Menu ativo, cabeçalhos das tabelas e abas selecionadas. "Padrão" volta ao azul-marinho original.</div><div class="swatches" id="stAcc">';
   ACCENTS.forEach(function(a){
     var on=(a[0]===(st.accent||""));
@@ -11725,8 +11725,8 @@ function lembretesCalc(){
   }catch(e){ rmLogErr(e,"lemb-man"); }
   try{
     var st=DB.settings, dias=st.backupDays||7;
-    if(st.lastBackup&&validISO(st.lastBackup)){ var due=somaDiasISO(st.lastBackup,dias); itens.push({id:"bkp:"+due,quando:due,ate:somaDiasISO(due,60),titulo:"Faça um backup",texto:"Último backup em "+isoToBR(st.lastBackup)+". Abra o app e toque em Enviar backup (ou Exportar)."}); }
-    else if((DB.rides||[]).length||(DB.titulos||[]).length){ itens.push({id:"bkp:nunca",quando:hoje,ate:somaDiasISO(hoje,60),titulo:"Faça seu primeiro backup",texto:"Seus dados vivem só neste aparelho. Abra o app e toque em Enviar backup (ou Exportar)."}); }
+    if(st.lastBackup&&validISO(st.lastBackup)){ var due=somaDiasISO(st.lastBackup,dias); itens.push({id:"bkp:"+due,quando:due,ate:somaDiasISO(due,60),titulo:"Faça um backup",texto:"Último backup em "+isoToBR(st.lastBackup)+". Abra o app e toque em Enviar backup (ou Fazer backup, no menu)."}); }
+    else if((DB.rides||[]).length||(DB.titulos||[]).length){ itens.push({id:"bkp:nunca",quando:hoje,ate:somaDiasISO(hoje,60),titulo:"Faça seu primeiro backup",texto:"Seus dados vivem só neste aparelho. Abra o app e toque em Enviar backup (ou Fazer backup, no menu)."}); }
   }catch(e){ rmLogErr(e,"lemb-bkp"); }
   itens.sort(function(a,b){ return a.quando<b.quando?-1:(a.quando>b.quando?1:0); });
   return itens;
@@ -11899,7 +11899,7 @@ async function bkpRestaurar(k){
   var ok=await customConfirm(msg,"Restaurar cópia","Restaurar");
   if(!ok) return;
   var r=await bkpGuardarCopia("restauracao");
-  if(r!=="ok"&&r!=="vazia"){ customAlert("Não consegui guardar o estado atual antes de restaurar, então nada foi alterado. Faça um backup (Exportar) e tente de novo.","Restaurar cópia"); return; }
+  if(r!=="ok"&&r!=="vazia"){ customAlert("Não consegui guardar o estado atual antes de restaurar, então nada foi alterado. Faça um backup (Fazer backup, no menu) e tente de novo.","Restaurar cópia"); return; }
   var old=DB;
   DB=clean; processVehicleReset();
   if(!save()){ DB=old; show("plataformas"); return; }
@@ -11926,7 +11926,7 @@ function bkpEnviar(){
   /* .txt: o compartilhar do Chrome Android não aceita .json; o Importar lê os dois. */
   var f=new File([txt],nome,{type:"text/plain"});
   if(!bkpPodeEnviar()||!navigator.canShare({files:[f]})){ downloadFile(nome.replace(/\.txt$/,".json"),txt); bkpMarcarFeito(); customAlert("Este navegador não tem o compartilhar de arquivo, então o backup foi baixado.","Enviar backup"); show(currentViewSafe()); return; }
-  navigator.share({files:[f],title:"Backup RideMax",text:"Backup do RideMax de "+isoToBR(todayISO())+". Para restaurar: Importar no app."}).then(function(){
+  navigator.share({files:[f],title:"Backup RideMax",text:"Backup do RideMax de "+isoToBR(todayISO())+". Para restaurar: Restaurar backup, no menu do app."}).then(function(){
     bkpMarcarFeito(); customAlert("Backup enviado. Guarde onde não dependa deste celular (Google Drive, e-mail ou WhatsApp para você mesmo).","Enviar backup"); show(currentViewSafe());
   }).catch(function(e){ if(e&&e.name==="AbortError") return; rmLogErr(e,"bkp-share"); customAlert("O envio não foi concluído: "+String((e&&e.message)||e),"Enviar backup"); });
 }
@@ -12848,7 +12848,7 @@ function syncPintar(){
 function cfgSecSync(){
   var c=syncCfg(), web=/^https:$/.test(location.protocol)||/^http:\/\/(127\.0\.0\.1|localhost)/.test(location.href);
   var h='<div class="sub" id="cfgSync">Sincronizar celular e computador (Google Drive)</div>';
-  if(!web){ h+='<div class="sub">Funciona no app publicado (https). Aberto direto do disco, use Enviar backup / Importar.</div>'; return h; }
+  if(!web){ h+='<div class="sub">Funciona no app publicado (https). Aberto direto do disco, use Enviar backup / Restaurar backup.</div>'; return h; }
   h+='<div class="kv"><span>Última sincronização</span><b>'+esc(syncQuando(syncUlt))+(syncUltMsg?' — '+esc(syncUltMsg):'')+'</b></div>';
   h+='<label class="f">ID do cliente Google (OAuth)<input id="syncCid" value="'+esc(c.clientId)+'" placeholder="123456-abc….apps.googleusercontent.com" autocomplete="off" style="background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;width:100%"></label>';
   h+='<label style="display:flex;gap:8px;align-items:center;font-size:var(--f-sm);margin:6px 0"><input type="checkbox" id="syncAuto" style="width:auto"'+(c.auto?" checked":"")+'> depois de sincronizar, continuar enviando cada lançamento sozinho (enquanto o acesso do Google vale, ~1 hora)</label>';
@@ -12879,9 +12879,9 @@ function syncSalvarCfg(){
 try{ window.RM.syncJuntar=syncJuntar; window.RM.syncAgora=syncAgora; window.RM.syncBaseLer=syncBaseLer; }catch(e){ rmLogErr(e); }
 
 /* ---------- CELULAR — FASE 1: barra de navegação embaixo + menu em gaveta ----------
-   Início · Corridas · ＋ (corrida rápida) · Dinheiro · Mais (abre o menu completo).
+   Início · Corridas · ＋ (corrida rápida) · Financeiro · Mais (abre o menu completo).
    O botão "voltar" do Android fecha a gaveta em vez de sair do app. */
-var MBAR_CORRIDAS={historico:1,nova:1}, MBAR_DINHEIRO={financeiro:1,contas:1,centros:1,transferencias:1,contaspagar:1,saldos:1,extrato:1,fluxo:1,relcat:1,conciliacao:1,despesas:1,investimentos:1};
+var MBAR_CORRIDAS={historico:1,nova:1}, MBAR_DINHEIRO={financeiro:1,transferencias:1,contaspagar:1,saldos:1,extrato:1,fluxo:1,relcat:1,conciliacao:1,investimentos:1};
 var MBAR_SVG={
   inicio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h5v-6h4v6h5V9.5"/></svg>',
   corridas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>',
@@ -12896,7 +12896,7 @@ function mbarIni(){
   b.innerHTML='<button type="button" data-mb="inicio"><span class="pill">'+MBAR_SVG.inicio+'</span>Início</button>'
     +'<button type="button" data-mb="corridas"><span class="pill">'+MBAR_SVG.corridas+'</span>Corridas</button>'
     +'<button type="button" data-mb="mais-corrida" class="mplus" aria-label="Nova corrida rápida"><span class="fab">'+MBAR_SVG.mais2+'</span>Corrida</button>'
-    +'<button type="button" data-mb="dinheiro"><span class="pill">'+MBAR_SVG.dinheiro+'</span>Dinheiro</button>'
+    +'<button type="button" data-mb="dinheiro"><span class="pill">'+MBAR_SVG.dinheiro+'</span>Financeiro</button>'
     +'<button type="button" data-mb="menu" aria-haspopup="true"><span class="pill">'+MBAR_SVG.mais+'</span>Mais</button>';
   /* dentro do #app: ele tem camada própria (z-index:1, efeito de vidro); fora dele a gaveta ficaria por baixo */
   var _host=document.getElementById("app")||document.body;
@@ -13620,7 +13620,7 @@ function pinEsqueci(){
   /* mostra dentro da tela do PIN: uma janela comum ficaria atrás do bloqueio */
   var i=document.getElementById("pinInfo"); if(!i) return;
   if(!i.hidden){ i.hidden=true; return; }
-  i.textContent="O PIN não pode ser recuperado: ele não fica guardado em lugar nenhum. Se você usa a sincronização com o Google Drive ou tem um backup, dá para limpar este aparelho e recuperar os dados de lá — o que não foi sincronizado nem está no backup se perde. Para limpar, no Chrome: ⋮ › Configurações › Configurações do site › endereço do RideMax › Limpar dados. Depois abra o app e configure a sincronização ou use Importar.";
+  i.textContent="O PIN não pode ser recuperado: ele não fica guardado em lugar nenhum. Se você usa a sincronização com o Google Drive ou tem um backup, dá para limpar este aparelho e recuperar os dados de lá — o que não foi sincronizado nem está no backup se perde. Para limpar, no Chrome: ⋮ › Configurações › Configurações do site › endereço do RideMax › Limpar dados. Depois abra o app e configure a sincronização ou use Restaurar backup (no menu).";
   i.hidden=false;
 }
 /* ---- digital / rosto (WebAuthn, autenticador do aparelho) ---- */
