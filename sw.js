@@ -3,8 +3,8 @@
    Ícones/manifesto: cópia guardada primeiro.
    Nada de outros sites (ex.: clima) passa por aqui, e os DADOS não ficam neste cache
    (eles ficam no IndexedDB do app). Ao publicar uma versão nova, aumente VERSAO. */
-var VERSAO = "ridemax-v3";
-var ARQUIVOS = ["./ridemax.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
+var VERSAO = "ridemax-v5";
+var ARQUIVOS = ["./ridemax.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./atalho-corrida.png", "./atalho-turno.png", "./atalho-rapida.png", "./atalho-despesa.png"];
 
 self.addEventListener("install", function (ev) {
   ev.waitUntil(caches.open(VERSAO).then(function (c) { return c.addAll(ARQUIVOS); }).then(function () { return self.skipWaiting(); }));
@@ -24,7 +24,8 @@ self.addEventListener("fetch", function (ev) {
   var ehPagina = req.mode === "navigate" || /\/ridemax\.html$/.test(url.pathname);
   if (ehPagina) {
     ev.respondWith(
-      fetch(req).then(function (resp) {
+      /* página: sempre pergunta ao servidor (ignora a espera de 10 min do cache do navegador) */
+      fetch(new Request(url.href, { cache: "no-cache", credentials: "same-origin" })).then(function (resp) {
         if (resp && resp.ok) { var cp = resp.clone(); caches.open(VERSAO).then(function (c) { c.put("./ridemax.html", cp); }); }
         return resp;
       }).catch(function () {
