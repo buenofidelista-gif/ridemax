@@ -1442,6 +1442,28 @@ body.rv-aberto{overflow:hidden}
   .hist-bar>.f6-grade{order:6}
 }
 #man-topo a{color:var(--blue)}
+/* ---------- OBSERVAÇÃO: leitura em cartões ---------- */
+.obs-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin-top:6px}
+.obs-card{border:1px solid var(--border);border-left:6px solid #8f96a3;border-radius:var(--r-sm);padding:10px 12px;background:var(--card);min-width:0}
+.obs-card.v-verde{border-left-color:#4caf7d}
+.obs-card.v-amarelo{border-left-color:#d79a2b}
+.obs-card.v-vermelho{border-left-color:#e0695c}
+.obs-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.obs-top .obs-cod{font-size:17px;font-weight:800}
+.obs-top .obs-preco{margin-left:auto;font-size:17px;font-weight:700}
+.obs-ver{font-size:15px;margin:8px 0 6px;line-height:1.35}
+.obs-crit{list-style:none;margin:0;padding:0;font-size:13px;line-height:1.45}
+.obs-crit li{padding:3px 0 3px 22px;position:relative}
+.obs-crit li::before{position:absolute;left:0;top:3px;font-weight:800}
+.obs-crit li.ok::before{content:"✓";color:#4caf7d}
+.obs-crit li.no::before{content:"✗";color:#e0695c}
+.obs-crit li.na::before{content:"–";color:var(--muted)}
+.obs-crit li.info{color:var(--muted)}
+.obs-crit li.info::before{content:"ℹ";color:var(--muted)}
+.obs-como{margin-top:12px}
+.obs-como summary{cursor:pointer;font-weight:700;padding:6px 0}
+.obs-como p{font-size:13px;line-height:1.5;margin:6px 0}
+body[data-sol="1"] .obs-card{background:#fff!important;color:#000!important;border-color:#000!important}
 /* ---------- BAIXAR VÁRIAS (Contas a pagar) ---------- */
 @media(max-width:860px){
   .tit-list-head{flex-wrap:wrap!important;gap:8px!important;overflow:visible!important}
@@ -8905,7 +8927,7 @@ function invWatchInfo(codigo,tipo){
 }
 function invWatchTabHTML(){
   var _list=invWatchList();
-  var _rows="";
+  var _rows="", _cards=[];
   if(!_list.length) _rows='<tr><td colspan="6" style="color:var(--muted)">Nenhum código em observação. Adicione acima.</td></tr>';
   _list.forEach(function(w){
     var _info=null; try{ _info=invWatchInfo(w.codigo,w.tipo); }catch(e){ _info=null; }
@@ -8930,10 +8952,11 @@ function invWatchTabHTML(){
       _sigTxt='<span style="color:var(--muted)">—</span>';
     }
     if(_info&&_info.semDado){ _precoTxt='<span style="color:var(--muted)">sem dado</span>'; }
+    try{ _cards.push(invObsCard(w,_info)); }catch(_eO){ rmLogErr(_eO,"obs-card"); }
     _rows+='<tr data-invwatch="'+esc(w.codigo)+'"><td class="l"><b>'+esc(w.codigo)+'</b><br><span style="font-size:11px;color:var(--muted)">'+esc(invTipoLabel(w.tipo))+'</span></td><td>'+_precoTxt+'</td><td>'+_grTxt+'<br><span style="font-size:11px;color:var(--muted)">'+_mgTxt+'</span></td><td>'+_bzTxt+'<br><span style="font-size:11px;color:var(--muted)">'+_mbTxt+'</span></td><td>'+_sigTxt+'</td><td><button class="btn sm rowdel" data-invwatchdel="'+esc(w.id)+'">🗑</button></td></tr>';
   });
-  var _h='<div class="card inv-list-card"><h3>Observação ('+_list.length+')<button type="button" class="infoBtn" data-tip="Indicação calculada por fórmula, não é recomendação de compra. Margem em %: (valor de referência − preço) ÷ preço. ETF: só preço, sem sinal." aria-label="Sobre este bloco">i</button></h3>'
-    +'<div class="tblwrap"><table class="tbl"><thead><tr><th style="text-align:left">Código</th><th>Preço</th><th>Graham / margem</th><th>Bazin / margem</th><th>Sinal</th><th></th></tr></thead><tbody>'+_rows+'</tbody></table></div></div>';
+  var _h='<div class="card inv-list-card"><h3>Observação ('+_list.length+')<button type="button" class="infoBtn" data-tip="Leitura por fórmula, não é recomendação de compra. Cada cartão diz, em português, se o preço de hoje está abaixo ou acima dos critérios clássicos (Graham e Bazin para ações; P/VP e dividendos para FII). Veja Como ler, embaixo." aria-label="Sobre este bloco">i</button></h3>'
+    +invObsCorpo(_cards)+'</div>';
   _h='<div class="inv-obs-main"><div class="inv-obs-left"><div class="card formgrid f2 inv-form"><h3>Acompanhar código<button type="button" class="infoBtn" data-tip="Acompanhe sem ter comprado. Não entra no saldo, no DRE nem na exportação da carteira além da lista." aria-label="Sobre este bloco">i</button></h3>'
     +'<label class="f">Código *<input id="invWCode" maxlength="12" placeholder="ex: PETR4" style="text-transform:uppercase"></label>'
     +'<label class="f">Tipo *<select id="invWTipo"><option value="acao">Ação</option><option value="fii">FII</option><option value="etf">ETF</option></select></label>'
@@ -14580,6 +14603,58 @@ function invBarLigar(){
   try{ var _cpb=document.getElementById("cotPastaBtn"); if(_cpb) _cpb.onclick=function(){ if(COT_PASTA_ESTADO==="ativa") cotPastaRemover(); else if(COT_PASTA_ESTADO==="reativar") cotPastaReativar(); else cotPastaEscolher(); }; }catch(_eC){ rmLogErr(_eC,"cot-pasta-btn"); }
   try{ cotPastaAuto(); }catch(_eA){ rmLogErr(_eA,"cot-pasta-auto"); }
 }
+
+/* ---------- OBSERVAÇÃO: "está boa para comprar?" em português ----------
+   Só reorganiza o que o arquivo de cotações já traz. Ação: Graham (preço justo por lucro
+   e patrimônio) e Bazin (preço teto para 6% ao ano em dividendos). FII: P/VP e dividendos
+   (Bazin) comparados com o CDI. Conta sobre o passado — filtro para estudar, não recomendação. */
+function invObsPct(ref,preco){ var r=Number(ref), p=Number(preco); if(!(r>0)||!(p>0)) return null; return (p-r)/r*100; }
+function invObsRel(ref,preco){ var d=invObsPct(ref,preco); if(d==null) return ""; var a=Math.round(Math.abs(d)); if(a<1) return "praticamente igual"; return a+"% "+(d<0?"abaixo":"acima"); }
+function invObsCard(w,info){
+  var cod=String(w.codigo||"").toUpperCase(), tipo=w.tipo, d=null;
+  try{ var c=invCotacoesGet(); if(c) d=c.dados[cod]||null; }catch(e){}
+  var top='<div class="obs-top"><span class="obs-cod">'+esc(cod)+'</span><span class="mtag">'+esc(invTipoLabel(tipo))+'</span>'+(info&&info.preco?'<span class="obs-preco">'+esc(BRL(info.preco))+'</span>':'')+'<button class="btn sm rowdel" data-invwatchdel="'+esc(w.id)+'" aria-label="Tirar '+esc(cod)+' da observação">🗑</button></div>';
+  if(!info||info.semDado) return '<div class="obs-card" data-invwatch="'+esc(cod)+'">'+top+'<div class="obs-ver">⚪ <b>Sem cotação ainda</b></div><ul class="obs-crit"><li class="info">Rode "Atualizar cotações" no PC (o código entra na lista sozinho com a pasta ligada).</li></ul></div>';
+  if(tipo==="etf"||info.soPreco) return '<div class="obs-card" data-invwatch="'+esc(cod)+'">'+top+'<div class="obs-ver">⚪ <b>Só o preço</b> — ETF é uma cesta de ativos; Graham e Bazin não se aplicam.</div></div>';
+  var crit=[], ok=0, tem=0, extra=[];
+  var preco=info.preco;
+  if(tipo==="fii"){
+    var pvp=d?Number(d.pvp):NaN, dy=d?Number(d.dy):NaN;
+    if(isFinite(pvp)&&pvp>0){ tem++; if(pvp<=1){ ok++; crit.push('<li class="ok"><b>P/VP '+esc(brDec(pvp,2))+'</b>: você paga R$ '+esc(brDec(pvp,2))+' por R$ 1,00 de patrimônio do fundo'+(pvp<0.995?' — '+Math.round((1-pvp)*100)+'% de desconto':'')+'.</li>'); } else crit.push('<li class="no"><b>P/VP '+esc(brDec(pvp,2))+'</b>: você paga '+Math.round((pvp-1)*100)+'% a mais que o patrimônio do fundo.</li>'); }
+    else crit.push('<li class="na">P/VP: sem dado no arquivo.</li>');
+    if(info.bazin!=null){ tem++; var rendeTxt=(isFinite(dy)&&dy>0)?'<b>Rende '+esc(brDec(dy,1))+'% ao ano</b> em dividendos':'<b>Dividendos dos últimos 12 meses</b>'; if(preco<=info.bazin){ ok++; crit.push('<li class="ok">'+rendeTxt+' — acima dos 6% do método Bazin (preço teto '+esc(BRL(info.bazin))+'; hoje '+esc(invObsRel(info.bazin,preco))+').</li>'); } else crit.push('<li class="no">'+rendeTxt+' — abaixo dos 6% do método Bazin (preço teto '+esc(BRL(info.bazin))+'; hoje '+esc(invObsRel(info.bazin,preco))+').</li>'); }
+    else crit.push('<li class="na">Dividendos: sem dado no arquivo.</li>');
+    try{ var cdi=invCdiGet(); if(cdi&&isFinite(dy)&&dy>0){ extra.push('<li class="info">CDI hoje: '+esc(brDec(cdi.pct,2))+'% ao ano — o fundo rende '+(dy>=cdi.pct?'mais':'menos')+' que o CDI (dividendo de FII é isento de IR para pessoa física; o CDI tem IR).</li>'); } }catch(e){}
+  } else {
+    if(info.grahamNa){ tem++; crit.push('<li class="no"><b>Graham não se aplica</b>: a empresa teve prejuízo ou patrimônio negativo no último balanço — sinal de cuidado.</li>'); }
+    else if(info.graham!=null){ tem++; if(preco<=info.graham){ ok++; crit.push('<li class="ok"><b>Preço justo (Graham)</b>: '+esc(BRL(info.graham))+' — hoje está '+esc(invObsRel(info.graham,preco))+'.</li>'); } else crit.push('<li class="no"><b>Preço justo (Graham)</b>: '+esc(BRL(info.graham))+' — hoje está '+esc(invObsRel(info.graham,preco))+'.</li>'); }
+    else crit.push('<li class="na">Preço justo (Graham): sem dado no arquivo.</li>');
+    if(info.bazin!=null){ tem++; var div=d?Number(d.dividendo_anual):NaN, yld=(isFinite(div)&&div>0)?div/preco*100:null; var yTxt=yld!=null?' (paga uns '+esc(brDec(yld,1))+'% ao ano no preço de hoje)':''; if(preco<=info.bazin){ ok++; crit.push('<li class="ok"><b>Preço teto por dividendos (Bazin)</b>: '+esc(BRL(info.bazin))+' — hoje está '+esc(invObsRel(info.bazin,preco))+yTxt+'.</li>'); } else crit.push('<li class="no"><b>Preço teto por dividendos (Bazin)</b>: '+esc(BRL(info.bazin))+' — hoje está '+esc(invObsRel(info.bazin,preco))+yTxt+'.</li>'); }
+    else crit.push('<li class="na">Preço teto (Bazin): a empresa não pagou dividendos no período ou falta dado.</li>');
+  }
+  var cls, ver;
+  if(!tem){ cls=""; ver='⚪ <b>Sem dados suficientes</b> para os critérios.'; }
+  else if(ok===tem&&tem>=2){ cls="v-verde"; ver='🟢 <b>Parece barata pelos '+tem+' critérios</b> — vale estudar a empresa antes de comprar.'; }
+  else if(ok===tem){ cls="v-amarelo"; ver='🟡 <b>Barata pelo único critério com dado</b> — pouca informação para concluir.'; }
+  else if(ok>0){ cls="v-amarelo"; ver='🟡 <b>Barata por '+ok+' de '+tem+' critérios</b> — sinal misto, olhe com calma.'; }
+  else { cls="v-vermelho"; ver=(tipo!=="fii"&&info.grahamNa)?'🔴 <b>Não passa nos critérios</b> — a empresa teve prejuízo; veja os motivos abaixo.':'🔴 <b>Parece cara pelos critérios</b> — o preço de hoje está acima das referências.'; }
+  return '<div class="obs-card '+cls+'" data-invwatch="'+esc(cod)+'" data-obs-ok="'+ok+'" data-obs-tem="'+tem+'">'+top+'<div class="obs-ver">'+ver+'</div><ul class="obs-crit">'+crit.join("")+extra.join("")+'</ul></div>';
+}
+function invObsCorpo(cards){
+  if(!cards.length) return '<div class="empty">Nenhum código em observação. Adicione ao lado.</div>';
+  var ordem=function(h){ return /v-verde/.test(h)?0:(/v-amarelo/.test(h)?1:(/v-vermelho/.test(h)?2:3)); };
+  var c=cards.slice().sort(function(a,b){ return ordem(a)-ordem(b); });
+  var data=""; try{ var cc=invCotacoesGet(); if(cc&&cc.data) data=' Cotações de '+isoToBR(cc.data)+'.'; }catch(e){}
+  return '<div class="obs-cards">'+c.join("")+'</div>'
+    +'<div class="sub" style="margin-top:10px">⚠️ É uma conta com números do passado (lucro, patrimônio e dividendos do último balanço), não uma recomendação. Ela não sabe de dívidas, do setor, de notícias nem se o lucro vai continuar. Use como filtro para escolher o que estudar.'+esc(data)+'</div>'
+    +'<details class="obs-como"><summary>Como ler</summary>'
+    +'<p><b>Preço justo de Graham</b> (ações): √(22,5 × lucro por ação × patrimônio por ação). Junta o quanto a empresa lucra e o quanto ela vale no balanço. Preço de hoje <b>abaixo</b> do justo = parece barata por esse critério. Não vale para empresa com prejuízo.</p>'
+    +'<p><b>Preço teto de Bazin</b> (ações e FII): dividendos do ano ÷ 6%. É o preço máximo para receber pelo menos 6% ao ano em dividendos. Preço <b>abaixo</b> do teto = rende mais de 6%.</p>'
+    +'<p><b>P/VP</b> (FII): preço da cota ÷ valor patrimonial da cota. Abaixo de 1 = você paga menos do que os imóveis/títulos do fundo valem no balanço.</p>'
+    +'<p><b>As cores:</b> 🟢 passou nos dois critérios · 🟡 passou em um só (ou só um tem dado) · 🔴 não passou em nenhum · ⚪ sem dado. Os cartões verdes aparecem primeiro.</p>'
+    +'</details>';
+}
+try{ window.RM.invObsCard=invObsCard; }catch(e){ rmLogErr(e); }
 
 } /* fim rmApp */
 })();
