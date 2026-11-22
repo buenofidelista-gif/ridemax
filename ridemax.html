@@ -3755,9 +3755,10 @@ var NAV_GROUPS=[
   {id:"g-manual",icon:"",label:"Manual",single:"manual"},
  {id:"g-lix",icon:"",label:"Lixeira",single:"lixeira"}
 ];
-function navOpenDefault(){ return {"g-uber":1,"g-fin":1}; }
+function navOpenDefault(){ return {"g-uber":0,"g-fin":0}; }
 function navOpenSanitize(v){ var d=navOpenDefault(); try{ if(v&&typeof v==="object"&&!Array.isArray(v)){ ["g-uber","g-fin"].forEach(function(k){ if(v[k]===0||v[k]==="0"||v[k]===false) d[k]=0; else d[k]=1; }); } }catch(e){rmLogErr(e)} return d; }
-var NAV_OPEN=(function(){ try{ var _s=(DB&&DB.settings&&DB.settings.navOpen)||null; return navOpenSanitize(_s); }catch(e){ return navOpenDefault(); } })();
+/* regra: todo recolhível começa recolhido — os grupos abrem só no toque, durante o uso */
+var NAV_OPEN=navOpenDefault();
 function navOpenPersist(){ try{ if(!DB||!DB.settings) return; DB.settings.navOpen={"g-uber":NAV_OPEN["g-uber"]?1:0,"g-fin":NAV_OPEN["g-fin"]?1:0}; try{ writePreserveRev(); }catch(e){rmLogErr(e)} }catch(e){rmLogErr(e)} }
 function navTabInfo(t){
   var base=NAV_BY_ID[t.view]||{icon:"•",label:t.view};
@@ -11625,7 +11626,6 @@ function qrRender(pref){
   if(rp) rp.onclick=function(){
     var l=qrLastRide(); if(!l) return;
     if(qrActivePlats().some(function(p){ return p.id===l.platform_id; })) qrPlat=l.platform_id;
-    if(l.distance!=null) qrMoreOpen=true;
     qrRender({val:brDec(Number(l.earnings)||0,2),cash:!!l.cash,fare:(l.cash&&l.fare)?brDec(l.fare,2):"",dist:(l.distance!=null?brDec(l.distance,1):"")});
   };
   [].forEach.call(box.querySelectorAll("input"),function(inp){ inp.addEventListener("keydown",function(ev){ if(ev.key==="Enter"){ ev.preventDefault(); qrSubmit(false); } }); });
@@ -13050,7 +13050,7 @@ function f3Montar(form,o){
   if(ch&&o.chipsDepois){ var _ref=o.chipsDepois===true?null:f3Lbl(o.chipsDepois); if(_ref&&_ref.parentNode===topo) topo.insertBefore(ch,_ref.nextSibling); else topo.appendChild(ch); }
   (o.grande||[]).forEach(function(id){ var e=document.getElementById(id); if(e){ e.classList.add("f3-grande"); var l=e.closest("label"); if(l) l.classList.add("f3-grande-lbl"); } });
   if(o.mais&&o.mais.length){
-    var d=document.createElement("details"); d.className="f3-mais"; if(o.abrirMais) d.open=true;
+    var d=document.createElement("details"); d.className="f3-mais";
     var s=document.createElement("summary"); s.textContent=o.maisRotulo||"Mais detalhes"; d.appendChild(s);
     o.mais.forEach(function(item){
       if(Array.isArray(item)){ var linha=document.createElement("div"); linha.className="f3-linha"; item.forEach(function(id){ var l=f3Lbl(id); if(l) linha.appendChild(l); }); if(linha.children.length) d.appendChild(linha); return; }
@@ -13191,7 +13191,7 @@ function f5Blocos(){
     var h=c.querySelector(":scope > h3");
     var tit=(h.textContent||"").replace(/\s+/g," ").replace(/\d+/g,"#").trim().slice(0,60);
     var chave=v+"|"+sub+"|"+tit;
-    var aberto=(mem[chave]!=null)?!!mem[chave]:(i<2);
+    var aberto=false; /* regra: todo recolhível começa recolhido */
     c.classList.add("f5-bloco"); if(!aberto) c.classList.add("f5-fechado");
     h.setAttribute("role","button"); h.setAttribute("tabindex","0"); h.setAttribute("aria-expanded",aberto?"true":"false");
     var alterna=function(){ var fechado=c.classList.toggle("f5-fechado"); h.setAttribute("aria-expanded",fechado?"false":"true"); f5MemGrava(chave,!fechado); if(!fechado){ setTimeout(function(){ try{ redrawCharts(); }catch(e){} },60); } };
@@ -13273,7 +13273,7 @@ function cronAbrirValor(){
   var o=cronLer(); if(!o||!o.fim) return;
   var dIni=new Date(o.ini), data;
   try{ data=workdayISO(dIni); }catch(e){ data=todayISO(); }
-  qrMoreOpen=(o.km||0)>0.05;
+  qrMoreOpen=false;
   qrOpen({titulo:"🏁 Corrida encerrada — informe o valor",date:data,start:cronHM(o.ini),end:cronHM(o.fim),dist:(o.km||0)>0.05?brDec(Math.round(o.km*10)/10,1):"",resumo:cronResumo(o)});
 }
 function cronDescartar(){ cronGpsDesligar(); cronGrava(null); cronPintar(); }
