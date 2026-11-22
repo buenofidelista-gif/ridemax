@@ -3795,10 +3795,11 @@ function openShift(){ for(var i=0;i<DB.shifts.length;i++){ var s=DB.shifts[i]; i
 function rideMin(r){ try{ var sm=parseHM(r.start_time); if(sm==null) return null; return isoDays(r.date)*1440+sm; }catch(e){ return null; } }
 function rideInShift(r,s){ try{ var iv=shiftInterval(s); if(!iv) return false; var rm=rideMin(r); if(rm==null) return false;
   var dentro=function(m){ return iv.end==null?m>=iv.start:(m>=iv.start&&m<=iv.end); };
-  if(dentro(rm)) return true;
-  /* de madrugada o app grava a corrida com a data do DIA DE TRABALHO (vira às 04:00):
-     00:30 com data de sábado aconteceu no domingo 00:30 */
-  var sm=parseHM(r.start_time); return sm!=null&&sm<240&&dentro(rm+1440);
+  /* de madrugada a corrida tem a data do DIA DE TRABALHO (vira às 04:00), tanto lançada no app quanto
+     importada do extrato: 00:30 com data de sábado aconteceu no domingo 00:30. Só essa leitura vale —
+     ler também como "sábado 00:30" fazia a mesma corrida entrar em dois turnos. */
+  var sm=parseHM(r.start_time); if(sm!=null&&sm<240) return dentro(rm+1440);
+  return dentro(rm);
 }catch(e){ return false; } }
 /* DESEMPENHO: antes, cada turno varria TODAS as corridas (700 turnos × 15 mil corridas
    = 10 milhões de comparações). Uma corrida só pode cair no turno se a data dela for
@@ -5041,7 +5042,7 @@ function parseCSV(text){
 function guessField(h){
   h=String(h||"").toLowerCase();
   if(/data|date|dia/.test(h)) return "date";
-  if(/inicio|início|start|partida|embarque/.test(h)) return "start";
+  if(/inicio|início|start|partida|embarque|hora|horario|horário|time/.test(h)) return "start";
   if(/fim|end|chegada|desembarque/.test(h)) return "end";
   if(/gorjeta|gratific|tip/.test(h)) return "tip";
   if(/passageiro|passenger|fare/.test(h)) return "fare";
@@ -5104,13 +5105,16 @@ function importCsv(){
     var _cashFlag=0;
     if(_cashWant){ if(fareV!=null&&fareV>0){ _cashFlag=1; } else { _cashFlag=0; cashFallN++; } }
     var st=parseCsvTime(g("start"))||"12:00", et=parseCsvTime(g("end"))||null;
+    /* madrugada: o extrato traz a data do calendário; o app usa a do DIA DE TRABALHO (vira às 04:00),
+       igual à corrida lançada no app — 00:30 de domingo fica no sábado */
+    var isoCal=iso; if(hasTime){ var _smC=parseHM(st); if(_smC!=null&&_smC<240){ var _wdI=somaDiasISO(iso,-1); if(_wdI) iso=_wdI; } }
     var distRaw=g("dist").replace(/\s?km$/i,""), dist=distRaw?parseBR(distRaw):null;
     if(distRaw&&!(dist>=0)) dist=null;
     var pn=g("plat"), pid=defPlat;
     if(pn){ var f=DB.platforms.find(function(p){return p.name.toLowerCase()===pn.toLowerCase();}); if(f) pid=f.id; }
     var notes=g("notes").slice(0,300);
     var key=keyOf(iso,hasTime?st:"",val,tipV,dist,notes);
-    if(seen[key]){ dupN++; return; }
+    if(seen[key]||(isoCal!==iso&&seen[keyOf(isoCal,hasTime?st:"",val,tipV,dist,notes)])){ dupN++; return; } /* também pega a mesma corrida importada antes com a data do calendário */
     seen[key]=1;
     rows.push({id:uid(),platform_id:pid,date:iso,start_time:st,end_time:et,earnings:val,tip:tipV,fare:fareV,cash:_cashFlag,distance:dist,notes:notes});
     okN++;
@@ -6802,7 +6806,7 @@ function wxSlot(wd,h){
   if(!(DB.wx.cfg.enabled&&DB.wx.cfg.key)) return null;
   var r=wxGet(nextDateOf(wd),h);
   if(!r) return null;
-  return {icon:wxIcon(r.c),title:wxIcon(r.c)+" "+wxDesc(r.c)+(r.t!=null?" · "+Number(r.t).toFixed(0)+"°C":"")+(r.p!=null?" · chuva "+r.p+"%":"")+(r.r?" · "+NumberbrDec((r.r),1)+" mm":"")};
+  return {icon:wxIcon(r.c),title:wxIcon(r.c)+" "+wxDesc(r.c)+(r.t!=null?" · "+Number(r.t).toFixed(0)+"°C":"")+(r.p!=null?" · chuva "+r.p+"%":"")+(r.r?" · "+brDec(Number(r.r),1)+" mm":"")};
 }
 /* ---------- PREVISÃO ---------- */
 function rPrev(){
@@ -6933,7 +6937,7 @@ function wxDayCard(date,label){
   h+='<div class="tblwrap"><table class="tbl"><tr><th>Hora</th><th>Condição</th><th>Temp.</th><th>Chuva %</th><th>Chuva mm</th><th>Vento</th></tr><tbody>';
   for(var hh=0;hh<24;hh++){
     var r=fc[hh]!=null?fc[hh]:fc[String(hh)]; if(!r) continue;
-    h+='<tr'+(hh===nowH?' style="background:var(--accent)"':"")+'><td>'+String(hh).padStart(2,"0")+':00</td><td class="l">'+wxIcon(r.c)+' '+esc(wxDesc(r.c))+'</td><td>'+(r.t!=null?NumberbrDec((r.t),1)+"°C":"–")+'</td><td style="color:'+((r.p||0)>=60?"#5a9fd4":"inherit")+'"><b>'+(r.p!=null?r.p+"%":"–")+'</b></td><td>'+(r.r!=null?Number(r.r).toFixed(1):"–")+'</td><td>'+(r.w!=null?Number(r.w).toFixed(0)+" km/h":"–")+'</td></tr>';
+    h+='<tr'+(hh===nowH?' style="background:var(--accent)"':"")+'><td>'+String(hh).padStart(2,"0")+':00</td><td class="l">'+wxIcon(r.c)+' '+esc(wxDesc(r.c))+'</td><td>'+(r.t!=null?brDec(Number(r.t),1)+"°C":"–")+'</td><td style="color:'+((r.p||0)>=60?"#5a9fd4":"inherit")+'"><b>'+(r.p!=null?r.p+"%":"–")+'</b></td><td>'+(r.r!=null?brDec(Number(r.r),1):"–")+'</td><td>'+(r.w!=null?Number(r.w).toFixed(0)+" km/h":"–")+'</td></tr>';
   }
   return h+'</tbody></table></div></div>';
 }
@@ -7912,7 +7916,7 @@ function rStyle(){
   })();
 }
 applyStyle();
-show("dashboard");
+/* a primeira tela é desenhada no fim do carregamento (js/99-fim.js), quando todos os módulos já estão prontos */
 /* ---------- DRE GERENCIAL ---------- */
 var DRE_MANUAL_GROUPS=[["receita","Outras receitas (gorjetas, bônus)"],["ded","Deduções — taxas e comissões"],["var","Custos variáveis"],["fix","Despesas fixas / operacionais"],["ajuste","Ajustes ao resultado"]];
 var DRE_MAP_OPTS=[["var","Variável"],["fix","Fixa"],["off","Ignorado"]];
@@ -13104,6 +13108,8 @@ function mbarIni(){
   var _host=document.getElementById("app")||document.body;
   _host.appendChild(b);
   b.addEventListener("click",function(ev){ var t=ev.target.closest?ev.target.closest("button"):null; if(!t) return; var k=t.dataset.mb;
+    /* qualquer outro botão da barra fecha a tela "Mais" antes de ir (senão ela ficava por cima) */
+    if(k!=="menu"&&document.body.classList.contains("mais-open")){ try{ maisFechar(); }catch(e){ rmLogErr(e,"mbar-mais"); } }
     if(k==="inicio") show("dashboard");
     else if(k==="corridas") show("historico");
     else if(k==="mais-corrida"){ try{ qrOpen(); }catch(e){ rmLogErr(e,"mbar-qr"); show("nova"); } }
@@ -14961,6 +14967,13 @@ function maisIr(id){
   try{ window.scrollTo(0,0); }catch(e){}
 }
 try{ window.RM.maisAbrir=maisAbrir; window.RM.maisIr=maisIr; }catch(e){ rmLogErr(e); }
+
+/* ---------- APOIO AOS TESTES AUTOMÁTICOS ----------
+   Só leitura: deixa os testes lerem o registro de erros internos (o mesmo do Diagnóstico). */
+try{ window.RM.errLog=function(){ return RM_ERRLOG.map(function(x){ return {msg:x.msg,origem:x.origem,n:x.n,stack:x.stack}; }); }; }catch(e){ rmLogErr(e); }
+
+/* primeira tela: só depois de todos os módulos (antes, cartões que usam listas definidas mais abaixo falhavam na abertura) */
+try{ show(current||"dashboard"); }catch(e){ rmLogErr(e,"primeira-tela"); }
 
 } /* fim rmApp */
 })();
