@@ -9299,10 +9299,25 @@ function invAcompTabHTML(){
   +'<div class="card inv-aviso"><div class="sub">Indicação calculada, não é recomendação.</div></div></div>';
   return h;
 }
+/* Tesouro do arquivo do script: "ipca-juros-2035-05-15" → "IPCAJ2035" (até 12 letras; com o mês se repetir) */
+function invTesouroCodigo(slug,comMes){
+  var s0=String(slug||"").toLowerCase().trim(); var m=s0.match(/^(.*?)-?(\d{4})-(\d{2})-(\d{2})$/); if(!m) return null;
+  var MAP={educa:"EDUCA",igpm:"IGPM",ipca:"IPCA",prefixado:"PRE",selic:"SELIC",renda:"RENDA",mais:"",juros:"J",com:"",semestrais:"",tesouro:""};
+  var p=m[1].split("-").filter(Boolean).map(function(w){ return MAP[w]!=null?MAP[w]:w.toUpperCase().slice(0,3); }).join("");
+  return ((p||"TES")+m[2]+(comMes?m[3]:"")).slice(0,12);
+}
 function invParseCotacoesTexto(txt){
   var _obj;
   try{ _obj=JSON.parse(String(txt)); }catch(e){ throw new Error("JSON inválido. Nada foi alterado."); }
   if(!_obj||typeof _obj!=="object"||Array.isArray(_obj)) throw new Error("Arquivo inválido: esperado objeto JSON. Nada foi alterado.");
+  /* formato do bueno_cotacoes.py: {gerado_em, ativos:[{codigo,preco,...}], tesouro:{titulos:[{slug,sell_price,buy_price}]}} */
+  if(Array.isArray(_obj.ativos)){
+    var _cv={}, _dt=(typeof _obj.data==="string"&&_obj.data.trim())?_obj.data.trim():((typeof _obj.gerado_em==="string")?_obj.gerado_em.slice(0,10):"");
+    _obj.ativos.forEach(function(a){ if(!a||!a.codigo) return; var _pa=Number(a.preco); if(!(_pa>0)) return; _cv[String(a.codigo).trim().toUpperCase().slice(0,12)]=a; });
+    try{ var _tt=(_obj.tesouro&&Array.isArray(_obj.tesouro.titulos))?_obj.tesouro.titulos:[];
+      _tt.forEach(function(b){ if(!b) return; var _pr=Number(b.sell_price)>0?Number(b.sell_price):Number(b.buy_price); if(!(_pr>0)) return; var _cd=invTesouroCodigo(b.slug,false); if(!_cd) return; if(_cv[_cd]) _cd=invTesouroCodigo(b.slug,true); if(_cd&&!_cv[_cd]) _cv[_cd]={preco:_pr}; }); }catch(_eT){ rmLogErr(_eT,"cot-tesouro"); }
+    _obj={data:_dt,dados:_cv};
+  }
   var _top=Object.keys(_obj);
   var _data=null;
   if(typeof _obj.data==="string"&&_obj.data.trim()) _data=_obj.data.trim();
@@ -9563,7 +9578,7 @@ function rInvest(){
     +'<div class="inv-bar-row"><div class="toolbar seg" id="invTabs"><button type="button" data-t="0" class="'+(_invTab===0?"on":"")+'">💼 Carteira</button><button type="button" data-t="1" class="'+(_invTab===1?"on":"")+'">👀 Observação</button><button type="button" data-t="2" class="'+(_invTab===2?"on":"")+'">💰 Proventos</button><button type="button" data-t="3" class="'+(_invTab===3?"on":"")+'">📊 Acompanhar</button></div>'
     +'<div class="toolbar"><span>Período:</span><select id="invPer"><option value="mes">Este mês</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="todos">Todo o período</option></select></div><span class="tip">'+esc(perLabel+perioTxt)+'</span>'
     +'<span class="sub" id="invCotTopo">'+esc((function(){ var _c=invCotacoesGet(); if(!_c) return "sem cotações carregadas"; var _dd=""; try{ _dd=isoToBR(_c.data).slice(0,5); }catch(e){rmLogErr(e)} var _n=0; try{ _n=Object.keys(_c.dados||{}).length; }catch(e){rmLogErr(e)} var _id=invCotIdadeDias(); var _t="cotações de "+_dd+" · "+_n+" ativo(s)"; if(_id!=null&&_id>1) _t+=" · ⚠️ desatualizada ("+_id+" dias)"; return _t; })())+'</span>'
-    +((_invTab===0)?'<button class="btn sm accent" id="invExpLista">Exportar lista</button><button class="btn sm teal" id="invImpCot">Carregar cotações</button><button class="btn sm green" id="invOpNovoBtn">Nova operação</button><button class="btn sm green" id="invEvNovoBtn">Novo evento</button><span class="msg-ok" id="invCotMsg"></span>':"")
+    +((_invTab===0)?cotPastaBtnHTML()+'<button class="btn sm accent" id="invExpLista">Exportar lista</button><button class="btn sm teal" id="invImpCot">Carregar cotações</button><button class="btn sm green" id="invOpNovoBtn">Nova operação</button><button class="btn sm green" id="invEvNovoBtn">Novo evento</button><span class="msg-ok" id="invCotMsg"></span>':"")
     +'</div></div>';
   if(_invTab===3){
     html+=invAcompTabHTML();
@@ -9950,8 +9965,10 @@ function rInvest(){
   document.getElementById("invGoSaldos").onclick=function(){ show("saldos"); };
   document.getElementById("invGoExt").onclick=function(){ show("extrato"); };
   var _expB=document.getElementById("invExpLista");
+  if(_expB&&COT_PASTA_ESTADO==="ativa"){ _expB.onclick=function(){ cotPastaGravarLista(true).then(function(r){ var _m=document.getElementById("invCotMsg"); if(_m){ _m.style.color=r.ok?"#4caf7d":"#e0695c"; _m.textContent=r.msg; } }); }; _expB=null; }
   if(_expB){ _expB.onclick=function(){ try{ var _p=invExportarPayload(); downloadFile("ativos_bueno.json",JSON.stringify(_p),"application/json"); var _m=document.getElementById("invCotMsg"); if(_m){ _m.style.color="#4caf7d"; _m.textContent="Lista exportada: "+_p.ativos.length+" ativo(s)"+(_p.tesouro?" + tesouro":"")+"."; } }catch(e){ try{ customAlert("Não foi possível exportar a lista.","Investimentos"); }catch(_){rmLogErr(_)} } }; }
   var _impB=document.getElementById("invImpCot");
+  if(_impB&&COT_PASTA_ESTADO==="ativa"){ _impB.onclick=function(){ cotPastaLerNovo(true).then(function(r){ cotPastaAvisar(r,true); }); }; _impB=null; }
   if(_impB){ _impB.onclick=function(){ var _fi=document.createElement("input"); _fi.type="file"; _fi.accept=".json,application/json"; _fi.onchange=function(){ var _f=_fi.files&&_fi.files[0]; if(!_f) return; var _rd=new FileReader(); _rd.onload=function(){ var _msg=document.getElementById("invCotMsg"); try{ var _parsed=invParseCotacoesTexto(String(_rd.result||"")); var _keys=_parsed.topKeys||[]; invCotacoesAplicar(_parsed); var _nh8f=0; try{ _nh8f=(DB.invHist||[]).length; }catch(_){rmLogErr(_)} if(!save()){ try{ customAlert(SAVE_FAIL_MSG,"Investimentos"); }catch(_){rmLogErr(_)} return; } if(_msg){ _msg.style.color="#4caf7d"; _msg.textContent="Cotações de "+isoToBR(_parsed.data).slice(0,5)+" carregadas: "+Object.keys(_parsed.dados).length+" ativo(s). Chaves do arquivo: "+_keys.join(", ")+". Histórico: "+_nh8f+" arquivo(s)."; } rInvest(); var _m2=document.getElementById("invCotMsg"); if(_m2){ _m2.style.color="#4caf7d"; _m2.textContent="Cotações de "+isoToBR(_parsed.data).slice(0,5)+" carregadas: "+Object.keys(_parsed.dados).length+" ativo(s). Chaves do arquivo: "+_keys.join(", ")+". Histórico: "+_nh8f+" arquivo(s)."; } }catch(_e){ if(_msg){ _msg.style.color="#e0695c"; _msg.textContent="⚠️ "+(_e&&_e.message?_e.message:"Arquivo inválido."); } try{ customAlert((_e&&_e.message?_e.message:"Arquivo inválido."),"Investimentos"); }catch(_){rmLogErr(_)} } }; _rd.readAsText(_f); }; _fi.click(); }; }
   /* FASE 8G — alterna campos Tesouro (lista do arquivo) e CDB (% CDI + vencimento). */
   var _invTipoEl=document.getElementById("invTipo"), _invOpEl=document.getElementById("invOp");
@@ -10044,6 +10061,8 @@ function rInvest(){
     save(); rInvest();
     if(trashId) showUndoBar(trashId);
   }; });
+  try{ var _cpb=document.getElementById("cotPastaBtn"); if(_cpb) _cpb.onclick=function(){ if(COT_PASTA_ESTADO==="ativa") cotPastaRemover(); else if(COT_PASTA_ESTADO==="reativar") cotPastaReativar(); else cotPastaEscolher(); }; }catch(_eC){ rmLogErr(_eC,"cot-pasta-btn"); }
+  try{ cotPastaAuto(); }catch(_eA){ rmLogErr(_eA,"cot-pasta-auto"); }
 }
 /* ---------- FASE 5B — CONCILIAÇÃO (conferência, não ajuste) ----------
    Regra 23: cada baixa e transferência carrega a marca conciliado; a tela
@@ -14476,6 +14495,83 @@ function repLoteBaixar(rp){
 }
 function repLoteConciliado(rp){ if(!rp||!rp.loteId) return null; var L=loteById(rp.loteId); return (L&&L.status==="conciliado")?L:null; }
 try{ window.RM.loteDifMovs=loteDifMovs; window.RM.repLoteBaixar=repLoteBaixar; }catch(e){ rmLogErr(e); }
+
+/* ---------- PASTA DAS COTAÇÕES (PC) ----------
+   O app fica "ligado" à pasta do bueno_cotacoes.py (mesmo recurso da pasta de backup):
+   ao abrir Investimentos, grava ativos_bueno.json (lista da carteira) e carrega sozinho o
+   cotacoes_bueno_AAAA-MM-DD.json mais novo, se ainda não foi carregado. O script roda pelo
+   ícone "Atualizar cotações" (ou agendado); as cotações vão para o celular pela sincronização.
+   A pasta fica só neste aparelho (fora do backup e da sincronização). */
+var COT_PASTA=null, COT_PASTA_ESTADO="nenhuma", COT_PASTA_T=0;
+function cotPastaBtnHTML(){
+  if(!bkpPastaSuporte()) return "";
+  if(COT_PASTA_ESTADO==="ativa") return '<button class="btn sm accent" id="cotPastaBtn" title="Pasta ligada: o app grava a lista e lê as cotações sozinho. Toque para desligar.">📁 '+esc(COT_PASTA?COT_PASTA.name:"Pasta")+' · automático</button>';
+  if(COT_PASTA_ESTADO==="reativar") return '<button class="btn sm yellow" id="cotPastaBtn">🔓 Reativar pasta das cotações</button>';
+  return '<button class="btn sm accent" id="cotPastaBtn" title="Escolha a pasta onde está o bueno_cotacoes.py">📁 Ligar pasta das cotações</button>';
+}
+async function cotPastaCarregar(){
+  if(!bkpPastaSuporte()){ COT_PASTA_ESTADO="sem-suporte"; return; }
+  try{ var h=await bkpTx(BKP_ST_CFG,"readonly",function(st){ return st.get("cotPasta"); }); if(!h){ COT_PASTA=null; COT_PASTA_ESTADO="nenhuma"; return; }
+    COT_PASTA=h; var p=await h.queryPermission({mode:"readwrite"}); COT_PASTA_ESTADO=(p==="granted")?"ativa":"reativar"; }catch(e){ rmLogErr(e,"cot-pasta-ler"); COT_PASTA_ESTADO="nenhuma"; }
+}
+function cotPastaListaTexto(){ var p=invExportarPayload(); return JSON.stringify({versao:1,ativos:p.ativos,tesouro:!!p.tesouro},null,2); }
+async function cotPastaGravarLista(avisar){
+  if(!COT_PASTA||COT_PASTA_ESTADO!=="ativa") return {ok:false,msg:"Pasta das cotações não está ligada."};
+  try{
+    var novo=cotPastaListaTexto(), atual=null;
+    try{ var fh0=await COT_PASTA.getFileHandle("ativos_bueno.json"); atual=await (await fh0.getFile()).text(); }catch(_e){ atual=null; }
+    var mesmo=false; try{ var a=JSON.parse(atual||"null"), b=JSON.parse(novo); mesmo=!!a&&JSON.stringify(a.ativos)===JSON.stringify(b.ativos)&&!!a.tesouro===!!b.tesouro; }catch(_e2){ mesmo=false; }
+    var n=JSON.parse(novo).ativos.length;
+    if(mesmo&&!avisar) return {ok:true,igual:true,msg:""};
+    if(!mesmo){ var fh=await COT_PASTA.getFileHandle("ativos_bueno.json",{create:true}); var w=await fh.createWritable(); await w.write(novo); await w.close(); }
+    return {ok:true,msg:"Lista gravada na pasta "+COT_PASTA.name+": "+n+" ativo(s). Rode \"Atualizar cotações\" no PC."};
+  }catch(e){ rmLogErr(e,"cot-pasta-lista"); if(e&&(e.name==="NotAllowedError"||e.name==="SecurityError")) COT_PASTA_ESTADO="reativar"; return {ok:false,msg:"Não consegui gravar a lista na pasta: "+String((e&&e.message)||e)}; }
+}
+async function cotPastaLerNovo(forcar){
+  if(!COT_PASTA||COT_PASTA_ESTADO!=="ativa") return {ok:false,msg:"Pasta das cotações não está ligada."};
+  try{
+    var melhor=null;
+    for await (var ent of COT_PASTA.values()){ if(ent.kind!=="file"||!/^cotacoes_bueno_\d{4}-\d{2}-\d{2}\.json$/.test(ent.name)) continue; var f=await ent.getFile(); if(!melhor||ent.name>melhor.nome||(ent.name===melhor.nome&&f.lastModified>melhor.f.lastModified)) melhor={nome:ent.name,f:f}; }
+    if(!melhor) return {ok:false,vazio:true,msg:"Nenhum arquivo cotacoes_bueno_*.json na pasta "+COT_PASTA.name+" ainda. Rode \"Atualizar cotações\" no PC."};
+    var marca=melhor.nome+"|"+melhor.f.lastModified, ult=null;
+    try{ ult=await bkpTx(BKP_ST_CFG,"readonly",function(st){ return st.get("cotPastaUlt"); }); }catch(_e){}
+    if(!forcar&&ult===marca) return {ok:false,igual:true,msg:""};
+    var parsed=invParseCotacoesTexto(await melhor.f.text());
+    invCotacoesAplicar(parsed);
+    if(!save()) return {ok:false,msg:SAVE_FAIL_MSG};
+    try{ await bkpTx(BKP_ST_CFG,"readwrite",function(st){ st.put(marca,"cotPastaUlt"); }); }catch(_e){}
+    return {ok:true,data:parsed.data,n:Object.keys(parsed.dados).length,arquivo:melhor.nome,msg:"Cotações de "+isoToBR(parsed.data).slice(0,5)+" carregadas da pasta: "+Object.keys(parsed.dados).length+" ativo(s) ("+melhor.nome+")."};
+  }catch(e){ rmLogErr(e,"cot-pasta-arq"); if(e&&(e.name==="NotAllowedError"||e.name==="SecurityError")) COT_PASTA_ESTADO="reativar"; return {ok:false,msg:"Não consegui ler as cotações da pasta: "+String((e&&e.message)||e)}; }
+}
+function cotPastaAvisar(r,manual){ if(!r) return; if(r.ok){ try{ if(current==="investimentos") rInvest(); }catch(_e){} try{ qrToast("📈 "+r.msg,4500); }catch(_e2){} var m=document.getElementById("invCotMsg"); if(m){ m.style.color="#4caf7d"; m.textContent=r.msg; } } else if(manual&&r.msg){ customAlert(r.msg,"Cotações"); } }
+async function cotPastaSincronizar(manual){
+  if(COT_PASTA_ESTADO!=="ativa") return;
+  var g=await cotPastaGravarLista(false); if(!g.ok&&manual) customAlert(g.msg,"Cotações");
+  var r=await cotPastaLerNovo(false); cotPastaAvisar(r,manual);
+}
+function cotPastaAuto(){ if(COT_PASTA_ESTADO!=="ativa") return; var agora=Date.now(); if(agora-COT_PASTA_T<15000) return; COT_PASTA_T=agora; cotPastaSincronizar(false); }
+async function cotPastaEscolher(){
+  if(!bkpPastaSuporte()){ customAlert("Este navegador não deixa o site usar uma pasta. Use o Chrome ou o Edge no computador.","Pasta das cotações"); return; }
+  var h; try{ h=await window.showDirectoryPicker({id:"ridemax-cotacoes",mode:"readwrite",startIn:"documents"}); }catch(e){ if(e&&e.name==="AbortError") return; rmLogErr(e,"cot-pasta-esc"); customAlert("Não foi possível usar essa pasta: "+String((e&&e.message)||e),"Pasta das cotações"); return; }
+  try{ await bkpTx(BKP_ST_CFG,"readwrite",function(st){ st.put(h,"cotPasta"); st.delete("cotPastaUlt"); }); }catch(e){ rmLogErr(e,"cot-pasta-salvar"); }
+  COT_PASTA=h; COT_PASTA_ESTADO="ativa"; COT_PASTA_T=0;
+  var temScript=false; try{ await h.getFileHandle("bueno_cotacoes.py"); temScript=true; }catch(_e){}
+  await cotPastaSincronizar(false);
+  try{ rInvest(); }catch(_e){}
+  customAlert("Pasta \""+h.name+"\" ligada."+(temScript?"":" ⚠️ Não achei o bueno_cotacoes.py nela — confira se é a pasta certa.")+" Daqui para frente, ao abrir Investimentos o app grava a lista de ativos nela e carrega sozinho as cotações mais novas. Para buscar cotações novas, use o ícone \"Atualizar cotações\" no PC. Se o Chrome perguntar ao abrir o app, permita sempre.","Pasta das cotações");
+}
+async function cotPastaReativar(){
+  if(!COT_PASTA) return cotPastaEscolher();
+  try{ var p=await COT_PASTA.requestPermission({mode:"readwrite"}); if(p!=="granted"){ customAlert("Sem permissão, a pasta das cotações fica parada. Toque de novo e escolha Permitir.","Pasta das cotações"); return; } COT_PASTA_ESTADO="ativa"; COT_PASTA_T=0; await cotPastaSincronizar(true); try{ rInvest(); }catch(_e){} }catch(e){ rmLogErr(e,"cot-reativar"); }
+}
+async function cotPastaRemover(){
+  var ok=await customConfirm("Desligar a pasta das cotações? Os arquivos dela continuam; você volta a usar Exportar lista e Carregar cotações à mão.","Pasta das cotações","Desligar");
+  if(!ok) return;
+  try{ await bkpTx(BKP_ST_CFG,"readwrite",function(st){ st.delete("cotPasta"); st.delete("cotPastaUlt"); }); }catch(e){ rmLogErr(e,"cot-pasta-rem"); }
+  COT_PASTA=null; COT_PASTA_ESTADO="nenhuma"; try{ rInvest(); }catch(_e){}
+}
+try{ cotPastaCarregar().then(function(){ try{ if(current==="investimentos") rInvest(); }catch(_e){} }); }catch(e){ rmLogErr(e,"cot-pasta-init"); }
+try{ window.RM.invTesouroCodigo=invTesouroCodigo; window.RM.cotPastaTeste=function(h){ COT_PASTA=h; COT_PASTA_ESTADO="ativa"; COT_PASTA_T=0; }; window.RM.cotPastaSincronizar=cotPastaSincronizar; }catch(e){ rmLogErr(e); }
 
 } /* fim rmApp */
 })();
