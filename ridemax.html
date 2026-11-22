@@ -5343,6 +5343,11 @@ function rDesp(){
     if(!dsel){ customAlert("Selecione uma despesa clicando na linha.","Despesas"); return; }
     var ix=DB.expenses.findIndex(function(e){return e.id===dsel;});
     if(ix>=0){ var _lk0=tituloDoDespesa(DB.expenses[ix].id); if(_lk0&&tituloTemBaixa(_lk0)){ customAlert("Esta despesa já gerou um título com baixa(s) no Contas a pagar ("+BRL(tituloPago(_lk0))+" baixado). Desfaça a baixa antes de excluir.","Despesas"); return; } }
+    /* confirmação, como na corrida */
+    if(ix>=0){ var _eC=DB.expenses[ix], _cC=catById(_eC.category_id), _tC=tituloDoDespesa(_eC.id);
+      var _okC=false; try{ _okC=await customConfirm("Excluir a despesa "+(_cC?_cC.name+" ":"")+BRL(_eC.amount)+" de "+isoToBR(_eC.date)+(_eC.description?" ("+String(_eC.description).slice(0,40)+")":"")+"? Vai para a Lixeira"+(_tC?", junto com o título em aberto no Contas a pagar":"")+".","Excluir despesa","Excluir"); }catch(_e){ _okC=false; }
+      if(!_okC) return;
+      ix=DB.expenses.findIndex(function(e){return e.id===dsel;}); if(ix<0) return; }
     var trashId=null;
     if(ix>=0){ var _lk=tituloDoDespesa(DB.expenses[ix].id); if(_lk){ var _li0=DB.titulos.indexOf(_lk); if(_li0>=0){ moveToTrash("titulo",_lk); DB.titulos.splice(_li0,1); } } moveToTrash("expense",DB.expenses[ix]); DB.expenses.splice(ix,1); try{ trashId=DB.trash[DB.trash.length-1].id; }catch(e){ trashId=null; } }
     dsel=null; save(); refreshCats(); refreshHist();
