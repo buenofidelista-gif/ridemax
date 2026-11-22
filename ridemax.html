@@ -973,12 +973,12 @@ body.fit-lock #finBox:has(.fin-dre){display:block;overflow:visible}
   flex-shrink:0!important;
   white-space:nowrap!important;
 }
-#dreRegSeg,#relcatRegSeg,#titSeg,#serieTipoSeg,#concAjDir{
+#dreRegSeg,#relcatRegSeg,#titSeg,#titTipoSeg,#serieTipoSeg,#concAjDir{
   flex-wrap:nowrap!important;
   overflow-x:auto!important;
   max-width:100%!important;
 }
-#dreRegSeg button,#relcatRegSeg button,#titSeg button,#serieTipoSeg button,#concAjDir button{
+#dreRegSeg button,#relcatRegSeg button,#titSeg button,#titTipoSeg button,#serieTipoSeg button,#concAjDir button{
   flex-shrink:0!important;
   white-space:nowrap!important;
 }
@@ -1442,6 +1442,14 @@ body.rv-aberto{overflow:hidden}
   .hist-bar>.f6-grade{order:6}
 }
 #man-topo a{color:var(--blue)}
+/* ---------- PAGA NA HORA (despesa e recarga na rua) ---------- */
+.pago-box{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:6px 0 10px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--input);grid-column:1/-1}
+.pago-box[hidden]{display:none}
+.pago-chk{display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;margin:0;min-height:36px}
+.pago-chk input{width:20px;height:20px;margin:0}
+.pago-box select{flex:1 1 150px;min-width:0;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px}
+.pago-box select[hidden]{display:none}
+.pago-nota{flex-basis:100%;font-size:12px;color:var(--muted)}
 /* ---------- META DO MÊS POR DIA ---------- */
 .dh-mes{font-size:14px;color:var(--muted);margin-top:8px;line-height:1.45}
 .dh-mes b{color:var(--text)}
@@ -2435,7 +2443,7 @@ function sanitizeDB(d, rawBackup){
         var _rt=[];
         if(Array.isArray(x.rateio)){ for(var _ri=0;_ri<x.rateio.length;_ri++){ var _rr=x.rateio[_ri]; if(_rr&&typeof _rr.centro==="string"&&isFinite(Number(_rr.valor))&&Number(_rr.valor)>0){ _rt.push({centro:_rr.centro,valor:Math.round(Number(_rr.valor)*100)/100}); } } }
         var _bx=[];
-        if(Array.isArray(x.baixas)){ for(var _bi=0;_bi<x.baixas.length;_bi++){ var _b=x.baixas[_bi]; if(_b&&validISO(_b.data)&&typeof _b.conta==="string"&&_b.conta&&isFinite(Number(_b.valor))&&Number(_b.valor)>0){ var _ju=Number(_b.juros); if(!isFinite(_ju)||_ju<0) _ju=0; var _de=Number(_b.desconto); if(!isFinite(_de)||_de<0) _de=0; var _jc=null, _dc=null; try{ if(typeof _b.jurosCat==="string"&&_b.jurosCat.trim()) _jc=_b.jurosCat.trim().slice(0,64); }catch(_e1){ _jc=null; } try{ if(typeof _b.descCat==="string"&&_b.descCat.trim()) _dc=_b.descCat.trim().slice(0,64); }catch(_e2){ _dc=null; } var _er=[]; try{ if(Array.isArray(_b.encRateio)){ for(var _ei=0;_ei<_b.encRateio.length;_ei++){ var _ee=_b.encRateio[_ei]; if(_ee&&typeof _ee.centro==="string"&&isFinite(Number(_ee.valor))&&Number(_ee.valor)>0){ _er.push({centro:_ee.centro,valor:Math.round(Number(_ee.valor)*100)/100}); } } } }catch(_e3){ _er=[]; } _bx.push({id:String(_b.id||uid()),data:_b.data,conta:String(_b.conta),valor:Math.round(Number(_b.valor)*100)/100,juros:Math.round(_ju*100)/100,desconto:Math.round(_de*100)/100,jurosCat:_jc,descCat:_dc,encRateio:_er,conciliado:(_b.conciliado===1||_b.conciliado===true)?1:0,observacao:String(_b.observacao||"").slice(0,300)}); } } }
+        if(Array.isArray(x.baixas)){ for(var _bi=0;_bi<x.baixas.length;_bi++){ var _b=x.baixas[_bi]; if(_b&&validISO(_b.data)&&typeof _b.conta==="string"&&_b.conta&&isFinite(Number(_b.valor))&&Number(_b.valor)>0){ var _ju=Number(_b.juros); if(!isFinite(_ju)||_ju<0) _ju=0; var _de=Number(_b.desconto); if(!isFinite(_de)||_de<0) _de=0; var _jc=null, _dc=null; try{ if(typeof _b.jurosCat==="string"&&_b.jurosCat.trim()) _jc=_b.jurosCat.trim().slice(0,64); }catch(_e1){ _jc=null; } try{ if(typeof _b.descCat==="string"&&_b.descCat.trim()) _dc=_b.descCat.trim().slice(0,64); }catch(_e2){ _dc=null; } var _er=[]; try{ if(Array.isArray(_b.encRateio)){ for(var _ei=0;_ei<_b.encRateio.length;_ei++){ var _ee=_b.encRateio[_ei]; if(_ee&&typeof _ee.centro==="string"&&isFinite(Number(_ee.valor))&&Number(_ee.valor)>0){ _er.push({centro:_ee.centro,valor:Math.round(Number(_ee.valor)*100)/100}); } } } }catch(_e3){ _er=[]; } _bx.push({id:String(_b.id||uid()),data:_b.data,conta:String(_b.conta),valor:Math.round(Number(_b.valor)*100)/100,juros:Math.round(_ju*100)/100,desconto:Math.round(_de*100)/100,jurosCat:_jc,descCat:_dc,encRateio:_er,conciliado:(_b.conciliado===1||_b.conciliado===true)?1:0,observacao:String(_b.observacao||"").slice(0,300)}); if(_b.auto) _bx[_bx.length-1].auto=1; } } }
        var _st=(x.status==="aberto"||x.status==="parcial"||x.status==="baixado"||x.status==="cancelado")?x.status:"aberto";
        var _t={id:String(x.id||uid()),tipo:(x.tipo==="receber"?"receber":"pagar"),descricao:String(x.descricao).trim().slice(0,80),competencia:x.competencia,vencimento:x.vencimento,valor:Math.round(Number(x.valor)*100)/100,categoria:String(x.categoria||"").slice(0,64),rateio:_rt,origem:String(x.origem||"").slice(0,40),vinculo:String(x.vinculo||"").slice(0,40),serie:serieSanity(x.serie),lote:String(x.lote||"").slice(0,40),status:_st,baixas:_bx};
         /* FASE 3B — conta de luz: marcador + kWh + leitura. Compat: antigo sem contaLuz continua válido. */
@@ -3947,7 +3955,7 @@ contas:"Onde o dinheiro está: carteira, banco, investimento. Cada conta tem uma
 centros:"A que atividade o gasto pertence: Uber, Pessoal, Investimentos. O centro responde QUEM gastou. A categoria responde O QUÊ foi gasto. A conta responde DE ONDE saiu o dinheiro. São três perguntas diferentes e independentes. Gasto que serve a dois centros não vira duas categorias: vira rateio.",
 transferencia:"Dinheiro saindo de uma conta e entrando em outra. Não é receita nem despesa: não entra no DRE, não tem categoria e não tem centro de custo. É por aqui que o aporte vai para a conta de investimento.",
 saldos:"O saldo de cada conta é sempre calculado, nunca gravado: saldo inicial, mais entradas, menos saídas, contando só da data de corte em diante. Se aparecer um aviso de movimento anterior ao corte, aquele dinheiro existe no app mas está fora do saldo — para entrar, mude a data do saldo inicial da conta.",
-contaspagar:"Todo gasto nasce como título, com duas datas: a competência, que é o mês a que o gasto pertence, e o vencimento, que é quando ele vence. É a baixa, e não o título, que mexe no saldo da conta. \"Já pago\" cria o título e dá a baixa no mesmo ato. Juros e desconto pagos na baixa entram em categoria própria, nunca na categoria do título: luz paga com atraso não vira mais energia. Como funciona: título (a pagar ou a receber) não altera o DRE nem o saldo sozinho; só a baixa movimenta a conta (pagar debita, receber credita). Recebível de corrida não entra no DRE: a receita já foi contada pela corrida. Centro de custo é obrigatório: 100% numa linha ou Ratear em várias (soma tem de fechar). Baixa parcial deixa \"parcial\" (mostra pago e falta); ao somar o total, vira \"baixado\". Juros/desconto da baixa ganham categoria própria e herdam o rateio do título; desfazer a baixa remove o encargo junto. Título com baixa não pode ser editado nem excluído: desfaça a baixa antes. Regras da baixa: data futura é bloqueada (baixa é movimento de caixa). Data anterior à data do saldo inicial da conta é bloqueada (mesmo aviso da transferência). A soma das baixas não passa o valor do título; ao fechar, vira \"baixado\". Juros/desconto ganham categoria própria (Configurações) e herdam o rateio do título, na data da baixa; desfazer remove junto. Baixa conciliada não pode ser desfeita: desconcilie antes. Título a pagar entra no DRE por competência (vale a competência, aberto ou baixado); recebível de corrida não entra no DRE. Título não mexe no saldo — só a baixa movimenta a conta (pagar debita, receber credita). Excluir sem baixa vai para a lixeira.",
+contaspagar:"A tela tem duas listas: A pagar (seus gastos) e A receber (o que as plataformas devem das corridas no cartão — isso não vence, vem no repasse). Despesa ou recarga lançada com \"Já paga com\" já chega aqui baixada. Todo gasto nasce como título, com duas datas: a competência, que é o mês a que o gasto pertence, e o vencimento, que é quando ele vence. É a baixa, e não o título, que mexe no saldo da conta. \"Já pago\" cria o título e dá a baixa no mesmo ato. Juros e desconto pagos na baixa entram em categoria própria, nunca na categoria do título: luz paga com atraso não vira mais energia. Como funciona: título (a pagar ou a receber) não altera o DRE nem o saldo sozinho; só a baixa movimenta a conta (pagar debita, receber credita). Recebível de corrida não entra no DRE: a receita já foi contada pela corrida. Centro de custo é obrigatório: 100% numa linha ou Ratear em várias (soma tem de fechar). Baixa parcial deixa \"parcial\" (mostra pago e falta); ao somar o total, vira \"baixado\". Juros/desconto da baixa ganham categoria própria e herdam o rateio do título; desfazer a baixa remove o encargo junto. Título com baixa não pode ser editado nem excluído: desfaça a baixa antes. Regras da baixa: data futura é bloqueada (baixa é movimento de caixa). Data anterior à data do saldo inicial da conta é bloqueada (mesmo aviso da transferência). A soma das baixas não passa o valor do título; ao fechar, vira \"baixado\". Juros/desconto ganham categoria própria (Configurações) e herdam o rateio do título, na data da baixa; desfazer remove junto. Baixa conciliada não pode ser desfeita: desconcilie antes. Título a pagar entra no DRE por competência (vale a competência, aberto ou baixado); recebível de corrida não entra no DRE. Título não mexe no saldo — só a baixa movimenta a conta (pagar debita, receber credita). Excluir sem baixa vai para a lixeira.",
 rateio:"Dividir um título entre mais de um centro de custo. A soma das linhas tem de fechar exatamente com o valor do título. Quando o rateio tem duas linhas ou mais, o app não recalcula sozinho ao mudar o valor: avisa e trava até você ajustar. É de propósito — rateio de várias linhas costuma ser medido, como os kWh da conta de luz, e número proporcional calculado pelo sistema nesse caso seria número inventado.",
 series:"Recorrente e parcelado usam o mesmo cadastro, mas são coisas diferentes. No recorrente, o valor é de cada ocorrência e a competência avança: a luz de novembro pertence a novembro. No parcelado, o valor informado é o total, dividido entre as parcelas, e a competência é a mesma em todas: a compra aconteceu uma vez só, no mês em que foi feita. O vencimento é que avança.",
 lotes:"O repasse da plataforma. O lote agrupa os recebíveis do período, desconta as taxas das corridas pagas em dinheiro e baixa todos de uma vez quando o dinheiro cai. Esperado é o que deveria cair; se o que caiu for diferente, o caminho é lançar o que faltou — uma tarifa, um valor esquecido. Ajuste só para diferença investigada e não identificada, e com observação obrigatória. Conciliar baixa todos os títulos do lote de uma vez na conta de recebimento.",
@@ -3960,13 +3968,13 @@ conciliacao:"Conferência contra o extrato do banco, item a item. Você digita o
 dashboard:"Quatro blocos, cada um com uma cadência diferente. HOJE: o saldo das contas, o que vence nos próximos 7 dias e o que há a receber. SEMANA: o menor saldo projetado nos próximos 90 dias e as pendências em aberto. MÊS: resultado por centro de custo, custo por km, reserva, MEI e ponto de equilíbrio. PATRIMÔNIO: quanto você tem e como isso evoluiu. O dashboard só lê — nada se lança por aqui. A reserva é indicador: não entra no DRE, não vira despesa e não altera nenhum outro número. Confirme com o contador o que compõe o faturamento no seu caso.",
 nova:"A forma de pagamento muda o caminho do dinheiro. No cartão, o valor fica com a plataforma e vem no repasse: a corrida gera um recebível e não mexe no seu saldo hoje. Em dinheiro, você recebe na hora o valor total pago pelo passageiro, inclusive a parte da plataforma — ele entra na Carteira no dia da corrida, e a taxa fica a descontar no próximo repasse.",
 historico:"As corridas e os turnos já registrados. É daqui que saem os números de km, horas e ganhos usados na Análise e nas Metas. Corrida que já teve o recebível baixado não pode ser editada nem excluída sem antes desfazer a baixa.",
-recarga:"Onde a recarga é registrada, com odômetro e kWh. Na rua, gera um título a pagar. Em casa, NÃO gera título: acumula os kWh num período de medição, sem custo, porque essa energia já está dentro da conta de luz da casa — lançar os dois contaria o mesmo gasto duas vezes. O custo real de cada recarga de casa aparece quando a conta de luz é lançada. Até lá, o app mostra quantos kWh estão sem custo apurado, em vez de inventar uma estimativa.",
+recarga:"Onde a recarga é registrada, com odômetro e kWh. Na rua, gera um título a pagar; com \"Já paga com\" marcado, ele já nasce pago pela conta escolhida. Em casa, NÃO gera título: acumula os kWh num período de medição, sem custo, porque essa energia já está dentro da conta de luz da casa — lançar os dois contaria o mesmo gasto duas vezes. O custo real de cada recarga de casa aparece quando a conta de luz é lançada. Até lá, o app mostra quantos kWh estão sem custo apurado, em vez de inventar uma estimativa.",
 luz:"Marcar um título como conta de luz abre dois campos: o total de kWh e o período de leitura, que estão impressos na fatura. Com eles o app mede a tarifa — o valor dividido pelos kWh — e separa a parte do Uber: os kWh das recargas feitas em casa dentro daquele período, vezes a tarifa. Todo o resto é Pessoal. O rateio é medido, nunca estimado.",
 metas:"Quanto você quer ganhar e quanto falta para chegar lá. Olha a receita do Uber, não o resultado do mês: meta é sobre o que entra, não sobre o que sobra.",
-plataformas:"Cadastros e preferências: Plataformas, Categorias (cada categoria com seu grupo no DRE), Contas, Centros de custo, MEI e DAS, Manutenção e gastos anuais, Backup e armazenamento, Tipo de energia. Contas e Centros de custo são os mesmos cadastros do Financeiro.",
+plataformas:"Todos os cadastros ficam aqui: Plataformas, Categorias (cada categoria com seu grupo no DRE), Contas, Centros de custo, MEI e DAS, Manutenção e gastos anuais, Veículos, Segurança (PIN), Backup e armazenamento, Tipo de energia. Botões de outras telas que levam a Contas ou Centros de custo abrem a aba certa daqui.",
 analise:"Os números operacionais: custo por km, ganho por hora, consumo. A energia recarregada em casa só entra no custo depois que a conta de luz é lançada e apurada. Até isso acontecer, o custo por km fica sem ela, e o app mostra quantos kWh estão de fora em vez de chutar um valor. Deduções manuais (taxas) não entram no rateio do card por plataforma.",
 repasses:"A conferência do repasse: agrupa as corridas de uma plataforma por janela e mostra o que era esperado. Esta tela CONFERE — ela não baixa título nem mexe em conta nenhuma. Quem baixa é o Lote, no Financeiro. São duas telas com propósitos diferentes e é normal consultar as duas. O que restar após os ajustes costuma ser virada de fechamento: confira no próximo repasse.",
-investimentos:"As contas de tipo investimento, com os aportes e os resgates. O aporte é uma transferência comum: dinheiro saindo de uma conta e entrando na de investimento. Patrimônio aqui é saldo, não valor de mercado — o app não tem cotação nem calcula rentabilidade. Desdobramento/grupamento: excluir evento que deixaria venda acima da posição é bloqueado. O aporte é feito na tela de Transferência: escolha a conta de origem e a conta de investimento como destino. Acompanhar: a soma dos alvos tem de dar 100.",
+investimentos:"As contas de tipo investimento, com os aportes e os resgates. O aporte é uma transferência comum: dinheiro saindo de uma conta e entrando na de investimento. O patrimônio das contas é saldo; na Carteira de ativos, o valor de mercado usa as cotações que você carrega (Carregar cotações) e o CDB é calculado pelo CDI informado — sem cotação carregada, o ativo fica pelo preço médio. Desdobramento/grupamento: excluir evento que deixaria venda acima da posição é bloqueado. O aporte é feito na tela de Transferência: escolha a conta de origem e a conta de investimento como destino. Acompanhar: a soma dos alvos tem de dar 100.",
    lixeira:"O que foi excluído fica aqui e pode ser restaurado, com os saldos voltando a refletir. Registro conciliado precisa ser desconciliado antes de excluir. Registro que faz parte de um lote conciliado precisa que o lote seja desfeito primeiro.",
    backup:"Fazer backup baixa um arquivo com tudo. Restaurar backup SUBSTITUI a base atual — antes de substituir, o app baixa sozinho um backup do estado anterior. Registros inválidos do arquivo são descartados e relatados, com a indicação de quais foram, para você poder relançar.",
     limpeza:"Apaga todo o movimento e preserva os cadastros. Serve para zerar os dados de teste antes do primeiro dia de trabalho real. Pede backup, data de corte e confirmação digitada, nessa ordem. Atenção: as séries de recorrente e parcelado são cadastro e NÃO são apagadas — as de teste precisam ser excluídas à mão.",
@@ -4140,7 +4148,7 @@ function valeKmHBase(){
     if(ag&&ag.nKm>0&&ag.hours>0&&ag.kmTotal>0){
       var kmh=ag.kmTotal/ag.hours;
       if(isFinite(kmh)&&kmh>0){
-        return {kmh:kmh,src:"turno",km:ag.kmTotal,hours:ag.hours,n:ag.nKm,detail:ag.kmTotal.toFixed(1)+" km \u00F7 "+ag.hours.toFixed(1)+" h ("+ag.nKm+" turno(s) com km, 30d)"};
+        return {kmh:kmh,src:"turno",km:ag.kmTotal,hours:ag.hours,n:ag.nKm,detail:brDec(ag.kmTotal,1)+" km \u00F7 "+brDec(ag.hours,1)+" h ("+ag.nKm+" turno(s) com km, 30d)"};
       }
     }
   }catch(e){rmLogErr(e)}
@@ -4155,7 +4163,7 @@ function valeKmHBase(){
     if(km>0&&h>0){
       var kmh2=km/h;
       if(isFinite(kmh2)&&kmh2>0){
-        return {kmh:kmh2,src:"corridas",km:km,hours:h,n:n,detail:km.toFixed(1)+" km \u00F7 "+h.toFixed(1)+" h ("+n+" corridas, 30d)"};
+        return {kmh:kmh2,src:"corridas",km:km,hours:h,n:n,detail:brDec(km,1)+" km \u00F7 "+brDec(h,1)+" h ("+n+" corridas, 30d)"};
       }
     }
   }catch(e2){rmLogErr(e2)}
@@ -4465,7 +4473,7 @@ function dashMesHTML(){
         +statCard("💰",BRL(ks.ganho)+"/km","Ganho/km","")
         +statCard("💸",BRL(ks.custo)+"/km","Custo/km","")
         +statCard("📊",BRL(ks.lucro)+"/km","Lucro/km",ks.lucro>=0?"#4caf7d":"#e0695c")
-        +statCard("🛣️",ks.km.toFixed(1)+" km","Km no mês","",(ks.src==="shift"?"turno":"corridas"))
+        +statCard("🛣️",brDec(ks.km,1)+" km","Km no mês","",(ks.src==="shift"?"turno":"corridas"))
         +'</div>';
       if(!isComb&&kwhA>0.05) h+='<div class="kv"><span>Energia de casa ainda sem custo apurado</span><b>'+kwhA.toFixed(1).replace(".",",")+' kWh em aberto</b></div>';
       else if(!isComb) h+='<div class="kv"><span>Energia de casa</span><b>Energia em dia — nenhum kWh em aberto.</b></div>';
@@ -4478,7 +4486,7 @@ function dashMesHTML(){
   try{
     var ag=null;
     try{ ag=shiftAgg(ini,fim); }catch(e){ ag=null; }
-    if(ag&&ag.n>0&&ag.hours>0) h+='<div class="kv"><span>R$/hora (turno, mês)</span><b>'+BRL(ag.perHour)+'</b></div><div class="sub">base: '+ag.n+' turno(s) encerrado(s) · '+ag.hours.toFixed(1)+'h.</div>';
+    if(ag&&ag.n>0&&ag.hours>0) h+='<div class="kv"><span>R$/hora (turno, mês)</span><b>'+BRL(ag.perHour)+'</b></div><div class="sub">base: '+ag.n+' turno(s) encerrado(s) · '+brDec(ag.hours,1)+'h.</div>';
     else h+='<div class="kv"><span>R$/hora (turno, mês)</span><b>Sem turno encerrado no mês.</b></div>';
   }catch(e){rmLogErr(e)}
   try{
@@ -4704,7 +4712,7 @@ function rDash(){
   else if(kwh>0.05) html+='<div class="kv"><span>Energia de casa ainda sem custo apurado</span><b>'+kwh.toFixed(1).replace(".",",")+' kWh em aberto</b></div>';
   else html+='<div class="kv"><span>Energia de casa</span><b>Energia em dia — nenhum kWh em aberto.</b></div>';
   if(lotes&&lotes.n>0) html+='<div class="kv"><span>Repasse ainda não conferido</span><b>'+lotes.n+' lote(s) aberto(s) · esperado '+BRL(lotes.esperado)+'</b></div>';
-  else if(pendRep&&pendRep.count>0) html+='<div class="kv"><span>Repasse ainda não conferido</span><b>'+pendRep.count+' corrida(s) ainda sem repasse · '+BRL(pendRep.total)+'</b></div>';
+  else if(pendRep&&pendRep.count>0) html+='<div class="kv"><span>Repasse ainda não conferido</span><b>'+pendRep.count+' corrida(s) desde o último repasse · a plataforma deve '+BRL(pendRep.net!=null?pendRep.net:pendRep.total)+'</b></div>'+((pendRep.cashFee>0.004)?'<div class="sub">cartão '+BRL(pendRep.cardSum||0)+' − taxa das corridas em dinheiro '+BRL(pendRep.cashFee)+'</div>':'');
   else html+='<div class="kv"><span>Repasse ainda não conferido</span><b>Tudo conferido — nenhum repasse ou lote pendente.</b></div>';
   html+='</div><div class="btnrow dash-foot"><button class="btn sm accent" id="dashGoFluxo">Ver Fluxo de caixa</button><button class="btn sm accent" id="dashGoMetas">Ver Metas</button><button class="btn sm accent" id="dashGoRec">Resolver energia</button><button class="btn sm accent" id="dashGoLotes">Resolver repasse</button></div></div>';
   /* ============ BLOCO 3 — MÊS (6B, só leitura) ============ */
@@ -5190,9 +5198,9 @@ function renderShifts(box){
     var totKm=ag.kmTotal, totPass=ag.kmPass, totN=ag.shifts.reduce(function(a,s){ return a+shiftStats(s).n; },0), totG=ag.gain;
     var totRH=(totDurH>0?BRL(totG/totDurH)+"/h":"\u2013");
     var invN=ag.shifts.filter(function(s){ return shiftKmInfo(s).invalid; }).length;
-    document.getElementById("shTot").textContent="Total: "+BRL(totG)+" \u00B7 "+ag.n+" turno(s) \u00B7 "+totDurH.toFixed(1)+"h (clique p/ selecionar)";
+    document.getElementById("shTot").textContent="Total: "+BRL(totG)+" \u00B7 "+ag.n+" turno(s) \u00B7 "+brDec(totDurH,1)+"h (clique p/ selecionar)";
     var openN=rows.filter(function(s){return !s.end_time;}).length;
-    document.getElementById("shNote").textContent="Rodap\u00E9 do per\u00EDodo (s\u00F3 encerrados): "+fmtDur(totDurH*60)+" · km total "+totKm.toFixed(1)+" · km passageiro "+totPass.toFixed(1)+" · aproveitamento "+(totKm>0?(totPass/totKm*100).toFixed(0)+"%":"\u2013")+" · "+totN+" corrida(s) · "+BRL(totG)+" · "+totRH+(openN?" · "+openN+" aberto(s) fora do rodap\u00E9":"")+(invN?" · "+invN+" com km indispon\u00EDvel (troca de ve\u00EDculo?)":"");
+    document.getElementById("shNote").textContent="Rodap\u00E9 do per\u00EDodo (s\u00F3 encerrados): "+fmtDur(totDurH*60)+" · km total "+brDec(totKm,1)+" · km passageiro "+brDec(totPass,1)+" · aproveitamento "+(totKm>0?(totPass/totKm*100).toFixed(0)+"%":"\u2013")+" · "+totN+" corrida(s) · "+BRL(totG)+" · "+totRH+(openN?" · "+openN+" aberto(s) fora do rodap\u00E9":"")+(invN?" · "+invN+" com km indispon\u00EDvel (troca de ve\u00EDculo?)":"");
     document.getElementById("shPager").innerHTML=pagerHTML(window.__shiftPage,pages,rows.length);
     wirePager(document.getElementById("shPager"),function(d){ window.__shiftPage+=d; refresh(); });
     document.getElementById("shBody").querySelectorAll("tr[data-id]").forEach(function(tr){ tr.onclick=function(){ selected=tr.dataset.id; refresh(); }; });
@@ -5281,7 +5289,7 @@ function rDesp(){
     +'<label class="f">Categoria *<select id="dCat">'+opts+'</select></label>'
     +'<div class="desp-short"><label class="f">Data * (DD/MM/AAAA)<input id="dDate" value="'+esc(new Date().toLocaleDateString("pt-BR"))+'"></label>'
     +'<label class="f">Valor (R$) *<input id="dAmt" inputmode="decimal" placeholder="ex: 1.234,56"></label></div>'
-    +'<label class="f">Descrição<input id="dDesc"></label><div id="recArea"></div>'
+    +'<label class="f">Descrição<input id="dDesc"></label>'+pagoBoxHTML("d")+'<div id="recArea"></div>'
     +'<label class="f"><input type="checkbox" id="dRec" style="width:auto"> Despesa recorrente (mensal)</label>'
     +'<div class="msg-ok" id="dMsg"></div><div class="btnrow desp-actions"><button class="btn red" id="dSave">Salvar Despesa</button><button class="btn sm accent" id="dCancel" hidden>Cancelar</button></div></div>'
     +'<div class="card desp-side"><h3 class="desp-side-head">Últimas despesas</h3><div class="sub">Por categoria (30 dias) e lançamentos. Só leitura: edite pela seleção abaixo.</div><div id="dCats" class="desp-cats"></div><div class="toolbar">'+buscaCampo("dBusca",despBusca,"🔎 Buscar: valor, data, categoria, descrição")+'<span>Período:</span><select id="dF"><option>7 dias</option><option selected>30 dias</option><option>90 dias</option><option>Todos</option></select><span style="flex:1"></span><button class="btn accent sm" id="dGoDre">DRE</button><button class="btn yellow sm" id="dEdit">Editar</button><button class="btn red sm" id="dDel">Excluir</button></div><div class="tblwrap desp-list"><table class="tbl"><thead><tr><th>Categoria</th><th>Data</th><th>Valor</th><th class="l">Descrição</th><th>Rec.</th></tr></thead><tbody id="dBody"></tbody></table></div><div id="dPager"></div></div></div></div>';
@@ -5297,7 +5305,9 @@ function rDesp(){
       var _edT=tituloDoDespesa(editExp.id);
       var _newDesc=document.getElementById("dDesc").value.trim().slice(0,300);
       var _chgV=Math.round(amt*100)!==Math.round(Number(editExp.amount)*100), _chgD=(iso!==editExp.date);
-      if(_edT&&tituloTemBaixa(_edT)&&(_chgV||_chgD)){ customAlert("Esta despesa já gerou um título com baixa(s) no Contas a pagar. Desfaça a baixa antes de alterar valor ou data.","Despesas"); return; }
+      if(_edT&&tituloTemBaixa(_edT)&&!pagoSoAuto(_edT)&&(_chgV||_chgD)){ customAlert("Esta despesa já gerou um título com baixa(s) no Contas a pagar. Desfaça a baixa antes de alterar valor ou data.","Despesas"); return; }
+      var _pgE=pagoLer("d"); var _pgErrE=_edT?pagoValidar(_pgE,iso):null; if(_pgErrE){ customAlert(_pgErrE,"Despesas"); return; }
+      var _bxSnapE=_edT?JSON.stringify(_edT.baixas||[]):null;
       if(_edT&&_chgV&&_edT.rateio&&_edT.rateio.length>1){ var _rl=[]; for(var _rli=0;_rli<_edT.rateio.length;_rli++){ _rl.push(centroNome(_edT.rateio[_rli].centro)+" "+BRL(_edT.rateio[_rli].valor)); } customAlert("Este título tem rateio manual em "+_edT.rateio.length+" linhas no Contas a pagar ("+_rl.join(" · ")+"). O sistema não recalcula rateio medido sozinho: volte o rateio para 100% numa linha só no Contas a pagar e repita a alteração do valor. Nada foi gravado.","Despesas"); return; }
       var _oldE={date:editExp.date,category_id:editExp.category_id,amount:editExp.amount,description:editExp.description,recurring:editExp.recurring};
       var _oldT=null;
@@ -5305,16 +5315,19 @@ function rDesp(){
       editExp.date=iso; editExp.category_id=_cat; editExp.amount=amt;
       editExp.description=_newDesc; editExp.recurring=document.getElementById("dRec").checked?1:0;
       if(_edT){ _edT.descricao=tituloDescDeDespesa(editExp); _edT.valor=Math.round(amt*100)/100; if(_edT.rateio&&_edT.rateio.length===1){ _edT.rateio[0].valor=Math.round(amt*100)/100; } _edT.competencia=String(iso).slice(0,7)+"-01"; _edT.vencimento=iso; _edT.categoria=String(_cat||"").slice(0,64); tituloRecalc(_edT); }
-      if(!save()){ editExp.date=_oldE.date; editExp.category_id=_oldE.category_id; editExp.amount=_oldE.amount; editExp.description=_oldE.description; editExp.recurring=_oldE.recurring; if(_edT&&_oldT){ _edT.descricao=_oldT.descricao; _edT.valor=_oldT.valor; _edT.competencia=_oldT.competencia; _edT.vencimento=_oldT.vencimento; _edT.categoria=_oldT.categoria; tituloRecalc(_edT); } document.getElementById("dMsg").textContent=SAVE_FAIL_MSG; return; }
-      resetExpForm(); document.getElementById("dMsg").textContent="Alterações salvas. Título atualizado no Contas a pagar.";
+      try{ if(_edT) pagoSincronizar(_edT,_pgE,iso); }catch(_eP){ rmLogErr(_eP,"pago-desp"); }
+      if(!save()){ try{ if(_edT&&_bxSnapE!=null){ _edT.baixas=JSON.parse(_bxSnapE); tituloRecalc(_edT); } }catch(_eB){} editExp.date=_oldE.date; editExp.category_id=_oldE.category_id; editExp.amount=_oldE.amount; editExp.description=_oldE.description; editExp.recurring=_oldE.recurring; if(_edT&&_oldT){ _edT.descricao=_oldT.descricao; _edT.valor=_oldT.valor; _edT.competencia=_oldT.competencia; _edT.vencimento=_oldT.vencimento; _edT.categoria=_oldT.categoria; tituloRecalc(_edT); } document.getElementById("dMsg").textContent=SAVE_FAIL_MSG; return; }
+      resetExpForm(); document.getElementById("dMsg").textContent="Alterações salvas."+(_edT?(pagoBaixaAuto(_edT)?" Paga com "+contaNome(pagoBaixaAuto(_edT).conta)+".":(tituloTemBaixa(_edT)?"":" Fica a pagar no Contas a pagar.")):"");
       refreshCats(); refreshHist(); return;
     }
+    var _pgN=pagoLer("d"), _pgErrN=pagoValidar(_pgN,iso); if(_pgErrN){ customAlert(_pgErrN,"Despesas"); return; }
     var _newExp={id:uid(),date:iso,category_id:_cat,amount:amt,description:document.getElementById("dDesc").value.trim().slice(0,300),recurring:document.getElementById("dRec").checked?1:0};
     DB.expenses.push(_newExp);
     var _newTit=criarTituloDeDespesa(_newExp);
+    var _pgB=null; try{ if(_newTit) _pgB=pagoAplicar(_newTit,_pgN,iso); }catch(_eP){ rmLogErr(_eP,"pago-desp-novo"); }
     if(!save()){ var _p1=DB.expenses.indexOf(_newExp); if(_p1>=0) DB.expenses.splice(_p1,1); if(_newTit&&DB.titulos){ var _p2=DB.titulos.indexOf(_newTit); if(_p2>=0) DB.titulos.splice(_p2,1); } document.getElementById("dMsg").textContent=SAVE_FAIL_MSG; return; }
     try{ recVincular(_newExp.id); }catch(_eR){ rmLogErr(_eR,"rec"); }
-    document.getElementById("dMsg").textContent=BRL(amt)+" registrado."+(_newTit?" Título criado no Contas a pagar.":" ⚠️ Sem centro de custo: título não foi criado."); document.getElementById("dAmt").value="";document.getElementById("dDesc").value="";
+    document.getElementById("dMsg").textContent=BRL(amt)+" registrado."+(_newTit?(_pgB?" Paga com "+contaNome(_pgB.conta)+".":" Fica a pagar no Contas a pagar."):" ⚠️ Sem centro de custo: título não foi criado."); document.getElementById("dAmt").value="";document.getElementById("dDesc").value="";
     expPage=1; refreshCats(); refreshHist();
   };
   /* Item 4 — edição de despesa (mesmo padrão do ✏️ do Histórico) */
@@ -5330,6 +5343,7 @@ function rDesp(){
     document.getElementById("dAmt").value=String(Number(e.amount)).replace(".",",");
     document.getElementById("dDesc").value=e.description||"";
     document.getElementById("dRec").checked=!!e.recurring;
+    try{ pagoPreencher("d",tituloDoDespesa(e.id)); }catch(_eP){ rmLogErr(_eP,"pago-ed"); }
     document.getElementById("dFormT").textContent="Editar Despesa";
     document.getElementById("dSave").textContent="Salvar alterações"; try{ recPend=[]; recAreaPintar(e.id); }catch(_eR){ rmLogErr(_eR,"rec"); }
     document.getElementById("dCancel").hidden=false;
@@ -5359,7 +5373,7 @@ function rDesp(){
     document.getElementById("dCancel").hidden=true;
     document.getElementById("dCat").innerHTML=expCatOpts(null);
     document.getElementById("dDate").value=new Date().toLocaleDateString("pt-BR");
-    document.getElementById("dAmt").value="";document.getElementById("dDesc").value="";document.getElementById("dRec").checked=false; try{ recPend=[]; recAreaPintar(null); }catch(_eR){}
+    document.getElementById("dAmt").value="";document.getElementById("dDesc").value="";document.getElementById("dRec").checked=false; try{ recPend=[]; recAreaPintar(null); }catch(_eR){} try{ pagoResetar("d"); }catch(_eP){}
     document.getElementById("dMsg").textContent="";
   }
   function refreshHist(){
@@ -5383,10 +5397,10 @@ function rDesp(){
   document.getElementById("dDel").onclick=async function(){
     if(!dsel){ customAlert("Selecione uma despesa clicando na linha.","Despesas"); return; }
     var ix=DB.expenses.findIndex(function(e){return e.id===dsel;});
-    if(ix>=0){ var _lk0=tituloDoDespesa(DB.expenses[ix].id); if(_lk0&&tituloTemBaixa(_lk0)){ customAlert("Esta despesa já gerou um título com baixa(s) no Contas a pagar ("+BRL(tituloPago(_lk0))+" baixado). Desfaça a baixa antes de excluir.","Despesas"); return; } }
+    if(ix>=0){ var _lk0=tituloDoDespesa(DB.expenses[ix].id); if(_lk0&&tituloTemBaixa(_lk0)&&!pagoSoAuto(_lk0)){ customAlert("Esta despesa já gerou um título com baixa(s) no Contas a pagar ("+BRL(tituloPago(_lk0))+" baixado). Desfaça a baixa antes de excluir.","Despesas"); return; } }
     /* confirmação, como na corrida */
     if(ix>=0){ var _eC=DB.expenses[ix], _cC=catById(_eC.category_id), _tC=tituloDoDespesa(_eC.id);
-      var _okC=false; try{ _okC=await customConfirm("Excluir a despesa "+(_cC?_cC.name+" ":"")+BRL(_eC.amount)+" de "+isoToBR(_eC.date)+(_eC.description?" ("+String(_eC.description).slice(0,40)+")":"")+"? Vai para a Lixeira"+(_tC?", junto com o título em aberto no Contas a pagar":"")+".","Excluir despesa","Excluir"); }catch(_e){ _okC=false; }
+      var _okC=false; try{ _okC=await customConfirm("Excluir a despesa "+(_cC?_cC.name+" ":"")+BRL(_eC.amount)+" de "+isoToBR(_eC.date)+(_eC.description?" ("+String(_eC.description).slice(0,40)+")":"")+"? Vai para a Lixeira"+(_tC?(pagoBaixaAuto(_tC)?" e o pagamento ("+contaNome(pagoBaixaAuto(_tC).conta)+") é desfeito":", junto com o título em aberto no Contas a pagar"):"")+".","Excluir despesa","Excluir"); }catch(_e){ _okC=false; }
       if(!_okC) return;
       ix=DB.expenses.findIndex(function(e){return e.id===dsel;}); if(ix<0) return; }
     var trashId=null;
@@ -5458,6 +5472,7 @@ function rRec(){
     +'<label class="f">Local (nome do ponto)<input id="rLoc" placeholder="ex: '+(isF?"posto, BR":"casa, shopping")+'"></label>'
     +'<div class="shortgrid"><label class="f">'+(isF?"Litros abastecidos *":"kWh adicionados *")+'<input id="rKwh" inputmode="decimal" placeholder="ex: '+(isF?"40,0":"32,5")+'"></label>'
     +'<label class="f" id="rCostWrap">Custo total (R$) *<input id="rCost" inputmode="decimal" placeholder="0 se grátis"></label></div>'
+    +(isF?"":pagoBoxHTML("r"))
     +'<label class="f">Odômetro (km)<input id="rOdo" inputmode="decimal"></label>'
     +'<label class="f"><input type="checkbox" id="rReset" style="width:auto"> 🔁 Odômetro reiniciou / troca de veículo neste '+(isF?"abastecimento":"recarga")+'</label>'
     +'<label class="f">Observações<input id="rNotes"></label>'
@@ -5501,7 +5516,9 @@ function rRec(){
       var _oldT=_lk?{descricao:_lk.descricao,valor:_lk.valor,competencia:_lk.competencia,vencimento:_lk.vencimento}:null;
       var _chV=Math.round(Number(c)*100)!==Math.round(Number(_old.cost)*100), _chD=(iso!==_old.date), _chL=(_newLocal!==_oldLocal);
       if(_oldLocal==="casa"&&typeof luzRecargaApurada==="function"&&luzRecargaApurada(editRec.id)){ customAlert("Recarga em casa j\u00E1 apurada na conta de luz. Para alterar, exclua ou restaure o t\u00EDtulo da conta de luz (o per\u00EDodo reabre). Nada foi gravado.",enName); return; }
-      if(_lk&&tituloTemBaixa(_lk)&&(_chV||_chD||_chL)){ customAlert("Esta recarga já gerou um título com baixa(s) no Contas a pagar. Desfaça a baixa antes de alterar valor, data ou local.",enName); return; }
+      var _pgR=(!isF&&_newLocal==="rua")?pagoLer("r"):null; var _pgErrR=pagoValidar(_pgR,iso); if(_pgErrR&&!(_lk&&tituloTemBaixa(_lk)&&!pagoSoAuto(_lk))){ customAlert(_pgErrR,enName); return; }
+      var _bxSnapR=_lk?JSON.stringify(_lk.baixas||[]):null;
+      if(_lk&&tituloTemBaixa(_lk)&&!pagoSoAuto(_lk)&&(_chV||_chD||_chL)){ customAlert("Esta recarga já gerou um título com baixa(s) no Contas a pagar. Desfaça a baixa antes de alterar valor, data ou local.",enName); return; }
       if(_lk&&_chV&&_lk.rateio&&_lk.rateio.length>1){ var _rl=[]; for(var _rli=0;_rli<_lk.rateio.length;_rli++){ _rl.push(centroNome(_lk.rateio[_rli].centro)+" "+BRL(_lk.rateio[_rli].valor)); } customAlert("Este título tem rateio manual em "+_lk.rateio.length+" linhas no Contas a pagar ("+_rl.join(" · ")+"). O sistema não recalcula rateio medido sozinho: volte o rateio para 100% numa linha só no Contas a pagar e repita a alteração do valor. Nada foi gravado.",enName); return; }
       var _meSnap=null; try{ _meSnap=JSON.stringify(DB.medicoesEnergia||[]); }catch(_e){rmLogErr(_e)}
       editRec.date=iso; editRec.time=tm; editRec.location=document.getElementById("rLoc").value.trim().slice(0,80);
@@ -5510,16 +5527,16 @@ function rRec(){
       if(!isF) editRec.local=_newLocal;
       var _nt=null, _rmTit=null;
       if(!isF){
-        if(_oldLocal!=="rua"&&_newLocal==="rua"){ _nt=criarTituloDeRecarga(editRec); retirarRecargaDoPeriodo(editRec.id); }
+        if(_oldLocal!=="rua"&&_newLocal==="rua"){ _nt=criarTituloDeRecarga(editRec); if(_nt) pagoSincronizar(_nt,_pgR,iso); retirarRecargaDoPeriodo(editRec.id); }
         else if(_oldLocal==="rua"&&_newLocal!=="rua"){ if(_lk){ _rmTit=_lk; var _li=DB.titulos.indexOf(_lk); if(_li>=0){ moveToTrash("titulo",_lk); DB.titulos.splice(_li,1); } } reporRecargaNoPeriodo(editRec); }
-        else if(_newLocal==="rua"&&_lk){ _lk.descricao=tituloDescDeRecarga(editRec); _lk.valor=Math.round(Number(c)*100)/100; if(_lk.rateio&&_lk.rateio.length===1){ _lk.rateio[0].valor=_lk.valor; } _lk.competencia=String(iso).slice(0,7)+"-01"; _lk.vencimento=iso; tituloRecalc(_lk); }
-        else if(_newLocal==="rua"){ _nt=criarTituloDeRecarga(editRec); }
+        else if(_newLocal==="rua"&&_lk){ _lk.descricao=tituloDescDeRecarga(editRec); _lk.valor=Math.round(Number(c)*100)/100; if(_lk.rateio&&_lk.rateio.length===1){ _lk.rateio[0].valor=_lk.valor; } _lk.competencia=String(iso).slice(0,7)+"-01"; _lk.vencimento=iso; tituloRecalc(_lk); pagoSincronizar(_lk,_pgR,iso); }
+        else if(_newLocal==="rua"){ _nt=criarTituloDeRecarga(editRec); if(_nt) pagoSincronizar(_nt,_pgR,iso); }
         else if(_newLocal==="casa"){ reporRecargaNoPeriodo(editRec); }
       }
       processVehicleReset();
       if(!save()){
         editRec.date=_old.date; editRec.time=_old.time; editRec.location=_old.location; editRec.kwh=_old.kwh; editRec.cost=_old.cost; editRec.odometer=_old.odometer; editRec.notes=_old.notes; editRec.resetVehicle=_old.resetVehicle; editRec.local=_oldLocal;
-        if(_lk&&_oldT){ _lk.descricao=_oldT.descricao; _lk.valor=_oldT.valor; _lk.competencia=_oldT.competencia; _lk.vencimento=_oldT.vencimento; tituloRecalc(_lk); }
+        if(_lk&&_oldT){ _lk.descricao=_oldT.descricao; _lk.valor=_oldT.valor; _lk.competencia=_oldT.competencia; _lk.vencimento=_oldT.vencimento; try{ if(_bxSnapR!=null) _lk.baixas=JSON.parse(_bxSnapR); }catch(_eB){} tituloRecalc(_lk); }
         if(_nt){ var _p3=DB.titulos.indexOf(_nt); if(_p3>=0) DB.titulos.splice(_p3,1); }
         if(_rmTit){ for(var _ti=DB.trash.length-1;_ti>=0;_ti--){ if(DB.trash[_ti].data===_rmTit){ DB.trash.splice(_ti,1); break; } } if(DB.titulos.indexOf(_rmTit)<0) DB.titulos.push(_rmTit); }
         try{ if(_meSnap!=null) DB.medicoesEnergia=JSON.parse(_meSnap); }catch(_e2){rmLogErr(_e2)}
@@ -5528,11 +5545,12 @@ function rRec(){
       }
       show("recarga"); return;
     }
+    var _pgNR=(!isF&&locSel==="rua")?pagoLer("r"):null, _pgErrNR=pagoValidar(_pgNR,iso); if(_pgErrNR){ customAlert(_pgErrNR,enName); return; }
     var _newRec={id:uid(),date:iso,time:tm,location:document.getElementById("rLoc").value.trim().slice(0,80),kwh:k,cost:((!isF&&locSel==="casa")?0:c),odometer:odo,notes:document.getElementById("rNotes").value.trim().slice(0,300),resetVehicle:document.getElementById("rReset").checked?1:0,unit:cu,local:isF?"":locSel};
     var _meSnap0=null; try{ _meSnap0=JSON.stringify(DB.medicoesEnergia||[]); }catch(_e4){rmLogErr(_e4)}
     DB.recharges.push(_newRec);
     var _newTit=null;
-    if(!isF&&locSel==="rua"){ _newTit=criarTituloDeRecarga(_newRec); }
+    if(!isF&&locSel==="rua"){ _newTit=criarTituloDeRecarga(_newRec); try{ if(_newTit) pagoAplicar(_newTit,_pgNR,iso); }catch(_eP){ rmLogErr(_eP,"pago-rec-novo"); } }
     if(!isF&&locSel==="casa"){ try{ reporRecargaNoPeriodo(_newRec); }catch(_e5){rmLogErr(_e5)} }
     processVehicleReset();
     if(!save()){ var _p1=DB.recharges.indexOf(_newRec); if(_p1>=0) DB.recharges.splice(_p1,1); if(_newTit&&DB.titulos){ var _p2=DB.titulos.indexOf(_newTit); if(_p2>=0) DB.titulos.splice(_p2,1); } try{ if(_meSnap0!=null) DB.medicoesEnergia=JSON.parse(_meSnap0); }catch(_e6){rmLogErr(_e6)} try{processVehicleReset();}catch(_){rmLogErr(_)} document.getElementById("rMsg").textContent=SAVE_FAIL_MSG; return; }
@@ -5549,7 +5567,8 @@ function rRec(){
     if(!r){ customAlert("Registro não encontrado.",enName); return; }
     var _lkE=(r.local==="rua")?tituloDaRecarga(r.id):null;
     if(r.local==="casa"&&typeof luzRecargaApurada==="function"&&luzRecargaApurada(r.id)){ customAlert("Recarga em casa j\u00E1 apurada na conta de luz. Para alterar, exclua ou restaure o t\u00EDtulo da conta de luz (o per\u00EDodo reabre).",enName); return; }
-    if(_lkE&&tituloTemBaixa(_lkE)){ customAlert("Esta recarga já gerou um título com baixa(s) no Contas a pagar. Desfaça a baixa antes de editar.",enName); return; }
+    if(_lkE&&tituloTemBaixa(_lkE)&&!pagoSoAuto(_lkE)){ customAlert("Esta recarga já gerou um título com baixa(s) no Contas a pagar. Desfaça a baixa antes de editar.",enName); return; }
+    try{ pagoPreencher("r",_lkE); }catch(_eP){ rmLogErr(_eP,"pago-rec-ed"); }
     editRec=r;
     recLocal=(r.local==="casa"||r.local==="rua")?r.local:"";
     segSync();
@@ -5574,8 +5593,9 @@ function rRec(){
       var bs=document.querySelectorAll("#rLocalSeg button");
       for(var i=0;i<bs.length;i++){ bs[i].classList.toggle("on",bs[i].dataset.loc===recLocal); }
       var cw=document.getElementById("rCostWrap"); if(cw) cw.hidden=(recLocal==="casa");
+      var pb=document.getElementById("rPagoBox"); if(pb) pb.hidden=(recLocal!=="rua");
       var tip=document.getElementById("rLocalTip");
-      if(tip) tip.textContent=(recLocal==="casa")?"🏠 Em casa: sem título e sem custo agora — os kWh somam no período de medição aberto.":((recLocal==="rua")?"🛣️ Na rua: gera título a pagar em aberto no Contas a pagar.":"Em casa: entra no período de medição, sem custo agora. Na rua: gera título a pagar.");
+      if(tip) tip.textContent=(recLocal==="casa")?"🏠 Em casa: sem título e sem custo agora — os kWh somam no período de medição aberto.":((recLocal==="rua")?"🛣️ Na rua: marque \"Já paga\" se pagou na hora; senão fica a pagar no Contas a pagar.":"Em casa: entra no período de medição, sem custo agora. Na rua: gera título a pagar.");
       calc();
     }catch(e){rmLogErr(e)}
   }
@@ -5604,11 +5624,11 @@ function rRec(){
     var _rec=DB.recharges[ix];
     var _lk=(_rec.local==="rua")?tituloDaRecarga(_rec.id):null;
     if(_rec.local==="casa"&&typeof luzRecargaApurada==="function"&&luzRecargaApurada(_rec.id)){ customAlert("Recarga em casa j\u00E1 apurada na conta de luz. Para excluir, exclua o t\u00EDtulo da conta de luz (o per\u00EDodo reabre e o custo zera).",enName); return; }
-    if(_lk&&tituloTemBaixa(_lk)){ customAlert("Esta recarga já gerou um título com baixa(s) no Contas a pagar ("+BRL(tituloPago(_lk))+" baixado). Desfaça a baixa antes de excluir.",enName); return; }
-    var _okR=false; try{ _okR=await customConfirm("Excluir "+(isF?"o abastecimento":"a recarga")+" de "+isoToBR(_rec.date)+" ("+brDec(Number(_rec.kwh)||0,1)+" "+qtyShort()+", "+BRL(_rec.cost)+")? Vai para a Lixeira"+(_lk?", junto com o título em aberto no Contas a pagar":"")+".",enName,"Excluir"); }catch(_e){ _okR=false; }
+    if(_lk&&tituloTemBaixa(_lk)&&!pagoSoAuto(_lk)){ customAlert("Esta recarga já gerou um título com baixa(s) no Contas a pagar ("+BRL(tituloPago(_lk))+" baixado). Desfaça a baixa antes de excluir.",enName); return; }
+    var _okR=false; try{ _okR=await customConfirm("Excluir "+(isF?"o abastecimento":"a recarga")+" de "+isoToBR(_rec.date)+" ("+brDec(Number(_rec.kwh)||0,1)+" "+qtyShort()+", "+BRL(_rec.cost)+")? Vai para a Lixeira"+(_lk?(pagoBaixaAuto(_lk)?" e o pagamento ("+contaNome(pagoBaixaAuto(_lk).conta)+") é desfeito":", junto com o título em aberto no Contas a pagar"):"")+".",enName,"Excluir"); }catch(_e){ _okR=false; }
     if(!_okR) return;
     ix=DB.recharges.findIndex(function(r){return r.id===rsel;}); if(ix<0) return;
-    _rec=DB.recharges[ix]; _lk=(_rec.local==="rua")?tituloDaRecarga(_rec.id):null; if(_lk&&tituloTemBaixa(_lk)) return;
+    _rec=DB.recharges[ix]; _lk=(_rec.local==="rua")?tituloDaRecarga(_rec.id):null; if(_lk&&tituloTemBaixa(_lk)&&!pagoSoAuto(_lk)) return;
     var trashId=null;
     if(_lk){ var _li=DB.titulos.indexOf(_lk); if(_li>=0){ moveToTrash("titulo",_lk); DB.titulos.splice(_li,1); } }
     if(_rec.local==="casa") retirarRecargaDoPeriodo(_rec.id);
@@ -5688,7 +5708,7 @@ function rFin(){
       +'<div class="kv"><span>Ganhos</span><b style="color:#4caf7d">'+BRL(earn)+'</b></div>'
       +'<div class="kv"><span>Despesas</span><b style="color:#e0695c">'+BRL(exp)+'</b></div>'
       +'<div class="kv"><span>'+(curUnit()==="L"?"Combustível":"Energia")+'</span><b>'+BRL(rc.cost)+'</b></div>'
-       +'<div class="kv"><span>Horas online</span><b>'+(wh.n>0?wh.hours.toFixed(1)+'h':"–")+'</b></div>'
+       +'<div class="kv"><span>Horas online</span><b>'+(wh.n>0?brDec(wh.hours,1)+'h':"–")+'</b></div>'
       +'<div class="kv"><span>R$/hora em corrida</span><b>'+(wh.n>0&&wh.hours>0?BRL(wh.perHour):"–")+'</b></div>'
       +'<div class="sub">base: '+wh.n+' de '+(wh.total!=null?wh.total:wh.n)+' corridas com hora de fim</div>'
       +'<div class="kv"><span>R$/hora (turno)</span><b>'+(function(){ try{ var _ini=(p[1]===1?todayISO():sinceISO(p[1])); var sh=shiftAgg(_ini,todayISO()); return (sh.n>0&&sh.hours>0?BRL(sh.perHour):"–"); }catch(e){ return "–"; } })()+'</b></div>'
@@ -5725,8 +5745,8 @@ function reservaCardHTML(){
   var provM=(km>0&&cp.any)?km*cp.total:0;
   var provA=annualProvNoPeriodo(ini,fim);
   var tot=provM+provA;
-  h+='<div class="kv"><span>Km do período</span><b>'+km.toFixed(1)+' km</b></div>';
-  if(cp.any) h+='<div class="kv"><span>Provisão manutenção ('+fmtPerKm(cp.total)+' × '+km.toFixed(1)+' km)</span><b>'+BRL(provM)+'</b></div>';
+  h+='<div class="kv"><span>Km do período</span><b>'+brDec(km,1)+' km</b></div>';
+  if(cp.any) h+='<div class="kv"><span>Provisão manutenção ('+fmtPerKm(cp.total)+' × '+brDec(km,1)+' km)</span><b>'+BRL(provM)+'</b></div>';
   else h+='<div class="kv"><span>Provisão manutenção</span><b>–</b></div>';
   if(mens>0) h+='<div class="kv"><span>Provisão gastos anuais ('+BRL(mens)+'/mês pró-rata dias reais do mês)</span><b>'+BRL(provA)+'</b></div>';
   else h+='<div class="kv"><span>Provisão gastos anuais</span><b>–</b></div>';
@@ -6013,20 +6033,20 @@ function kmBodyHTML(s){
     +statCard("💰",BRL(s.ganho)+"/km","Ganho bruto/km","")
     +statCard("💸",BRL(s.custo)+"/km","Custo total/km","")
     +statCard(s.lucro>=0?"📊":"🔻",BRL(s.lucro)+"/km","Lucro líquido/km",s.lucro>=0?"#4caf7d":"#e0695c")
-    +statCard(isF?"⛽":"⚡",s.cons?(s.cons.toFixed(3)+" "+(isF?"L":"kWh")):"–","Consumo/km","",(s.ridesKm+" de "+s.ridesTotal+" corridas c/ km"))
+    +statCard(isF?"⛽":"⚡",s.cons?(brDec(s.cons,3)+" "+(isF?"L":"kWh")):"–","Consumo/km","",(s.ridesKm+" de "+s.ridesTotal+" corridas c/ km"))
     +'</div>';
-  h+='<div class="kv"><span>Km rodados</span><b>'+s.km.toFixed(1)+' km</b></div>'
+  h+='<div class="kv"><span>Km rodados</span><b>'+brDec(s.km,1)+' km</b></div>'
     +'<div class="kv"><span>Corridas c/ km</span><b>'+s.ridesKm+' de '+s.ridesTotal+'</b></div>'
     +'<div class="kv"><span>Ganho bruto (período)</span><b>'+BRL(s.earnAll)+'</b></div>'
     +'<div class="kv"><span>'+(isF?"Combustível":"Energia")+' (recargas)</span><b>'+BRL(s.rc)+(s.kwh>0?(" ("+s.kwh.toFixed(1)+" "+qtyShort()+")"):"")+'</b></div>'
     +'<div class="kv"><span>Despesas (todas)</span><b>'+BRL(s.exp)+'</b></div>'
-    +((s.dep>0)?('<div class="kv"><span>Depreciação do carro ('+fmtPerKm(s.depKm)+' × '+s.km.toFixed(1)+' km)</span><b>'+BRL(s.dep)+'</b></div>'):"")
+    +((s.dep>0)?('<div class="kv"><span>Depreciação do carro ('+fmtPerKm(s.depKm)+' × '+brDec(s.km,1)+' km)</span><b>'+BRL(s.dep)+'</b></div>'):"")
     +((s.alug>0)?('<div class="kv"><span>Aluguel do carro ('+s.alugDias+' dia'+(s.alugDias===1?"":"s")+')</span><b>'+BRL(s.alug)+'</b></div>'):"")
     +'<div class="kv"><span>Custo total'+(s.src==="shift"?" (sem rateio)":" rateado")+'</span><b>'+BRL(s.cr)+'</b></div>'
     +((!s.veicCfg&&!s.alugNasDesp)?'<div class="sub">ℹ️ Depreciação e aluguel do carro ainda não entram aqui. Cadastre em Configurações › Manutenção › Custo do carro para ver o lucro real.</div>':"")
     +(s.alugNasDesp?'<div class="sub">Aluguel do carro: conta pelas Despesas lançadas (opção marcada em Custo do carro).</div>':"");
   if(s.src==="shift"&&s.kmPess>0){ h+='<div class="sub">Pausas: '+brGroup(String(Math.round(s.kmPess)))+' km pessoais fora do turno e '+BRL(s.energiaPessoal||0)+' de energia proporcional fora deste custo (o DRE continua com a despesa inteira).</div>'; }
-  if(s.src==="shift"){ h+='<div class="sub">fonte: km do turno (od\u00F4metro'+(s.shiftN?(' \u00B7 '+s.shiftN+' turno(s) com km'):"")+') \u2014 sem rateio. Aproveitamento = km com passageiro \u00F7 km total.</div>'; if(s.aproveit!=null) h+='<div class="kv"><span>Aproveitamento (km pass. \u00F7 km total)</span><b>'+(s.aproveit*100).toFixed(0)+'%</b></div>'; if(s.kmPass!=null) h+='<div class="kv"><span>Km com passageiro</span><b>'+s.kmPass.toFixed(1)+' km</b></div>'; }
+  if(s.src==="shift"){ h+='<div class="sub">fonte: km do turno (od\u00F4metro'+(s.shiftN?(' \u00B7 '+s.shiftN+' turno(s) com km'):"")+') \u2014 sem rateio. Aproveitamento = km com passageiro \u00F7 km total.</div>'; if(s.aproveit!=null) h+='<div class="kv"><span>Aproveitamento (km pass. \u00F7 km total)</span><b>'+(s.aproveit*100).toFixed(0)+'%</b></div>'; if(s.kmPass!=null) h+='<div class="kv"><span>Km com passageiro</span><b>'+brDec(s.kmPass,1)+' km</b></div>'; }
   else { h+='<div class="sub">fonte: km das corridas (rateado).</div>'; if(s.ridesKm<s.ridesTotal) h+='<div class="sub">\u2139\uFE0F '+(s.ridesTotal-s.ridesKm)+' corrida(s) sem km no per\u00EDodo. Custos rateados proporcionalmente pelo ganho ('+(s.prop*100).toFixed(0)+'%).</div>'; }
   var ePart=(s.src==="shift"?s.rc:s.rc*s.prop), xPart=(s.src==="shift"?s.exp:s.exp*s.prop);
   h+='<div class="sub" style="margin-top:8px">Composição do custo/km</div>';
@@ -6688,7 +6708,7 @@ function wxSlot(wd,h){
   if(!(DB.wx.cfg.enabled&&DB.wx.cfg.key)) return null;
   var r=wxGet(nextDateOf(wd),h);
   if(!r) return null;
-  return {icon:wxIcon(r.c),title:wxIcon(r.c)+" "+wxDesc(r.c)+(r.t!=null?" · "+Number(r.t).toFixed(0)+"°C":"")+(r.p!=null?" · chuva "+r.p+"%":"")+(r.r?" · "+Number(r.r).toFixed(1)+" mm":"")};
+  return {icon:wxIcon(r.c),title:wxIcon(r.c)+" "+wxDesc(r.c)+(r.t!=null?" · "+Number(r.t).toFixed(0)+"°C":"")+(r.p!=null?" · chuva "+r.p+"%":"")+(r.r?" · "+NumberbrDec((r.r),1)+" mm":"")};
 }
 /* ---------- PREVISÃO ---------- */
 function rPrev(){
@@ -6758,7 +6778,7 @@ function rPrev(){
         var meta=parseBR(sMeta.value.trim()), hs=parseBR(sHoras.value.trim());
         var h='<div class="kv"><span>Média do dia ('+DIAS[wd]+')</span><b>'+BRL(mean)+'/h</b></div>';
         h+='<div class="kv"><span>Nos 3 melhores horários</span><b>'+BRL(t3m)+'/h</b></div>';
-        if(meta>0) h+='<div class="kv"><span>Para '+BRL(meta)+'</span><b>~'+(meta/mean).toFixed(1)+'h na média · ~'+(meta/t3m).toFixed(1)+'h no melhor horário</b></div>';
+        if(meta>0) h+='<div class="kv"><span>Para '+BRL(meta)+'</span><b>~'+brDec((meta/mean),1)+'h na média · ~'+brDec((meta/t3m),1)+'h no melhor horário</b></div>';
         if(hs>0) h+='<div class="kv"><span>Com '+hs+'h</span><b>espere ~'+BRL(hs*mean)+' (até ~'+BRL(hs*t3m)+' nos melhores horários)</b></div>';
         if(!(meta>0)&&!(hs>0)) h+='<div class="sub">Preencha a meta, as horas, ou os dois.</div>';
         h+='<div class="sub">Sugestão '+DIAS[wd]+': '+top3.map(function(x){return String(x.h).padStart(2,"0")+":00 ("+BRL(x.v)+"/h)";}).join(" · ")+'</div>';
@@ -6818,7 +6838,7 @@ function wxDayCard(date,label){
   h+='<div class="tblwrap"><table class="tbl"><tr><th>Hora</th><th>Condição</th><th>Temp.</th><th>Chuva %</th><th>Chuva mm</th><th>Vento</th></tr><tbody>';
   for(var hh=0;hh<24;hh++){
     var r=fc[hh]!=null?fc[hh]:fc[String(hh)]; if(!r) continue;
-    h+='<tr'+(hh===nowH?' style="background:var(--accent)"':"")+'><td>'+String(hh).padStart(2,"0")+':00</td><td class="l">'+wxIcon(r.c)+' '+esc(wxDesc(r.c))+'</td><td>'+(r.t!=null?Number(r.t).toFixed(1)+"°C":"–")+'</td><td style="color:'+((r.p||0)>=60?"#5a9fd4":"inherit")+'"><b>'+(r.p!=null?r.p+"%":"–")+'</b></td><td>'+(r.r!=null?Number(r.r).toFixed(1):"–")+'</td><td>'+(r.w!=null?Number(r.w).toFixed(0)+" km/h":"–")+'</td></tr>';
+    h+='<tr'+(hh===nowH?' style="background:var(--accent)"':"")+'><td>'+String(hh).padStart(2,"0")+':00</td><td class="l">'+wxIcon(r.c)+' '+esc(wxDesc(r.c))+'</td><td>'+(r.t!=null?NumberbrDec((r.t),1)+"°C":"–")+'</td><td style="color:'+((r.p||0)>=60?"#5a9fd4":"inherit")+'"><b>'+(r.p!=null?r.p+"%":"–")+'</b></td><td>'+(r.r!=null?Number(r.r).toFixed(1):"–")+'</td><td>'+(r.w!=null?Number(r.w).toFixed(0)+" km/h":"–")+'</td></tr>';
   }
   return h+'</tbody></table></div></div>';
 }
@@ -7913,6 +7933,8 @@ function computeDRECustom(ini,fim,label,filtro,regime){
   var r={ini:ini,fim:fim,label:label||""};
   var f=dreNormFiltro(filtro);
   var ids=dreCentroIds();
+  /* corridas são do centro Uber por natureza: com filtro Pessoal/Investimentos não entram */
+  var _ridesUberOk=dreRateioMatch(ids.uber,f,ids);
   /* FASE 5A — REGIME: "competencia" (padrão, idêntico a antes) ou "caixa". */
   var isCaixa=(regime==="caixa");
   regime=isCaixa?"caixa":"competencia";
@@ -7921,12 +7943,13 @@ function computeDRECustom(ini,fim,label,filtro,regime){
   var byPlat={}, bruta=0, km=0, tipT=0;
   var nBxRec=0;
   if(!isCaixa){
+    if(!_ridesUberOk) rides=[];
     rides.forEach(function(x){ var n=platName(x.platform_id), t=rideTotal(x); byPlat[n]=(byPlat[n]||0)+t; bruta+=t; tipT+=(Number(x.tip)||0); km+=Number(x.distance)||0; });
   } else {
     /* CAIXA — receita: corridas em DINHEIRO no mês da corrida + baixas de
        recebíveis no mês da baixa (pelo valor baixado). Recebível em aberto
        fica fora. Manuais de receita/energia/DAS continuam pela data. */
-    rides=(DB.rides||[]).filter(function(x){ return x&&isCashRide(x)&&inRange(x.date,r.ini,r.fim); });
+    rides=_ridesUberOk?(DB.rides||[]).filter(function(x){ return x&&isCashRide(x)&&inRange(x.date,r.ini,r.fim); }):[];
     rides.forEach(function(x){ var n=platName(x.platform_id), t=rideTotal(x); byPlat[n]=Math.round(((byPlat[n]||0)+t)*100)/100; bruta=Math.round((bruta+t)*100)/100; tipT=Math.round((tipT+(Number(x.tip)||0))*100)/100; km+=Number(x.distance)||0; });
     (DB.titulos||[]).forEach(function(t){
       if(!t||t.tipo!=="receber"||t.status==="cancelado") return;
@@ -7965,7 +7988,15 @@ function computeDRECustom(ini,fim,label,filtro,regime){
   /* Energia das recargas (rua e casa apurada) pertence ao centro Uber: entra só
      quando o filtro casa com o centro Uber (consolidado sempre casa). */
   var _recUberOk=dreRateioMatch(ids.uber,f,ids);
-  var energia=_recUberOk?rc.reduce(function(s,x){return s+Number(x.cost);},0):0, kwh=rc.reduce(function(s,x){return s+((x.unit==="L")?0:Number(x.kwh));},0), liters=rc.reduce(function(s,x){return s+((x.unit==="L")?Number(x.kwh):0);},0);
+  var energia=0;
+  if(_recUberOk){
+    if(!isCaixa) energia=rc.reduce(function(s,x){return s+Number(x.cost);},0);
+    else {
+      rc.forEach(function(x){ if(x.local==="rua"&&tituloDaRecarga(x.id)) return; energia=Math.round((energia+(Number(x.cost)||0))*100)/100; });
+      (DB.recharges||[]).forEach(function(x){ if(!x||x.local!=="rua") return; var _tr=tituloDaRecarga(x.id); if(!_tr) return; tituloBaixas(_tr).forEach(function(b){ if(b&&validISO(b.data)&&inRange(b.data,r.ini,r.fim)) energia=Math.round((energia+(Number(b.valor)||0))*100)/100; }); });
+    }
+  }
+  var kwh=rc.reduce(function(s,x){return s+((x.unit==="L")?0:Number(x.kwh));},0), liters=rc.reduce(function(s,x){return s+((x.unit==="L")?Number(x.kwh):0);},0);
   var titByVinc={};
   try{
     for(var _ti=0;_ti<(DB.titulos||[]).length;_ti++){ var _tt=DB.titulos[_ti]; if(_tt&&_tt.vinculo) titByVinc[String(_tt.vinculo)]=_tt; }
@@ -8012,7 +8043,7 @@ function computeDRECustom(ini,fim,label,filtro,regime){
           var n2=c2?(c2.icon+" "+c2.name):"Sem categoria";
           if(g2==="var"){ expVar[n2]=(expVar[n2]||0)+sl; vT=Math.round((vT+sl)*100)/100; }
           else if(g2==="fix"){ expFix[n2]=(expFix[n2]||0)+sl; fT=Math.round((fT+sl)*100)/100; }
-          else { ignored=Math.round((ignored+sl)*100)/100; }
+          else if(t.origem!=="recarga-rua"){ ignored=Math.round((ignored+sl)*100)/100; }
         }
         titPrincipal=Math.round((titPrincipal+sl)*100)/100;
       }
@@ -8056,7 +8087,7 @@ function computeDRECustom(ini,fim,label,filtro,regime){
           var n0=c0?(c0.icon+" "+c0.name):"Sem categoria";
           if(g0==="var"){ expVar[n0]=(expVar[n0]||0)+psl0; vT=Math.round((vT+psl0)*100)/100; }
           else if(g0==="fix"){ expFix[n0]=(expFix[n0]||0)+psl0; fT=Math.round((fT+psl0)*100)/100; }
-          else { ignored=Math.round((ignored+psl0)*100)/100; }
+          else if(t.origem!=="recarga-rua"){ ignored=Math.round((ignored+psl0)*100)/100; }
         }
         titPrincipal=Math.round((titPrincipal+psl0)*100)/100;
       }
@@ -8207,7 +8238,7 @@ function rDre(){
   html+='<div class="fin-dre-top"><div class="cards c4 fin-dre-cards">'
     +statCard("💰",BRL(D.brutaT),"Receita bruta","#4caf7d",D.nRides+" corridas")
     +statCard("🧾",BRL(D.liquida),"Receita líquida","","− "+BRL(D.ded)+" deduções")
-    +statCard("⚖️",BRL(D.margem),"Margem de contribuição","",margPct.toFixed(1)+"% da líquida")
+    +statCard("⚖️",BRL(D.margem),"Margem de contribuição","",brDec(margPct,1)+"% da líquida")
     +statCard(D.liquido>=0?"✅":"🔻",BRL(D.liquido),"Resultado líquido",D.liquido>=0?"#4caf7d":"#e0695c",D.km?(BRL(D.varT/Math.max(D.km,0.01))+" var/km"):"sem km")
     +'</div>';
   if(isCaixa){
@@ -8246,13 +8277,13 @@ function rDre(){
   html+='</tbody>';
   html+=sub("(=) RECEITA LÍQUIDA",'<b>'+BRL(D.liquida)+'</b>');
   html+=accH("var","(−) CUSTOS VARIÁVEIS","− "+BRL(D.varT),"#e0695c");
-  var eQty=(D.kwh>0?D.kwh.toFixed(1)+' kWh':"")+(D.kwh>0&&D.liters>0?" + ":"")+(D.liters>0?D.liters.toFixed(1)+' L':"");
+  var eQty=(D.kwh>0?brDec(D.kwh,1)+' kWh':"")+(D.kwh>0&&D.liters>0?" + ":"")+(D.liters>0?brDec(D.liters,1)+' L':"");
   html+=det(((D.liters>0&&!(D.kwh>0))?'Combustível — abastecimentos':'Energia — recargas')+(eQty?(' ('+eQty+')'):""),BRL(D.energia));
   Object.keys(D.expVar).sort().forEach(function(n){ html+=det(esc(n)+' <span style="color:var(--muted)">(despesas)</span>',BRL(D.expVar[n])); });
   D.man.filter(function(x){return x.gid==="var";}).forEach(function(x){ var _v=dreManualSlice(Number(x.amount),x.rateio,fD,idsD); if(!(_v>0.004)) return; html+=det('⊕ '+esc(x.desc||"Custo variável")+' <span style="color:var(--muted)">'+isoToBR(x.date)+'</span>',BRL(_v)); });
   if(!(D.energia>0||D.vT>0||D.varMan>0)) html+=det(muted("Nenhum"),"–");
   html+='</tbody>';
-  html+=sub("(=) MARGEM DE CONTRIBUIÇÃO ("+margPct.toFixed(1)+"%)",'<b>'+BRL(D.margem)+'</b>');
+  html+=sub("(=) MARGEM DE CONTRIBUIÇÃO ("+brDec(margPct,1)+"%)",'<b>'+BRL(D.margem)+'</b>');
   html+=accH("fix","(−) DESPESAS FIXAS / OPERACIONAIS","− "+BRL(D.fixT),"#e0695c");
   var fks=Object.keys(D.expFix).sort();
   if(!fks.length&&!(D.fixMan>0)) html+=det(muted("Nenhuma no período"),"–");
@@ -10220,6 +10251,9 @@ function fluxoRealizado(de,ate){
         else { var s=baixaSaida(b); saidas=Math.round((saidas+s)*100)/100; itens.push({data:b.data,tipo:"pagar",descricao:t.descricao,valor:s,conta:contaNome(b.conta),tituloId:t.id,baixaId:b.id}); }
       }
     }
+    /* corrida paga em dinheiro: entra na Carteira na data da corrida (preço do passageiro + gorjeta) */
+    var _cc=null; try{ _cc=carteiraCreditoContaId(); }catch(_e){}
+    (DB.rides||[]).forEach(function(r){ if(!r||!isCashRide(r)||!validISO(r.date)||r.date<de||r.date>ate) return; var v=creditoDinheiroDe(r); if(!(v>0)) return; entradas=Math.round((entradas+v)*100)/100; itens.push({data:r.date,tipo:"receber",descricao:"Dinheiro — corrida "+platName(r.platform_id)+" "+(r.start_time||""),valor:v,conta:_cc?contaNome(_cc):"Carteira",rideId:r.id}); });
   }catch(e){rmLogErr(e)}
   itens.sort(function(a,b){ if(a.data!==b.data) return a.data<b.data?-1:1; if(a.tipo!==b.tipo) return a.tipo<b.tipo?-1:1; return String(a.descricao)<String(b.descricao)?-1:1; });
   return {entradas:Math.round(entradas*100)/100,saidas:Math.round(saidas*100)/100,resultado:Math.round((entradas-saidas)*100)/100,itens:itens};
@@ -10365,8 +10399,9 @@ function wireFlxFiltros(){
 }
 function rFluxo(){
   try{ document.body.classList.add("fit-lock"); }catch(e){rmLogErr(e)}
-  if(!flxDeTxt){ flxDeTxt=new Date().toLocaleDateString("pt-BR"); }
-  if(!flxAteTxt){ try{ flxAteTxt=new Date(new Date().setDate(new Date().getDate()+30)).toLocaleDateString("pt-BR"); }catch(e){ flxAteTxt=flxDeTxt; } }
+  /* abre no mês atual: o realizado mostra o mês até hoje e o previsto o que vence até o fim do mês */
+  if(!flxDeTxt){ var _h0=new Date(); flxDeTxt=new Date(_h0.getFullYear(),_h0.getMonth(),1).toLocaleDateString("pt-BR"); }
+  if(!flxAteTxt){ try{ var _h1=new Date(); flxAteTxt=new Date(_h1.getFullYear(),_h1.getMonth()+1,0).toLocaleDateString("pt-BR"); }catch(e){ flxAteTxt=flxDeTxt; } }
   var html='<div class="fit-screen fin-flx"><div class="fin-flx-bar"><div class="card fin-flx-filtros"><h3>Fluxo de caixa — previsto × realizado<button type="button" class="infoBtn" data-tip="Regime por caixa. Realizado = baixas pela data da baixa. Previsto = título a pagar em aberto pelo vencimento; título a receber em aberto pela data prevista do repasse. O vencimento do recebível nunca é usado como pagamento. Só leitura: nada aqui altera dado nenhum." aria-label="Sobre este bloco">i</button></h3>'
     +'<div class="conc-grid"><label class="f">Período de (DD/MM/AAAA)<input id="flxDe" value="'+esc(flxDeTxt)+'"></label>'
     +'<label class="f">Período até (DD/MM/AAAA)<input id="flxAte" value="'+esc(flxAteTxt)+'"></label></div></div></div>';
@@ -10374,8 +10409,8 @@ function rFluxo(){
   if(!de||!ate||ate<de){ html+='<div class="fin-flx-bot"></div><div class="card warn"><h3>⚠️ Período inválido</h3><div class="sub">Use DD/MM/AAAA com dia real e fim depois do início.</div></div></div></div>'; viewCtn.innerHTML=html; wireFlxFiltros(); return; }
   var real=fluxoRealizado(de,ate), prev=fluxoPrevisto(de,ate);
   var sd=prev.semData||{total:0,n:0,per:{}};
-  html+='<div class="fin-flx-top"><div class="card fin-flx-sum"><h3>Realizado ('+isoToBR(de)+' a '+isoToBR(ate)+')<button type="button" class="infoBtn" data-tip="Baixas com data no período, pela data em que aconteceram." aria-label="Sobre este bloco">i</button></h3>'
-    +'<div class="kv"><span>Entradas (recebíveis baixados)</span><b>'+BRL(real.entradas)+'</b></div>'
+  html+='<div class="fin-flx-top"><div class="card fin-flx-sum"><h3>Realizado ('+isoToBR(de)+' a '+isoToBR(ate)+')<button type="button" class="infoBtn" data-tip="Baixas com data no período, pela data em que aconteceram, mais o dinheiro das corridas pagas em espécie (na data da corrida). Transferências entre suas contas não entram." aria-label="Sobre este bloco">i</button></h3>'
+    +'<div class="kv"><span>Entradas (repasses recebidos + corridas em dinheiro)</span><b>'+BRL(real.entradas)+'</b></div>'
     +'<div class="kv"><span>Saídas (títulos pagos)</span><b>'+BRL(real.saidas)+'</b></div>'
     +'<div class="kv"><span>Resultado do período</span><b style="color:'+(real.resultado<0?"#e0695c":"#4caf7d")+'">'+BRL(real.resultado)+'</b></div></div>'
     +'<div class="card fin-flx-sum"><h3>Previsto ('+isoToBR(de)+' a '+isoToBR(ate)+')<button type="button" class="infoBtn" data-tip="A pagar pelo vencimento; a receber pela data prevista do repasse. Nunca somado com o realizado." aria-label="Sobre este bloco">i</button></h3>'
@@ -10637,7 +10672,7 @@ function rRelcat(){
 /* ---------- FASE 2A — CONTAS A PAGAR (título + baixa) ----------
    Título NÃO mexe no saldo. Só a BAIXA (saída de caixa) mexe, via contaSaidas.
    Vencimento futuro é a natureza do título; isFuturo vale só para a DATA DA BAIXA. */
-var titEditId=null, titBaixaId=null, titFiltro="aberto", titPage=1;
+var titEditId=null, titBaixaId=null, titFiltro="aberto", titPage=1, titTipoF="pagar";
 var titNovoOpen=false;
 var titAgingOpen=false;
 var serieTipo="nenhuma", seriePer="mensal", serieDiaTxt="", serieNTxt="12";
@@ -10660,10 +10695,11 @@ function centroNome(id){ var c=centroById(id); return c?c.nome:"—"; }
 function titCatNome(id){ var c=null; try{ c=catById(id); }catch(e){ c=null; } if(!c) return "—"; return String((c.icon?c.icon+" ":"")+c.name); }
 function compToISO(s){ var m=String(s||"").trim().match(/^(\d{2})\/(\d{4})$/); if(!m) return null; var mo=+m[1],y=+m[2]; if(mo<1||mo>12||y<2000||y>2100) return null; return y+"-"+String(mo).padStart(2,"0")+"-01"; }
 function isoToComp(iso){ var m=String(iso||"").match(/^(\d{4})-(\d{2})-\d{2}$/); if(!m) return "–"; return m[2]+"/"+m[1]; }
-function titDiasAtraso(t){ try{ var a=new Date(todayISO()+"T12:00:00").getTime(), v=new Date(t.vencimento+"T12:00:00").getTime(); if(!isFinite(a)||!isFinite(v)) return 0; return Math.floor((a-v)/86400000); }catch(e){ return 0; } }
+function titRecebivelCorrida(t){ return !!(t&&t.tipo==="receber"&&t.origem==="corrida"); }
+function titDiasAtraso(t){ if(titRecebivelCorrida(t)) return 0; try{ var a=new Date(todayISO()+"T12:00:00").getTime(), v=new Date(t.vencimento+"T12:00:00").getTime(); if(!isFinite(a)||!isFinite(v)) return 0; return Math.floor((a-v)/86400000); }catch(e){ return 0; } }
 function titFaixa(t){ var d=titDiasAtraso(t); if(d<=0) return 0; if(d<=15) return 1; if(d<=30) return 2; if(d<=60) return 3; return 4; }
 function titAberto(t){ return !!(t&&(t.status==="aberto"||t.status==="parcial")); }
-function titVencido(t){ return titAberto(t)&&String(t.vencimento||"")<todayISO(); }
+function titVencido(t){ return titAberto(t)&&!titRecebivelCorrida(t)&&String(t.vencimento||"")<todayISO(); }
 function titStatusLabel(s){ if(s==="baixado") return "Baixado"; if(s==="parcial") return "Parcial"; if(s==="cancelado") return "Cancelado"; return "Em aberto"; }
 var titRateioMulti=false, titRateioLines=[];
 var titLuzOn=false, titLuzKwhTxt="", titLuzDeTxt="", titLuzAteTxt="";
@@ -11028,7 +11064,9 @@ function rTitulos(){
       +(!editing?'<div id="titPagoBox" style="grid-column:1/-1" hidden><div class="f2"><label class="f">Conta da baixa *<select id="titConta">'+ctaOpts+'</select></label><label class="f">Data da baixa *<input id="titDataBx" value="'+esc(new Date().toLocaleDateString("pt-BR"))+'"><span class="tip">movimento de caixa: não aceita futuro.</span></label><label class="f">Juros (R$)<input id="titJuros" inputmode="decimal" value="0,00"></label><label class="f">Desconto (R$)<input id="titDesc2" inputmode="decimal" value="0,00"></label></div><label class="f">Observação da baixa<input id="titObsBx" maxlength="300" placeholder="opcional"></label></div>':"")
       +'<div class="msg-ok" id="titMsg"></div></div></div><div class="tit-panel-foot"><button class="btn green" id="titSave">'+(editing?"Salvar alterações":"Salvar título")+'</button><button class="btn sm accent" id="titCancel">Voltar</button></div></div></div>';
   }
-  var all=(DB.titulos||[]).slice();
+  var _todosT=(DB.titulos||[]).slice();
+  var nPagar=_todosT.filter(function(t){ return t.tipo!=="receber"&&titAberto(t); }).length, nReceber=_todosT.filter(function(t){ return t.tipo==="receber"&&titAberto(t); }).length;
+  var all=_todosT.filter(function(t){ return titTipoF==="receber"?t.tipo==="receber":t.tipo!=="receber"; });
   var abertos=all.filter(titAberto);
   var vencidos=abertos.filter(titVencido);
   var baixadosN=all.filter(function(t){ return t.status==="baixado"; }).length;
@@ -11037,7 +11075,7 @@ function rTitulos(){
   if(titAgingOpen&&!titPanelHTML){ titPanelHTML=titAgingPanelHTML(fa,na,faltaA,abertos.length,faltaV,vencidos.length,baixadosN); }
 
   var nAb=abertos.length, nVe=vencidos.length, nBx=baixadosN;
-  html+='<div class="fit-screen tit-screen"><div class="toolbar tit-list-head"><h3 style="margin:0">Títulos ('+all.length+')</h3><span style="flex:1 1 auto;min-width:8px"></span><div class="seg" id="titSeg">'
+  html+='<div class="fit-screen tit-screen"><div class="toolbar tit-list-head"><div class="seg" id="titTipoSeg" role="tablist"><button type="button" data-tt="pagar" class="'+(titTipoF!=="receber"?"on":"")+'">A pagar ('+nPagar+')</button><button type="button" data-tt="receber" class="'+(titTipoF==="receber"?"on":"")+'">A receber ('+nReceber+')</button></div><span style="flex:1 1 auto;min-width:8px"></span><div class="seg" id="titSeg">'
     +'<button type="button" data-tf="aberto" class="'+(titFiltro==="aberto"?"on":"")+'">Em aberto ('+nAb+')</button>'
     +'<button type="button" data-tf="vencidos" class="'+(titFiltro==="vencidos"?"on":"")+'">Vencidos ('+nVe+')</button>'
     +'<button type="button" data-tf="baixados" class="'+(titFiltro==="baixados"?"on":"")+'">Baixados ('+nBx+')</button>'
@@ -11057,7 +11095,7 @@ function rTitulos(){
     var pg=tituloPago(t), ft=tituloFalta(t), vv=titVencido(t);
     var _sp=seriePosTxt(t);
     html+='<tr><td class="l"><span class="tit-desc">'+esc(t.descricao)+'</span><button type="button" class="infoBtn tit-info" data-tip="'+esc(titInfoTip(t))+'" aria-label="Detalhes do título">'+esc(titInfoIcon(t))+'</button></td>'
-      +'<td'+(vv?' style="color:#e0695c;font-weight:700"':"")+'>'+isoToBR(t.vencimento)+(vv?' <span style="font-size:11px">⚠️ '+titDiasAtraso(t)+'d em atraso</span>':"")+'</td>'
+      +'<td'+(vv?' style="color:#e0695c;font-weight:700"':"")+'>'+isoToBR(t.vencimento)+(vv?' <span style="font-size:11px">⚠️ '+titDiasAtraso(t)+'d em atraso</span>':"")+(titRecebivelCorrida(t)&&titAberto(t)?' <span style="font-size:11px;color:var(--muted)">corrida · vem no repasse</span>':"")+'</td>'
       +'<td class="mhide" style="white-space:nowrap">'+BRL(t.valor)+'</td><td style="white-space:nowrap">'+BRL(pg)+'</td><td style="white-space:nowrap"><b>'+BRL(ft)+'</b></td>'
       +'<td style="white-space:nowrap">'+titStatusLabel(t.status)+'</td>'
       +'<td style="white-space:nowrap">'+(titAberto(t)?'<button class="btn sm green" data-titbx="'+esc(t.id)+'">Baixar</button> ':"")+'<button class="btn sm yellow" data-titedit="'+esc(t.id)+'">✏️</button> <button class="btn sm rowdel" data-titdel="'+esc(t.id)+'">🗑</button></td></tr>';
@@ -11074,6 +11112,7 @@ function rTitulos(){
   document.getElementById("titPager").innerHTML=pagerHTML(titPage,pages,rows.length);
   wirePager(document.getElementById("titPager"),function(d){ titPage+=d; rTitulos(); });
   document.querySelectorAll("#titSeg button").forEach(function(b){ b.onclick=function(){ titFiltro=b.dataset.tf; titPage=1; rTitulos(); }; });
+  document.querySelectorAll("#titTipoSeg button").forEach(function(b){ b.onclick=function(){ titTipoF=b.dataset.tt; titPage=1; if(titTipoF==="receber"&&titFiltro==="vencidos") titFiltro="aberto"; rTitulos(); }; });
   var tp=document.getElementById("titPago");
   if(tp){ tp.onchange=function(){ var bx=document.getElementById("titPagoBox"); if(bx) bx.hidden=!tp.checked; }; }
   var tc=document.getElementById("titCancel");
@@ -13087,7 +13126,7 @@ function f3Aprimorar(){
   if(rk){
     var rf=rk.closest(".rec-form");
     if(rf&&!rf.dataset.f3){
-      f3Montar(rf,{depoisDe:rf.querySelector("#rLocalSeg")?"div[style*='grid-column']":"h3",topo:[["rKwh","rCost"],"rOdo"],grande:["rKwh","rCost"],
+      f3Montar(rf,{depoisDe:rf.querySelector("#rLocalSeg")?"div[style*='grid-column']":"h3",topo:[["rKwh","rCost"],"rPagoBox","rOdo"],grande:["rKwh","rCost"],
         mais:[["rDate","rTime"],"rLoc","rReset","rNotes"],maisRotulo:"Mais detalhes — data, hora, local, observação",acoes:".rec-actions"});
     }
   }
@@ -13096,7 +13135,7 @@ function f3Aprimorar(){
   if(dc){
     var df=dc.closest(".desp-form");
     if(df&&!df.dataset.f3){
-      f3Montar(df,{chips:"dCat",chipsRotulo:"Categoria",chipsGrade:true,chipsDepois:"dAmt",topo:["dAmt","dDesc","recArea"],grande:["dAmt"],mais:["dDate","dRec"],maisRotulo:"Mais detalhes — data, recorrente",acoes:".desp-actions"});
+      f3Montar(df,{chips:"dCat",chipsRotulo:"Categoria",chipsGrade:true,chipsDepois:"dAmt",topo:["dAmt","dDesc","dPagoBox","recArea"],grande:["dAmt"],mais:["dDate","dRec"],maisRotulo:"Mais detalhes — data, recorrente",acoes:".desp-actions"});
     }
   }
 }
@@ -14198,6 +14237,57 @@ function metaMesCardPintar(){
   var ba=document.getElementById("mmAuto"); if(ba) ba.onclick=function(){ var old=DB.goals.dias; delete DB.goals.dias; if(!save()){ DB.goals.dias=old; } metaMesCardPintar(); };
 }
 try{ window.RM.metaMesCalc=metaMesCalc; window.RM.mmDiasAuto=mmDiasAuto; }catch(e){ rmLogErr(e); }
+
+/* ---------- PAGA NA HORA ----------
+   Despesa e recarga na rua: "Já paga com [conta]" dá a baixa do título no mesmo ato,
+   na data do lançamento. A baixa leva a marca auto=1: enquanto for a única baixa e não
+   estiver conciliada, editar ou excluir o lançamento ajusta ou desfaz o pagamento junto.
+   Baixa feita no Contas a pagar (sem a marca) continua com as regras de antes. */
+function pagoBaixaAuto(t){ var bs=tituloBaixas(t); if(bs.length!==1) return null; var b=bs[0]; if(!b||!b.auto) return null; if(b.conciliado===1||b.conciliado===true) return null; return b; }
+function pagoSoAuto(t){ if(!t||!pagoBaixaAuto(t)) return false; try{ if(typeof loteConciliadoDoTitulo==="function"&&loteConciliadoDoTitulo(t.id)) return false; }catch(e){} return true; }
+function pagoContaPadrao(){ var id=null; try{ id=localStorage.getItem("rm_pago_conta"); }catch(e){} var c=id?contaById(id):null; if(c&&c.ativa) return c.id; return carteiraCreditoContaId(); }
+function pagoBoxHTML(pref){
+  var padrao=pagoContaPadrao();
+  var opts=(DB.contas||[]).filter(function(c){ return c&&c.ativa; }).map(function(c){ return '<option value="'+esc(c.id)+'"'+(c.id===padrao?" selected":"")+'>'+esc(c.nome)+'</option>'; }).join("");
+  return '<div id="'+pref+'PagoBox" class="pago-box"><label class="pago-chk"><input type="checkbox" id="'+pref+'Pago" data-pago="'+pref+'" checked> Já paga com</label><select id="'+pref+'Conta" aria-label="Conta do pagamento">'+opts+'</select><span class="pago-nota" id="'+pref+'PagoNota">Sai do saldo desta conta na data do lançamento.</span></div>';
+}
+function pagoNota(pref){ var c=document.getElementById(pref+"Pago"), sel=document.getElementById(pref+"Conta"), n=document.getElementById(pref+"PagoNota"); if(!c||!sel) return; sel.hidden=!c.checked; if(n&&!c.disabled) n.textContent=c.checked?"Sai do saldo desta conta na data do lançamento.":"Fica em aberto no Contas a pagar, para pagar depois."; }
+function pagoLer(pref){ var c=document.getElementById(pref+"Pago"), sel=document.getElementById(pref+"Conta"); if(!c||!sel||c.disabled) return null; return {pago:!!c.checked,conta:sel.value}; }
+function pagoResetar(pref){ var c=document.getElementById(pref+"Pago"), sel=document.getElementById(pref+"Conta"); if(!c||!sel) return; c.disabled=false; sel.disabled=false; c.checked=true; var p=pagoContaPadrao(); if(p) sel.value=p; pagoNota(pref); }
+function pagoPreencher(pref,t){
+  var c=document.getElementById(pref+"Pago"), sel=document.getElementById(pref+"Conta"), n=document.getElementById(pref+"PagoNota"); if(!c||!sel) return;
+  c.disabled=false; sel.disabled=false;
+  if(t&&tituloTemBaixa(t)&&!pagoSoAuto(t)){ c.checked=true; c.disabled=true; sel.disabled=true; var _b=tituloBaixas(t)[0]; if(_b&&_b.conta) sel.value=_b.conta; pagoNota(pref); if(n) n.textContent="Pagamento lançado no Contas a pagar: para mudar, use a tela de Contas a pagar."; return; }
+  var b=t?pagoBaixaAuto(t):null;
+  if(b){ c.checked=true; sel.value=b.conta; } else if(t){ c.checked=false; } else { c.checked=true; var p=pagoContaPadrao(); if(p) sel.value=p; }
+  pagoNota(pref);
+}
+function pagoValidar(p,data){
+  if(!p||!p.pago) return null;
+  var c=contaById(p.conta); if(!c||!c.ativa) return "Escolha uma conta ativa para o pagamento.";
+  if(validISO(c.dataSaldoInicial)&&data<c.dataSaldoInicial) return "A data "+isoToBR(data)+" é anterior ao saldo inicial da conta "+c.nome+" (desde "+isoToBR(c.dataSaldoInicial)+"), então o pagamento não entraria no saldo. Desmarque \"Já paga\" ou ajuste a data do saldo inicial em Configurações › Contas.";
+  return null;
+}
+function pagoAplicar(t,p,data){
+  if(!t||!p||!p.pago) return null;
+  var er=[]; (t.rateio||[]).forEach(function(r){ if(r&&r.centro) er.push({centro:r.centro,valor:Math.round(Number(r.valor)*100)/100}); });
+  var b={id:uid(),data:data,conta:p.conta,valor:Math.round(Number(t.valor)*100)/100,juros:0,desconto:0,jurosCat:null,descCat:null,encRateio:er,conciliado:0,observacao:"Paga na hora",auto:1};
+  if(!Array.isArray(t.baixas)) t.baixas=[]; t.baixas.push(b); tituloRecalc(t);
+  try{ localStorage.setItem("rm_pago_conta",p.conta); }catch(e){}
+  return b;
+}
+/* depois de editar o lançamento: deixa o pagamento automático igual ao que está no formulário */
+function pagoSincronizar(t,p,data){
+  if(!t) return;
+  if(tituloTemBaixa(t)&&!pagoSoAuto(t)) return; /* pagamento feito à mão: não mexe */
+  var b=pagoBaixaAuto(t);
+  if(p&&p.pago){
+    if(b){ b.data=data; b.conta=p.conta; b.valor=Math.round(Number(t.valor)*100)/100; var er=[]; (t.rateio||[]).forEach(function(r){ if(r&&r.centro) er.push({centro:r.centro,valor:Math.round(Number(r.valor)*100)/100}); }); b.encRateio=er; tituloRecalc(t); try{ localStorage.setItem("rm_pago_conta",p.conta); }catch(e){} }
+    else pagoAplicar(t,p,data);
+  } else if(b){ t.baixas.splice(t.baixas.indexOf(b),1); tituloRecalc(t); }
+}
+try{ document.addEventListener("change",function(ev){ var t=ev.target; if(t&&t.dataset&&t.dataset.pago) pagoNota(t.dataset.pago); }); }catch(e){ rmLogErr(e,"pago-init"); }
+try{ window.RM.pagoSoAuto=pagoSoAuto; window.RM.pagoBaixaAuto=pagoBaixaAuto; }catch(e){ rmLogErr(e); }
 
 } /* fim rmApp */
 })();
