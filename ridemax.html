@@ -1431,6 +1431,16 @@ body[data-sol="1"] #mTelaBtn.on{color:#000}
 body.rv-aberto{overflow:hidden}
 .busca-in{flex:1 1 220px;min-width:0;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font:inherit;font-size:var(--f-base)}
 @media(max-width:860px){ .busca-in{flex-basis:100%;order:-1;min-height:44px;font-size:16px!important} .hist-bar .busca-in{order:-1} }
+/* ---------- CELULAR — BOTÕES EM GRADE ---------- */
+@media(max-width:860px){
+  .f6-grade{display:grid!important;grid-template-columns:1fr 1fr;gap:8px;width:100%;flex-basis:100%;grid-column:1/-1;align-items:stretch}
+  .f6-grade[data-n="1"]{grid-template-columns:1fr}
+  .f6-grade>.btn{width:100%!important;min-width:0;min-height:48px;margin:0!important;padding:8px 10px!important;font-size:15px!important;line-height:1.2;white-space:normal;display:flex;align-items:center;justify-content:center;text-align:center;flex:none!important;order:0!important}
+  .f6-grade>.btn.f6-impar{grid-column:1/-1}
+  .toolbar>.f6-grade,.btnrow>.f6-grade{margin-top:4px}
+  .btnrow.f6-grade,.toolbar.f6-grade{margin:12px 0}
+  .hist-bar>.f6-grade{order:6}
+}
 #man-topo a{color:var(--blue)}
 @media(min-width:861px){ #mbar,#navBk,#mSyncBtn{display:none!important} }
 @media print{ #mbar,#navBk,#mSyncBtn{display:none!important} }
@@ -13873,6 +13883,49 @@ function buscaRideTexto(r){ var t=rideTotal(r), c=false; try{ c=isCashRide(r); }
 function buscaDespTexto(e){ var c=catById(e.category_id); return [c?c.name:"",buscaData(e.date),buscaValor(e.amount),e.description||"",e.recurring?"recorrente":""].join(" "); }
 function buscaCampo(id,valor,dica){ return '<input type="search" id="'+id+'" class="busca-in" enterkeyhint="search" autocomplete="off" placeholder="'+dica+'" aria-label="Buscar" value="'+esc(valor)+'">'; }
 try{ window.RM.buscaCasa=buscaCasa; window.RM.buscaTermos=buscaTermos; window.RM.buscaRideTexto=buscaRideTexto; }catch(e){ rmLogErr(e); }
+
+/* ---------- CELULAR — BOTÕES EM GRADE ----------
+   Cada sequência de botões vira uma grade de colunas iguais: 1 botão = largura
+   total; 2 = duas colunas; ímpar = o último ocupa a linha toda. Botões misturados
+   com campos (ex.: "Período [30 dias] … DRE") descem para uma grade própria na
+   mesma posição. Só move os botões já existentes (cliques continuam iguais).
+   Fica de fora: abas, cartões de lista, paginação, painel do dia, Salvar fixo. */
+var F6_FORA=".seg,#cfgTabs,table,.hc,.dash-hero,.f3-fixo,#mbar,.rec-fotos,.turno-row,.pin-box,.f3-chips,.qr-chips,.pager,.kv,.f6-grade,.hcards,#hCards,.mrow,.dh-prev";
+function f6EhBotao(e){
+  if(!e||e.nodeType!==1||!e.matches(".btn")||e.tagName!=="BUTTON"&&e.tagName!=="A"&&e.tagName!=="LABEL") return false;
+  if(e.hidden||e.classList.contains("hbtn")||e.classList.contains("infoBtn")||e.classList.contains("qrx")) return false;
+  var t=(e.textContent||"").replace(/\s+/g,"").trim(); if(t.length<=2) return false; /* só ícone (✏️, ✕, ◀) */
+  return getComputedStyle(e).display!=="none";
+}
+function f6Ignoravel(e){ /* espaçador vazio entre botões */ return e.nodeType===1&&e.tagName==="SPAN"&&!(e.textContent||"").trim()&&!e.children.length; }
+function f6Destrutivo(b){ return b.classList.contains("red")||/^(excluir|remover|apagar|descartar|desfazer|parar)/i.test((b.textContent||"").trim()); }
+/* número ímpar: um botão ocupa a linha toda — o último, ou o primeiro se o último for de excluir (ação destrutiva não ganha destaque) */
+function f6Grade(g,btns){ g.classList.add("f6-grade"); g.dataset.n=String(btns.length); var impar=btns.length%2===1&&btns.length>1, alvo=impar?((f6Destrutivo(btns[btns.length-1])&&!f6Destrutivo(btns[0]))?0:btns.length-1):-1; btns.forEach(function(b,i){ b.classList.toggle("f6-impar",i===alvo); }); }
+function f6Botoes(){
+  if(!(typeof mbarMovel==="function"&&mbarMovel())) return;
+  var vc=document.getElementById("viewCtn"); if(!vc) return;
+  var pais=new Set(); vc.querySelectorAll(".btn").forEach(function(b){ var p=b.parentElement; if(p&&!p.closest(F6_FORA)&&!b.closest(F6_FORA)) pais.add(p); });
+  pais.forEach(function(p){
+    if(p.dataset.f6) return;
+    var kids=Array.prototype.filter.call(p.children,function(e){ return !e.hidden&&getComputedStyle(e).display!=="none"; });
+    var bts=kids.filter(f6EhBotao);
+    if(!bts.length) return;
+    p.dataset.f6="1";
+    var resto=kids.filter(function(e){ return !f6EhBotao(e)&&!f6Ignoravel(e); });
+    var podeSerGrade=!resto.length&&!p.classList.contains("card")&&!p.classList.contains("formgrid");
+    if(podeSerGrade){ f6Grade(p,bts); return; }
+    /* misturado: agrupa cada sequência contínua de botões no lugar onde ela está */
+    var seq=[], seqs=[];
+    kids.forEach(function(e){ if(f6EhBotao(e)) seq.push(e); else if(!f6Ignoravel(e)){ if(seq.length) seqs.push(seq); seq=[]; } });
+    if(seq.length) seqs.push(seq);
+    seqs.forEach(function(s){ var w=document.createElement("div"); s[0].parentNode.insertBefore(w,s[0]); s.forEach(function(b){ w.appendChild(b); }); f6Grade(w,s); w.dataset.f6="1"; });
+  });
+}
+try{
+  var _f6obs=new MutationObserver(function(){ try{ f6Botoes(); }catch(e){ rmLogErr(e,"f6"); } });
+  _f6obs.observe(document.getElementById("viewCtn"),{childList:true,subtree:true});
+  f6Botoes();
+}catch(e){ rmLogErr(e,"f6-init"); }
 
 } /* fim rmApp */
 })();
