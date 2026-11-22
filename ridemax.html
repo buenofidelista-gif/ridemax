@@ -9833,6 +9833,8 @@ function rInvest(){
     document.querySelectorAll("#invTabs button").forEach(function(b){ b.onclick=function(){ window.__invTab=Number(b.dataset.t)||0; rInvest(); }; });
     document.getElementById("invGoContas").onclick=function(){ show("contas"); };
     document.getElementById("invGoSaldos0").onclick=function(){ show("saldos"); };
+    try{ invBarLigar(); }catch(_eB){ rmLogErr(_eB,"inv-bar-0"); }
+    ["invOpNovoBtn","invEvNovoBtn"].forEach(function(_bid){ var _b=document.getElementById(_bid); if(_b) _b.onclick=function(){ customAlert("Cadastre primeiro uma conta do tipo investimento (Configurações › Contas › Investimento). As cotações e a aba Observação já funcionam sem ela.","Investimentos"); }; });
     return;
   }
   var totInv=0, i;
@@ -9964,12 +9966,7 @@ function rInvest(){
   document.getElementById("invGoTr").onclick=function(){ show("transferencias"); };
   document.getElementById("invGoSaldos").onclick=function(){ show("saldos"); };
   document.getElementById("invGoExt").onclick=function(){ show("extrato"); };
-  var _expB=document.getElementById("invExpLista");
-  if(_expB&&COT_PASTA_ESTADO==="ativa"){ _expB.onclick=function(){ cotPastaGravarLista(true).then(function(r){ var _m=document.getElementById("invCotMsg"); if(_m){ _m.style.color=r.ok?"#4caf7d":"#e0695c"; _m.textContent=r.msg; } }); }; _expB=null; }
-  if(_expB){ _expB.onclick=function(){ try{ var _p=invExportarPayload(); downloadFile("ativos_bueno.json",JSON.stringify(_p),"application/json"); var _m=document.getElementById("invCotMsg"); if(_m){ _m.style.color="#4caf7d"; _m.textContent="Lista exportada: "+_p.ativos.length+" ativo(s)"+(_p.tesouro?" + tesouro":"")+"."; } }catch(e){ try{ customAlert("Não foi possível exportar a lista.","Investimentos"); }catch(_){rmLogErr(_)} } }; }
-  var _impB=document.getElementById("invImpCot");
-  if(_impB&&COT_PASTA_ESTADO==="ativa"){ _impB.onclick=function(){ cotPastaLerNovo(true).then(function(r){ cotPastaAvisar(r,true); }); }; _impB=null; }
-  if(_impB){ _impB.onclick=function(){ var _fi=document.createElement("input"); _fi.type="file"; _fi.accept=".json,application/json"; _fi.onchange=function(){ var _f=_fi.files&&_fi.files[0]; if(!_f) return; var _rd=new FileReader(); _rd.onload=function(){ var _msg=document.getElementById("invCotMsg"); try{ var _parsed=invParseCotacoesTexto(String(_rd.result||"")); var _keys=_parsed.topKeys||[]; invCotacoesAplicar(_parsed); var _nh8f=0; try{ _nh8f=(DB.invHist||[]).length; }catch(_){rmLogErr(_)} if(!save()){ try{ customAlert(SAVE_FAIL_MSG,"Investimentos"); }catch(_){rmLogErr(_)} return; } if(_msg){ _msg.style.color="#4caf7d"; _msg.textContent="Cotações de "+isoToBR(_parsed.data).slice(0,5)+" carregadas: "+Object.keys(_parsed.dados).length+" ativo(s). Chaves do arquivo: "+_keys.join(", ")+". Histórico: "+_nh8f+" arquivo(s)."; } rInvest(); var _m2=document.getElementById("invCotMsg"); if(_m2){ _m2.style.color="#4caf7d"; _m2.textContent="Cotações de "+isoToBR(_parsed.data).slice(0,5)+" carregadas: "+Object.keys(_parsed.dados).length+" ativo(s). Chaves do arquivo: "+_keys.join(", ")+". Histórico: "+_nh8f+" arquivo(s)."; } }catch(_e){ if(_msg){ _msg.style.color="#e0695c"; _msg.textContent="⚠️ "+(_e&&_e.message?_e.message:"Arquivo inválido."); } try{ customAlert((_e&&_e.message?_e.message:"Arquivo inválido."),"Investimentos"); }catch(_){rmLogErr(_)} } }; _rd.readAsText(_f); }; _fi.click(); }; }
+  invBarLigar();
   /* FASE 8G — alterna campos Tesouro (lista do arquivo) e CDB (% CDI + vencimento). */
   var _invTipoEl=document.getElementById("invTipo"), _invOpEl=document.getElementById("invOp");
   var _invTesSync=function(){ try{ var _t=_invTipoEl?_invTipoEl.value:"", _op=_invOpEl?_invOpEl.value:"compra"; var _c=invCotacoesGet(), _keys=[]; try{ if(_c&&_c.dados) _keys=Object.keys(_c.dados).sort(); }catch(e){rmLogErr(e)} var _tw=document.getElementById("invTesouroWrap"), _ts=document.getElementById("invTesouroSel"), _cw=document.getElementById("invCodWrap"); if(_t==="tesouro"&&_keys.length){ if(_tw) _tw.hidden=false; if(_cw) _cw.hidden=true; if(_ts){ var _cur=_ts.value; _ts.innerHTML=_keys.map(function(k){ return '<option value="'+esc(k)+'">'+esc(k)+'</option>'; }).join(""); try{ if(_cur&&_keys.indexOf(_cur)>=0) _ts.value=_cur; }catch(e){rmLogErr(e)} } } else { if(_tw) _tw.hidden=true; if(_cw) _cw.hidden=false; if(_ts) _ts.innerHTML=""; } var _pw=document.getElementById("invCdbPctWrap"), _vw=document.getElementById("invCdbVencWrap"); var _sh=(_t==="cdb"&&_op==="compra"); if(_pw) _pw.hidden=!_sh; if(_vw) _vw.hidden=!_sh; var _rw8h=document.getElementById("invReservaWrap"); if(_rw8h) _rw8h.hidden=!(_op==="compra"); }catch(e){rmLogErr(e)} };
@@ -10061,8 +10058,6 @@ function rInvest(){
     save(); rInvest();
     if(trashId) showUndoBar(trashId);
   }; });
-  try{ var _cpb=document.getElementById("cotPastaBtn"); if(_cpb) _cpb.onclick=function(){ if(COT_PASTA_ESTADO==="ativa") cotPastaRemover(); else if(COT_PASTA_ESTADO==="reativar") cotPastaReativar(); else cotPastaEscolher(); }; }catch(_eC){ rmLogErr(_eC,"cot-pasta-btn"); }
-  try{ cotPastaAuto(); }catch(_eA){ rmLogErr(_eA,"cot-pasta-auto"); }
 }
 /* ---------- FASE 5B — CONCILIAÇÃO (conferência, não ajuste) ----------
    Regra 23: cada baixa e transferência carrega a marca conciliado; a tela
@@ -14572,6 +14567,19 @@ async function cotPastaRemover(){
 }
 try{ cotPastaCarregar().then(function(){ try{ if(current==="investimentos") rInvest(); }catch(_e){} }); }catch(e){ rmLogErr(e,"cot-pasta-init"); }
 try{ window.RM.invTesouroCodigo=invTesouroCodigo; window.RM.cotPastaTeste=function(h){ COT_PASTA=h; COT_PASTA_ESTADO="ativa"; COT_PASTA_T=0; }; window.RM.cotPastaSincronizar=cotPastaSincronizar; }catch(e){ rmLogErr(e); }
+
+/* Barra de cima da Carteira (Exportar lista, Carregar cotações, pasta das cotações).
+   Chamada também quando ainda não há conta de investimento. */
+function invBarLigar(){
+  var _expB=document.getElementById("invExpLista");
+  if(_expB&&COT_PASTA_ESTADO==="ativa"){ _expB.onclick=function(){ cotPastaGravarLista(true).then(function(r){ var _m=document.getElementById("invCotMsg"); if(_m){ _m.style.color=r.ok?"#4caf7d":"#e0695c"; _m.textContent=r.msg; } }); }; _expB=null; }
+  if(_expB){ _expB.onclick=function(){ try{ var _p=invExportarPayload(); downloadFile("ativos_bueno.json",JSON.stringify(_p),"application/json"); var _m=document.getElementById("invCotMsg"); if(_m){ _m.style.color="#4caf7d"; _m.textContent="Lista exportada: "+_p.ativos.length+" ativo(s)"+(_p.tesouro?" + tesouro":"")+"."; } }catch(e){ try{ customAlert("Não foi possível exportar a lista.","Investimentos"); }catch(_){rmLogErr(_)} } }; }
+  var _impB=document.getElementById("invImpCot");
+  if(_impB&&COT_PASTA_ESTADO==="ativa"){ _impB.onclick=function(){ cotPastaLerNovo(true).then(function(r){ cotPastaAvisar(r,true); }); }; _impB=null; }
+  if(_impB){ _impB.onclick=function(){ var _fi=document.createElement("input"); _fi.type="file"; _fi.accept=".json,application/json"; _fi.onchange=function(){ var _f=_fi.files&&_fi.files[0]; if(!_f) return; var _rd=new FileReader(); _rd.onload=function(){ var _msg=document.getElementById("invCotMsg"); try{ var _parsed=invParseCotacoesTexto(String(_rd.result||"")); var _keys=_parsed.topKeys||[]; invCotacoesAplicar(_parsed); var _nh8f=0; try{ _nh8f=(DB.invHist||[]).length; }catch(_){rmLogErr(_)} if(!save()){ try{ customAlert(SAVE_FAIL_MSG,"Investimentos"); }catch(_){rmLogErr(_)} return; } if(_msg){ _msg.style.color="#4caf7d"; _msg.textContent="Cotações de "+isoToBR(_parsed.data).slice(0,5)+" carregadas: "+Object.keys(_parsed.dados).length+" ativo(s). Chaves do arquivo: "+_keys.join(", ")+". Histórico: "+_nh8f+" arquivo(s)."; } rInvest(); var _m2=document.getElementById("invCotMsg"); if(_m2){ _m2.style.color="#4caf7d"; _m2.textContent="Cotações de "+isoToBR(_parsed.data).slice(0,5)+" carregadas: "+Object.keys(_parsed.dados).length+" ativo(s). Chaves do arquivo: "+_keys.join(", ")+". Histórico: "+_nh8f+" arquivo(s)."; } }catch(_e){ if(_msg){ _msg.style.color="#e0695c"; _msg.textContent="⚠️ "+(_e&&_e.message?_e.message:"Arquivo inválido."); } try{ customAlert((_e&&_e.message?_e.message:"Arquivo inválido."),"Investimentos"); }catch(_){rmLogErr(_)} } }; _rd.readAsText(_f); }; _fi.click(); }; }
+  try{ var _cpb=document.getElementById("cotPastaBtn"); if(_cpb) _cpb.onclick=function(){ if(COT_PASTA_ESTADO==="ativa") cotPastaRemover(); else if(COT_PASTA_ESTADO==="reativar") cotPastaReativar(); else cotPastaEscolher(); }; }catch(_eC){ rmLogErr(_eC,"cot-pasta-btn"); }
+  try{ cotPastaAuto(); }catch(_eA){ rmLogErr(_eA,"cot-pasta-auto"); }
+}
 
 } /* fim rmApp */
 })();
