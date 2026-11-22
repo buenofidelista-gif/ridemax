@@ -1442,6 +1442,28 @@ body.rv-aberto{overflow:hidden}
   .hist-bar>.f6-grade{order:6}
 }
 #man-topo a{color:var(--blue)}
+#invCotTopo{margin-left:8px}
+/* ---------- CELULAR: Observação mostra a lista antes do formulário de adicionar ---------- */
+@media(max-width:860px){
+  .inv-obs-main{display:flex!important;flex-direction:column}
+  .inv-obs-main>*:not(.inv-obs-left){order:1}
+  .inv-obs-main>.inv-obs-left{order:2}
+}
+/* ---------- TABELA VAZIA: mensagem centralizada ---------- */
+table.tbl tbody tr:only-child>td[colspan]{text-align:center!important;padding:18px 12px!important;color:var(--muted);white-space:normal!important}
+@media(max-width:860px){ table.tbl.tbl-vazia thead,table.tbl.tbl-vazia tr.f4-cab{display:none!important} table.tbl.tbl-vazia{min-width:0!important;width:100%!important;table-layout:auto!important} }
+/* ---------- CELULAR: cartões de tabela — observação pequena embaixo do valor ---------- */
+@media(max-width:860px){
+  table.f4-cartoes td[data-f4]{flex-wrap:wrap}
+  table.f4-cartoes td[data-f4]>br{display:none}
+  table.f4-cartoes td[data-f4]>br+span{flex-basis:100%;text-align:right;margin-top:-2px}
+}
+/* ---------- CELULAR: rótulo + caixa de escolha juntos ---------- */
+@media(max-width:860px){
+  .f6-par{display:inline-flex;align-items:center;gap:8px;flex-wrap:nowrap;max-width:100%;min-width:0}
+  .f6-par>span{white-space:nowrap;flex:0 0 auto}
+  .f6-par>select{min-width:0;flex:1 1 auto;max-width:100%}
+}
 /* ---------- CARTEIRA: leitura "vale comprar mais?" ---------- */
 .pos-leit{display:block;font-size:12px;margin-top:3px;line-height:1.35;white-space:normal}
 .pos-leit.v-verde b{color:#4caf7d}
@@ -3785,6 +3807,7 @@ function shiftStats(s){ var iv=shiftInterval(s); var _pm=0; try{ _pm=(iv&&iv.end
 function shiftsInRange(ini,fim){ return DB.shifts.filter(function(s){ return s.date>=ini&&s.date<=fim; }).sort(function(a,b){ return (a.date+a.start_time)<(b.date+b.start_time)?-1:1; }); }
 function shiftAgg(ini,fim){ var list=shiftsInRange(ini,fim).filter(function(s){ return !!s.end_time; }); var hours=0,gain=0,kmT=0,kmPass=0,nKm=0,kmPe=0; list.forEach(function(s){ var st=shiftStats(s); hours+=st.durH; gain+=st.gain; if(st.km!=null){ kmT+=st.km; kmPass+=st.kmPass; nKm++; try{ kmPe+=shiftKmInfo(s).kmPess||0; }catch(_e){} } }); return {kmPess:kmPe,shifts:list,n:list.length,hours:hours,gain:gain,kmTotal:kmT,kmPass:kmPass,nKm:nKm,aproveit:kmT>0?kmPass/kmT:null,perHour:hours>0?gain/hours:0}; }
 function shiftElapsedMin(s){ try{ var sm=parseHM(s.start_time); if(sm==null) return 0; var pp=String(s.date).split("-"); var dt=new Date(+pp[0],+pp[1]-1,+pp[2],Math.floor(sm/60),sm%60,0); var ms=new Date()-dt; var _pz=0; try{ _pz=shiftPausaMin(s,agoraAbs()); }catch(_e){} return Math.max(0,ms/60000-_pz); }catch(e){ return 0; } }
+function fmtHHMM(horas){ var m=Math.round((Number(horas)||0)*60); if(m<0) m=0; return Math.floor(m/60)+":"+String(m%60).padStart(2,"0"); }
 function fmtDur(min){ if(min==null) return "\u2013"; min=Math.round(min); var h=Math.floor(min/60), m=min%60; return h+"h"+String(m).padStart(2,"0"); }
 /* ---------- UI base ---------- */
 var viewCtn=document.getElementById("viewCtn"), pageTitle=document.getElementById("pageTitle"),
@@ -4206,7 +4229,7 @@ function valeKmHBase(){
     if(ag&&ag.nKm>0&&ag.hours>0&&ag.kmTotal>0){
       var kmh=ag.kmTotal/ag.hours;
       if(isFinite(kmh)&&kmh>0){
-        return {kmh:kmh,src:"turno",km:ag.kmTotal,hours:ag.hours,n:ag.nKm,detail:brDec(ag.kmTotal,1)+" km \u00F7 "+brDec(ag.hours,1)+" h ("+ag.nKm+" turno(s) com km, 30d)"};
+        return {kmh:kmh,src:"turno",km:ag.kmTotal,hours:ag.hours,n:ag.nKm,detail:brDec(ag.kmTotal,1)+" km \u00F7 "+fmtHHMM(ag.hours)+" h ("+ag.nKm+" turno(s) com km, 30d)"};
       }
     }
   }catch(e){rmLogErr(e)}
@@ -4221,7 +4244,7 @@ function valeKmHBase(){
     if(km>0&&h>0){
       var kmh2=km/h;
       if(isFinite(kmh2)&&kmh2>0){
-        return {kmh:kmh2,src:"corridas",km:km,hours:h,n:n,detail:brDec(km,1)+" km \u00F7 "+brDec(h,1)+" h ("+n+" corridas, 30d)"};
+        return {kmh:kmh2,src:"corridas",km:km,hours:h,n:n,detail:brDec(km,1)+" km \u00F7 "+fmtHHMM(h)+" h ("+n+" corridas, 30d)"};
       }
     }
   }catch(e2){rmLogErr(e2)}
@@ -4544,7 +4567,7 @@ function dashMesHTML(){
   try{
     var ag=null;
     try{ ag=shiftAgg(ini,fim); }catch(e){ ag=null; }
-    if(ag&&ag.n>0&&ag.hours>0) h+='<div class="kv"><span>R$/hora (turno, mês)</span><b>'+BRL(ag.perHour)+'</b></div><div class="sub">base: '+ag.n+' turno(s) encerrado(s) · '+brDec(ag.hours,1)+'h.</div>';
+    if(ag&&ag.n>0&&ag.hours>0) h+='<div class="kv"><span>R$/hora (turno, mês)</span><b>'+BRL(ag.perHour)+'</b></div><div class="sub">base: '+ag.n+' turno(s) encerrado(s) · '+fmtHHMM(ag.hours)+' h.</div>';
     else h+='<div class="kv"><span>R$/hora (turno, mês)</span><b>Sem turno encerrado no mês.</b></div>';
   }catch(e){rmLogErr(e)}
   try{
@@ -5259,7 +5282,7 @@ function renderShifts(box){
     var totKm=ag.kmTotal, totPass=ag.kmPass, totN=ag.shifts.reduce(function(a,s){ return a+shiftStats(s).n; },0), totG=ag.gain;
     var totRH=(totDurH>0?BRL(totG/totDurH)+"/h":"\u2013");
     var invN=ag.shifts.filter(function(s){ return shiftKmInfo(s).invalid; }).length;
-    document.getElementById("shTot").textContent="Total: "+BRL(totG)+" \u00B7 "+ag.n+" turno(s) \u00B7 "+brDec(totDurH,1)+"h (clique p/ selecionar)";
+    document.getElementById("shTot").textContent="Total: "+BRL(totG)+" \u00B7 "+ag.n+" turno(s) \u00B7 "+fmtHHMM(totDurH)+" h (clique p/ selecionar)";
     var openN=rows.filter(function(s){return !s.end_time;}).length;
     document.getElementById("shNote").textContent="Rodap\u00E9 do per\u00EDodo (s\u00F3 encerrados): "+fmtDur(totDurH*60)+" · km total "+brDec(totKm,1)+" · km passageiro "+brDec(totPass,1)+" · aproveitamento "+(totKm>0?(totPass/totKm*100).toFixed(0)+"%":"\u2013")+" · "+totN+" corrida(s) · "+BRL(totG)+" · "+totRH+(openN?" · "+openN+" aberto(s) fora do rodap\u00E9":"")+(invN?" · "+invN+" com km indispon\u00EDvel (troca de ve\u00EDculo?)":"");
     document.getElementById("shPager").innerHTML=pagerHTML(window.__shiftPage,pages,rows.length);
@@ -5772,7 +5795,7 @@ function rFin(){
       +'<div class="kv"><span>Ganhos</span><b style="color:#4caf7d">'+BRL(earn)+'</b></div>'
       +'<div class="kv"><span>Despesas</span><b style="color:#e0695c">'+BRL(exp)+'</b></div>'
       +'<div class="kv"><span>'+(curUnit()==="L"?"Combustível":"Energia")+'</span><b>'+BRL(rc.cost)+'</b></div>'
-       +'<div class="kv"><span>Horas online</span><b>'+(wh.n>0?brDec(wh.hours,1)+'h':"–")+'</b></div>'
+       +'<div class="kv"><span>Horas online</span><b>'+(wh.n>0?fmtHHMM(wh.hours)+' h':"–")+'</b></div>'
       +'<div class="kv"><span>R$/hora em corrida</span><b>'+(wh.n>0&&wh.hours>0?BRL(wh.perHour):"–")+'</b></div>'
       +'<div class="sub">base: '+wh.n+' de '+(wh.total!=null?wh.total:wh.n)+' corridas com hora de fim</div>'
       +'<div class="kv"><span>R$/hora (turno)</span><b>'+(function(){ try{ var _ini=sinceISO(p[1]); var sh=shiftAgg(_ini,todayISO()); return (sh.n>0&&sh.hours>0?BRL(sh.perHour):"–"); }catch(e){ return "–"; } })()+'</b></div>'
@@ -6832,7 +6855,7 @@ function rPrev(){
         var meta=parseBR(sMeta.value.trim()), hs=parseBR(sHoras.value.trim());
         var h='<div class="kv"><span>Média do dia ('+DIAS[wd]+')</span><b>'+BRL(mean)+'/h</b></div>';
         h+='<div class="kv"><span>Nos 3 melhores horários</span><b>'+BRL(t3m)+'/h</b></div>';
-        if(meta>0) h+='<div class="kv"><span>Para '+BRL(meta)+'</span><b>~'+brDec((meta/mean),1)+'h na média · ~'+brDec((meta/t3m),1)+'h no melhor horário</b></div>';
+        if(meta>0) h+='<div class="kv"><span>Para '+BRL(meta)+'</span><b>~'+fmtHHMM(meta/mean)+' h na média · ~'+fmtHHMM(meta/t3m)+' h no melhor horário</b></div>';
         if(hs>0) h+='<div class="kv"><span>Com '+hs+'h</span><b>espere ~'+BRL(hs*mean)+' (até ~'+BRL(hs*t3m)+' nos melhores horários)</b></div>';
         if(!(meta>0)&&!(hs>0)) h+='<div class="sub">Preencha a meta, as horas, ou os dois.</div>';
         h+='<div class="sub">Sugestão '+DIAS[wd]+': '+top3.map(function(x){return String(x.h).padStart(2,"0")+":00 ("+BRL(x.v)+"/h)";}).join(" · ")+'</div>';
@@ -13290,11 +13313,16 @@ function f4Tabelas(){
   vc.querySelectorAll("table").forEach(function(t){
     if(t.closest(".hm")||t.classList.contains("hm")||t.classList.contains("dtbl")||t.dataset.f4==="nao") return;
     var cab=f4Cabecalhos(t); if(!cab||cab.nomes.length<4){ t.dataset.f4="nao"; return; }
+    /* vazia (só a linha "Nenhum ..." ocupando todas as colunas): fica como tabela, com a mensagem centralizada */
+    var _corpo=[]; Array.prototype.forEach.call(t.rows,function(r){ if(r!==cab.linha) _corpo.push(r); });
+    if(_corpo.length&&_corpo.every(function(r){ return r.cells.length===1&&(r.cells[0].colSpan||1)>=cab.nomes.length-1; })){ t.dataset.f4="nao"; t.classList.add("tbl-vazia"); return; }
     if(!t.classList.contains("f4-cartoes")){
       /* só converte se a tabela vaza da tela ou esconde colunas no celular; escondida (aba fechada): decide depois */
       var _w=t.closest(".tblwrap")||t.parentNode; if(!t.offsetWidth||!_w||!_w.clientWidth) return;
       var _vaza=t.scrollWidth>_w.clientWidth+4, _esconde=!!t.querySelector(".mhide");
-      if(!_vaza&&!_esconde){ t.dataset.f4="nao"; return; }
+      /* espremida: cabe na largura, mas quebrando palavras no meio (menos de ~64 px por coluna) */
+      var _aperta=(t.offsetWidth/Math.max(1,cab.nomes.length))<64;
+      if(!_vaza&&!_esconde&&!_aperta){ t.dataset.f4="nao"; return; }
       var _nl=0; Array.prototype.forEach.call(t.tBodies,function(b){ _nl+=b.rows.length; }); if(!t.tBodies.length) _nl=t.rows.length-1;
       if(_nl>6) t.classList.add("f4-compacto"); t.classList.add("f4-cartoes"); cab.linha.classList.add("f4-cab"); var w=t.closest(".tblwrap"); if(w) w.classList.add("f4-wrap"); }
     Array.prototype.forEach.call(t.rows,function(r){
@@ -14127,6 +14155,20 @@ function f6Ignoravel(e){ /* espaçador vazio entre botões */ return e.nodeType=
 function f6Destrutivo(b){ return b.classList.contains("red")||/^(excluir|remover|apagar|descartar|desfazer|parar)/i.test((b.textContent||"").trim()); }
 /* número ímpar: um botão ocupa a linha toda — o último, ou o primeiro se o último for de excluir (ação destrutiva não ganha destaque) */
 function f6Grade(g,btns){ g.classList.add("f6-grade"); g.dataset.n=String(btns.length); var impar=btns.length%2===1&&btns.length>1, alvo=impar?((f6Destrutivo(btns[btns.length-1])&&!f6Destrutivo(btns[0]))?0:btns.length-1):-1; btns.forEach(function(b,i){ b.classList.toggle("f6-impar",i===alvo); }); }
+/* Celular: rótulo curto ("Centro:") e a caixa de escolha logo depois andam juntos — se não
+   couber na linha, os dois descem juntos. Só agrupa; o select continua o mesmo elemento. */
+function f6Pares(){
+  if(!(typeof mbarMovel==="function"&&mbarMovel())) return;
+  var vc=document.getElementById("viewCtn"); if(!vc) return;
+  vc.querySelectorAll("select").forEach(function(sel){
+    var lb=sel.previousElementSibling;
+    if(!lb||lb.tagName!=="SPAN"||lb.children.length||lb.classList.contains("f6-par")) return;
+    if(sel.parentElement&&sel.parentElement.classList.contains("f6-par")) return;
+    var t=(lb.textContent||"").trim(); if(!t||t.length>24||!/:$/.test(t)) return;
+    var w=document.createElement("span"); w.className="f6-par";
+    sel.parentNode.insertBefore(w,lb); w.appendChild(lb); w.appendChild(sel);
+  });
+}
 function f6Botoes(){
   if(!(typeof mbarMovel==="function"&&mbarMovel())) return;
   var vc=document.getElementById("viewCtn"); if(!vc) return;
@@ -14148,7 +14190,7 @@ function f6Botoes(){
   });
 }
 try{
-  var _f6obs=new MutationObserver(function(){ try{ f6Botoes(); }catch(e){ rmLogErr(e,"f6"); } });
+  var _f6obs=new MutationObserver(function(){ try{ f6Botoes(); }catch(e){ rmLogErr(e,"f6"); } try{ f6Pares(); }catch(e2){ rmLogErr(e2,"f6-pares"); } });
   _f6obs.observe(document.getElementById("viewCtn"),{childList:true,subtree:true});
   f6Botoes();
 }catch(e){ rmLogErr(e,"f6-init"); }
