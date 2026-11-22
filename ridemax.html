@@ -1443,6 +1443,24 @@ body.rv-aberto{overflow:hidden}
 }
 #man-topo a{color:var(--blue)}
 #invCotTopo{margin-left:8px}
+/* ---------- CELULAR: tela "Mais" com atalhos ---------- */
+#maisSheet{display:none}
+@media(max-width:860px){
+  body.mais-open #maisSheet{display:block;position:fixed;left:0;right:0;top:0;bottom:calc(64px + env(safe-area-inset-bottom));z-index:45;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 22px}
+  body.mais-open{overflow:hidden}
+  #maisSheet .ms-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  #maisSheet .ms-top h2{margin:0;font-size:22px}
+  #maisSheet .ms-x{background:var(--input);border:1px solid var(--border);color:var(--text);border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer}
+  #maisSheet .ms-grp{margin-top:14px}
+  #maisSheet .ms-grp>h3{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+  #maisSheet .ms-grade{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+  #maisSheet .ms-it{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;min-height:78px;padding:10px 4px 8px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font:inherit;font-size:12px;line-height:1.2;text-align:center;cursor:pointer;min-width:0}
+  #maisSheet .ms-it .ms-ic{font-size:24px;line-height:1}
+  #maisSheet .ms-it.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+  #maisSheet .ms-it:active{transform:scale(.97)}
+  #maisSheet .ms-rodape{margin-top:16px;font-size:12px;color:var(--muted);text-align:center}
+  body[data-sol="1"] #maisSheet .ms-it{background:#fff!important;color:#000!important;border:2px solid #000!important}
+}
 /* ---------- CELULAR: Observação mostra a lista antes do formulário de adicionar ---------- */
 @media(max-width:860px){
   .inv-obs-main{display:flex!important;flex-direction:column}
@@ -13090,13 +13108,13 @@ function mbarIni(){
     else if(k==="corridas") show("historico");
     else if(k==="mais-corrida"){ try{ qrOpen(); }catch(e){ rmLogErr(e,"mbar-qr"); show("nova"); } }
     else if(k==="dinheiro"){ try{ window.__finTab=0; }catch(e){} show("financeiro"); }
-    else if(k==="menu"){ if(document.body.classList.contains("nav-open")) navFechar(); else navAbrir(); }
+    else if(k==="menu"){ if(document.body.classList.contains("mais-open")) maisFechar(); else if(document.body.classList.contains("nav-open")) navFechar(); else maisAbrir(); }
   });
   var bk=document.createElement("div"); bk.id="navBk"; bk.hidden=true; bk.addEventListener("click",function(){ navFechar(); }); _host.appendChild(bk);
   var tr=document.getElementById("titleRow");
   if(tr&&!document.getElementById("mSyncBtn")){ var s=document.createElement("button"); s.id="mSyncBtn"; s.type="button"; s.hidden=true; s.setAttribute("aria-label","Sincronizar"); s.innerHTML=MBAR_SVG.sync; s.onclick=function(){ try{ syncClique(); }catch(e){ rmLogErr(e,"msync"); } }; tr.appendChild(s); }
-  window.addEventListener("popstate",function(){ if(document.body.classList.contains("nav-open")) navFechar(true); });
-  document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&document.body.classList.contains("nav-open")) navFechar(); });
+  window.addEventListener("popstate",function(){ if(document.body.classList.contains("nav-open")) navFechar(true); if(document.body.classList.contains("mais-open")) maisFechar(true); });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&document.body.classList.contains("nav-open")) navFechar(); if(e.key==="Escape"&&document.body.classList.contains("mais-open")) maisFechar(); });
   mbarSync();
 }
 function mbarMovel(){ try{ return window.matchMedia("(max-width:860px)").matches; }catch(e){ return false; } }
@@ -13114,7 +13132,7 @@ function navFechar(doVoltar){
 }
 function mbarSync(){
   var b=document.getElementById("mbar"); if(!b) return;
-  var v=current, aberto=document.body.classList.contains("nav-open");
+  var v=current, aberto=document.body.classList.contains("nav-open")||document.body.classList.contains("mais-open");
   var on=aberto?"menu":(v==="dashboard"?"inicio":(MBAR_CORRIDAS[v]?"corridas":(MBAR_DINHEIRO[v]?"dinheiro":"menu")));
   b.querySelectorAll("button[data-mb]").forEach(function(x){ var s=(x.dataset.mb===on); x.classList.toggle("on",s); if(s) x.setAttribute("aria-current","page"); else x.removeAttribute("aria-current"); });
   /* botão de sincronizar no cabeçalho: só se estiver configurado */
@@ -14855,6 +14873,94 @@ function invIrAvisoLimite(contaId,cod,data,qtd,preco){
   return "Com esta venda, as vendas de ações de "+mes.slice(5,7)+"/"+mes.slice(0,4)+" vão de "+BRL(antes)+" para "+BRL(depois)+" e passam do limite de isenção de "+BRL(lim)+".\n\nAí o lucro de TODAS as vendas de ações do mês paga "+String(ir.aliqAcoes).replace(".",",")+"%: imposto estimado de "+BRL(imp)+" (lucro do mês "+BRL(base)+"), em DARF até "+isoToBR(invDarfVenc(mes))+"."+(base<=0?" (Sem lucro no mês, o imposto fica zero.)":"")+"\n\nPara continuar isento, venda até "+BRL(cabe)+" este mês"+(qMax>0?" ("+qMax+" ações a "+BRL(preco)+")":"")+" e o resto a partir do mês que vem.\n\nEstimativa, sem compensar prejuízo; confira com quem faz seu imposto.";
 }
 try{ window.RM.invIrAvisoLimite=invIrAvisoLimite; window.RM.invDarfPendentes=invDarfPendentes; }catch(e){ rmLogErr(e); }
+
+/* ---------- CELULAR: TELA "MAIS" ----------
+   No lugar da lista comprida do menu, atalhos com ícone agrupados pelo uso (4 por linha),
+   com os 4 últimos usados no topo ("Recentes", só neste aparelho). O menu lateral do
+   computador não muda. */
+var MAIS_ITENS=[
+  {g:"Dia a dia",id:"nova",ic:"➕",l:"Corrida",v:"nova"},
+  {g:"Dia a dia",id:"turnos",ic:"🕑",l:"Turnos",v:"historico",hist:1},
+  {g:"Dia a dia",id:"despesas",ic:"🧾",l:"Despesas",v:"despesas"},
+  {g:"Dia a dia",id:"recarga",ic:"⚡",l:"Recarga",v:"recarga"},
+  {g:"Dia a dia",id:"metas",ic:"🎯",l:"Metas",v:"metas"},
+  {g:"Dia a dia",id:"previsao",ic:"🔮",l:"Previsão",v:"previsao"},
+  {g:"Dia a dia",id:"clima",ic:"🌦️",l:"Clima",v:"clima"},
+  {g:"Dinheiro",id:"resumo",ic:"📊",l:"Resumo",v:"financeiro",fin:0},
+  {g:"Dinheiro",id:"dre",ic:"📈",l:"DRE",v:"financeiro",fin:1},
+  {g:"Dinheiro",id:"analise",ic:"🔍",l:"Análise",v:"financeiro",fin:2},
+  {g:"Dinheiro",id:"repasses",ic:"💸",l:"Repasses",v:"financeiro",fin:3},
+  {g:"Dinheiro",id:"contaspagar",ic:"📥",l:"A pagar e receber",v:"contaspagar"},
+  {g:"Dinheiro",id:"saldos",ic:"🏦",l:"Saldos",v:"saldos"},
+  {g:"Dinheiro",id:"transferencias",ic:"🔄",l:"Transferir",v:"transferencias"},
+  {g:"Dinheiro",id:"extrato",ic:"📃",l:"Extrato",v:"extrato"},
+  {g:"Dinheiro",id:"fluxo",ic:"🌊",l:"Fluxo de caixa",v:"fluxo"},
+  {g:"Dinheiro",id:"conciliacao",ic:"✅",l:"Conciliação",v:"conciliacao"},
+  {g:"Dinheiro",id:"lotes",ic:"📦",l:"Lotes",v:"financeiro",fin:4},
+  {g:"Dinheiro",id:"relcat",ic:"🗂️",l:"Por categoria",v:"relcat"},
+  {g:"Investir",id:"investimentos",ic:"💼",l:"Investimentos",v:"investimentos"},
+  {g:"Ajustes",id:"config",ic:"⚙️",l:"Configurações",v:"plataformas",cfg:"plataformas"},
+  {g:"Ajustes",id:"estilo",ic:"🎨",l:"Aparência",v:"estilo"},
+  {g:"Ajustes",id:"pin",ic:"🔒",l:"PIN",acao:"pin"},
+  {g:"Ajustes",id:"sol",ic:"☀️",l:"Modo sol",acao:"sol"},
+  {g:"Ajustes",id:"backup",ic:"💾",l:"Backup",v:"plataformas",cfg:"backup"},
+  {g:"Ajustes",id:"manual",ic:"📖",l:"Manual",v:"manual"},
+  {g:"Ajustes",id:"lixeira",ic:"🗑️",l:"Lixeira",v:"lixeira"},
+  {g:"Ajustes",id:"instalar",ic:"📲",l:"Instalar app",acao:"instalar"}
+];
+var MAIS_REC="rm_mais_recentes";
+function maisRecentes(){ try{ var a=JSON.parse(localStorage.getItem(MAIS_REC)||"[]"); return Array.isArray(a)?a.filter(function(id){ return MAIS_ITENS.some(function(x){ return x.id===id&&!x.acao; }); }).slice(0,4):[]; }catch(e){ return []; } }
+function maisGravaRecente(id){ try{ var a=maisRecentes().filter(function(x){ return x!==id; }); a.unshift(id); localStorage.setItem(MAIS_REC,JSON.stringify(a.slice(0,4))); }catch(e){} }
+function maisAtual(){ /* qual atalho corresponde à tela aberta */
+  var v=current, fin=Number(window.__finTab)||0, hist=Number(window.__histTab)||0;
+  for(var i=0;i<MAIS_ITENS.length;i++){ var x=MAIS_ITENS[i]; if(x.acao||x.v!==v) continue; if(x.fin!=null&&x.fin!==fin) continue; if(x.hist!=null&&x.hist!==hist) continue; if(x.cfg&&typeof cfgTab!=="undefined"&&((x.cfg==="backup")!==(cfgTab==="backup"))) continue; return x.id; }
+  return null;
+}
+function maisItemHTML(x,atual){
+  var l=x.l;
+  if(x.acao==="sol"){ try{ l="Modo sol: "+(solAtivo()?"ligado":"desligado"); }catch(e){} }
+  if(x.acao==="pin"){ try{ if(!pinSuporte()) return ""; l=pinCfg()?"Bloquear agora":"Bloqueio por PIN"; }catch(e){ return ""; } }
+  if(x.acao==="instalar"){ var ib=document.getElementById("instBtn"); if(!ib||ib.hidden) return ""; }
+  return '<button type="button" class="ms-it'+(atual===x.id?" on":"")+'" data-mais="'+esc(x.id)+'"><span class="ms-ic" aria-hidden="true">'+x.ic+'</span><span>'+esc(l)+'</span></button>';
+}
+function maisHTML(){
+  var atual=maisAtual(), h='<div class="ms-top"><h2>Mais</h2><button type="button" class="ms-x" data-mais-x aria-label="Fechar">×</button></div>';
+  var rec=maisRecentes();
+  if(rec.length) h+='<div class="ms-grp"><h3>Recentes</h3><div class="ms-grade">'+rec.map(function(id){ return maisItemHTML(MAIS_ITENS.filter(function(x){ return x.id===id; })[0],atual); }).join("")+'</div></div>';
+  var grupos=[]; MAIS_ITENS.forEach(function(x){ if(grupos.indexOf(x.g)<0) grupos.push(x.g); });
+  grupos.forEach(function(g){ var it=MAIS_ITENS.filter(function(x){ return x.g===g; }).map(function(x){ return maisItemHTML(x,atual); }).join(""); if(it) h+='<div class="ms-grp"><h3>'+esc(g)+'</h3><div class="ms-grade">'+it+'</div></div>'; });
+  h+='<div class="ms-rodape">RideMax · os dados ficam neste aparelho (e na sincronização, se ligada)</div>';
+  return h;
+}
+function maisAbrir(){
+  var el=document.getElementById("maisSheet");
+  if(!el){ el=document.createElement("div"); el.id="maisSheet"; el.setAttribute("role","dialog"); el.setAttribute("aria-label","Mais opções"); (document.getElementById("app")||document.body).appendChild(el);
+    el.addEventListener("click",function(ev){ var t=ev.target; if(t.closest&&t.closest("[data-mais-x]")){ maisFechar(); return; } var b=t.closest?t.closest("[data-mais]"):null; if(!b) return; maisIr(b.dataset.mais); }); }
+  el.innerHTML=maisHTML(); el.scrollTop=0;
+  document.body.classList.add("mais-open");
+  try{ history.pushState({rmMais:1},""); }catch(e){}
+  try{ mbarSync(); }catch(e){}
+}
+function maisFechar(doVoltar){
+  if(!document.body.classList.contains("mais-open")) return;
+  document.body.classList.remove("mais-open");
+  if(!doVoltar){ try{ if(history.state&&history.state.rmMais) history.back(); }catch(e){} }
+  try{ mbarSync(); }catch(e){}
+}
+function maisIr(id){
+  var x=MAIS_ITENS.filter(function(i){ return i.id===id; })[0]; if(!x) return;
+  if(x.acao==="sol"){ try{ var m=solModo(); solDefinir(solAtivo()?"off":"on"); qrToast(solAtivo()?"◐ Modo sol ligado (alto contraste)":"Modo sol desligado"+(m==="auto"?" — o automático foi desligado; religue em Aparência":""),3000); }catch(e){} var el=document.getElementById("maisSheet"); if(el) el.innerHTML=maisHTML(); return; }
+  maisFechar();
+  if(x.acao==="pin"){ try{ if(pinCfg()) pinTravar(); else { cfgTab="seguranca"; show("plataformas"); } }catch(e){ rmLogErr(e,"mais-pin"); } return; }
+  if(x.acao==="instalar"){ var ib=document.getElementById("instBtn"); if(ib) ib.click(); return; }
+  maisGravaRecente(x.id);
+  if(x.fin!=null) window.__finTab=x.fin;
+  if(x.hist!=null) window.__histTab=x.hist;
+  if(x.cfg){ try{ cfgTab=x.cfg; }catch(e){} }
+  show(x.v);
+  try{ window.scrollTo(0,0); }catch(e){}
+}
+try{ window.RM.maisAbrir=maisAbrir; window.RM.maisIr=maisIr; }catch(e){ rmLogErr(e); }
 
 } /* fim rmApp */
 })();
