@@ -1592,6 +1592,18 @@ body[data-sol="1"] .mm-dias button.on{background:#000!important;color:#fff!impor
 body[data-sol="1"] .tres-g>div,body[data-sol="1"] .tres-meta{background:#fff!important;border:2px solid #000!important;color:#000!important}
 @media(min-width:861px){ #mbar,#navBk,#mSyncBtn{display:none!important} }
 @media print{ #mbar,#navBk,#mSyncBtn{display:none!important} }
+/* gráfico de cotação (aba Observação) */
+.obs-card.obs-clic{cursor:pointer}
+.obs-card.obs-clic:hover{border-color:var(--accent,#5a9fd4)}
+.obs-card.obs-sel{box-shadow:0 0 0 2px var(--accent,#5a9fd4)}
+#grafCard{margin-top:10px}
+.graf-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between}
+.graf-per{display:flex;flex-wrap:wrap;gap:4px}
+.graf-per button{min-width:44px}
+.graf-preco{margin:8px 0 4px;font-size:15px}
+.graf-preco b{font-size:20px}
+#grafCv{width:100%;display:block;touch-action:pan-y;border-radius:var(--r-sm)}
+@media (max-width:700px){ .graf-per{flex:1 1 100%;flex-wrap:nowrap} .graf-per button{min-width:0;flex:1;padding:6px 2px;font-size:13px} }
 </style>
 </head>
 <body>
@@ -1907,6 +1919,21 @@ var DEFAULT_CATS = [
 function uid(){ return "id"+Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36); }
 /* Alvo da carteira por classe (Ações, FIIs, ETFs, Renda fixa): pesos de 0 a 100 que somam 100; senão null. */
 function invAlvoClassesNorm(o){ if(!o||typeof o!=="object"||Array.isArray(o)) return null; var r={}, s=0, ks=["acao","fii","etf","fixa"]; for(var i=0;i<ks.length;i++){ var x=o[ks[i]], n=(x==null||x==="")?0:Number(x); if(!(isFinite(n)&&n>=0&&n<=100)) return null; r[ks[i]]=Math.round(n*100)/100; s+=r[ks[i]]; } return Math.abs(s-100)<0.001?r:null; }
+/* Histórico de cotação (gráfico): {COD:{d:[AAAA-MM-DD...],c:[fechamento...]}} em ordem de data.
+   compactar: diário no último ano (+ folga) e um ponto por semana antes disso, para a base não crescer à toa. */
+function invSerieNorm(src,compactar){
+  if(!src||typeof src!=="object"||Array.isArray(src)) return null;
+  var out={}, n=0, corte=null;
+  if(compactar){ try{ var t=new Date(); t.setDate(t.getDate()-400); corte=t.getFullYear()+"-"+String(t.getMonth()+1).padStart(2,"0")+"-"+String(t.getDate()).padStart(2,"0"); }catch(e){ corte=null; } }
+  Object.keys(src).forEach(function(k){
+    var cod=String(k||"").trim().toUpperCase().slice(0,12), s=src[k]; if(!cod||!s||!Array.isArray(s.d)||!Array.isArray(s.c)) return;
+    var d=[], c=[], semAnt=null;
+    for(var i=0;i<s.d.length&&i<s.c.length;i++){ var di=String(s.d[i]||""), ci=Number(s.c[i]); if(!/^\d{4}-\d{2}-\d{2}$/.test(di)||!(ci>0)) continue; if(d.length&&di<=d[d.length-1]) continue;
+      if(corte&&di<corte){ var dt=new Date(di+"T12:00:00"); dt.setDate(dt.getDate()-((dt.getDay()+6)%7)); var sem=dt.toISOString().slice(0,10); if(sem===semAnt){ d[d.length-1]=di; c[c.length-1]=Math.round(ci*100)/100; continue; } semAnt=sem; }
+      d.push(di); c.push(Math.round(ci*100)/100); }
+    if(d.length){ out[cod]={d:d,c:c}; n++; } });
+  return n?out:null;
+}
 function isFuturo(iso){ try{ return String(iso||"")>todayISO(); }catch(e){ return false; } }
 var SAVE_FAIL_MSG="N\u00e3o foi poss\u00edvel salvar. Exporte um backup e libere espa\u00e7o.";
 function todayISO(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
@@ -2729,6 +2756,8 @@ function sanitizeDB(d, rawBackup){
     _fail("invWatch");
     try{ d.invWatch=[]; }catch(_){rmLogErr(_)}
   }
+  /* Histórico de cotação para o gráfico (vem do arquivo do script). Inválido = sem gráfico, nunca quebra a base. */
+  try{ var _is=d.invSerie; if(_is&&typeof _is==="object"&&!Array.isArray(_is)){ var _isA=invSerieNorm(_is.ativos,false); d.invSerie=_isA?{data:validISO(_is.data)?_is.data:null,fonte:String(_is.fonte||"").slice(0,20),ativos:_isA}:null; } else d.invSerie=null; }catch(e){ d.invSerie=null; }
   /* FASE 8D — proventos: valores digitados à mão (dividendo|jcp|rendimento).
      Backup antigo sem ela abre normal (vira []). Inválido descartado e contado.
      Conta inexistente = referência fantasma (varredura abaixo). */
@@ -9490,7 +9519,7 @@ function invTesouroCodigo(slug,comMes){
   return ((p||"TES")+m[2]+(comMes?m[3]:"")).slice(0,12);
 }
 function invParseCotacoesTexto(txt){
-  var _obj;
+  var _obj, _serieArq=null;
   try{ _obj=JSON.parse(String(txt)); }catch(e){ throw new Error("JSON inválido. Nada foi alterado."); }
   if(!_obj||typeof _obj!=="object"||Array.isArray(_obj)) throw new Error("Arquivo inválido: esperado objeto JSON. Nada foi alterado.");
   /* formato do bueno_cotacoes.py: {gerado_em, ativos:[{codigo,preco,...}], tesouro:{titulos:[{slug,sell_price,buy_price}]}} */
@@ -9499,6 +9528,7 @@ function invParseCotacoesTexto(txt){
     _obj.ativos.forEach(function(a){ if(!a||!a.codigo) return; var _pa=Number(a.preco); if(!(_pa>0)) return; _cv[String(a.codigo).trim().toUpperCase().slice(0,12)]=a; });
     try{ var _tt=(_obj.tesouro&&Array.isArray(_obj.tesouro.titulos))?_obj.tesouro.titulos:[];
       _tt.forEach(function(b){ if(!b) return; var _pr=Number(b.sell_price)>0?Number(b.sell_price):Number(b.buy_price); if(!(_pr>0)) return; var _cd=invTesouroCodigo(b.slug,false); if(!_cd) return; if(_cv[_cd]) _cd=invTesouroCodigo(b.slug,true); if(_cd&&!_cv[_cd]) _cv[_cd]={preco:_pr}; }); }catch(_eT){ rmLogErr(_eT,"cot-tesouro"); }
+    _serieArq=_obj.historico||null;
     _obj={data:_dt,dados:_cv};
   }
   var _top=Object.keys(_obj);
@@ -9537,7 +9567,7 @@ function invParseCotacoesTexto(txt){
     _dados[_code]=_o; _n++;
   });
   if(!_n) throw new Error("Arquivo inválido: nenhum ativo com preço válido. Nada foi alterado.");
-  return {data:_data,dados:_dados,topKeys:_top};
+  return {data:_data,dados:_dados,topKeys:_top,serie:_serieArq};
 }
 /* ---------- FASE 8F — HISTÓRICO + EVOLUÇÃO + REINVESTIMENTO (só leitura) ----------
    DB.invHist[] {data, precos:{CODIGO:preco}}: um registro por arquivo de
@@ -9569,6 +9599,8 @@ function invHistUpsert(data,precos){
    (igual à 8B) + registro no histórico (substitui mesma data). */
 function invCotacoesAplicar(parsed){
   DB.invCotacoes={data:parsed.data,dados:parsed.dados};
+  /* histórico para o gráfico: arquivo sem histórico (script antigo) mantém o que já havia */
+  try{ var _sa=parsed.serie?invSerieNorm(parsed.serie,true):null; if(_sa){ var _f=""; try{ var _k=Object.keys(parsed.serie)[0]; _f=String((parsed.serie[_k]&&parsed.serie[_k].fonte)||""); }catch(_e){} DB.invSerie={data:parsed.data,fonte:_f.slice(0,20),ativos:_sa}; } }catch(e){ rmLogErr(e,"inv-serie"); }
   try{
     var _pp={};
     Object.keys(parsed.dados||{}).forEach(function(k){ var _v=parsed.dados[k]; _pp[k]=((_v&&typeof _v==="object")?_v.preco:_v); });
@@ -9924,6 +9956,7 @@ function rInvest(){
   if(_invTab===1){
     html+=invWatchTabHTML()+'</div>';
     viewCtn.innerHTML=html;
+    try{ grafLigar(); }catch(_eG){ rmLogErr(_eG,"graf-cot"); }
     var _sp1=document.getElementById("invPer"); if(_sp1){ _sp1.value=invPeriodo; _sp1.onchange=function(){ invPeriodo=_sp1.value; rInvest(); }; }
     document.querySelectorAll("#invTabs button").forEach(function(b){ b.onclick=function(){ window.__invTab=Number(b.dataset.t)||0; rInvest(); }; });
     var _wAdd=document.getElementById("invWAdd");
@@ -15361,6 +15394,98 @@ function orcCfgLigar(){
 }
 try{ window.RM.orcCalc=orcCalc; }catch(e){ rmLogErr(e); }
 
+/* ---------- GRÁFICO DE COTAÇÃO POR PERÍODO (aba Observação) ----------
+   Toque num cartão da Observação → abaixo aparece o histórico de fechamento do código, com períodos
+   7D · 30D · 6M · YTD · 1A · 5A. Dados: DB.invSerie (o script de cotações baixa do Yahoo Finance e o
+   app guarda ao carregar o arquivo do dia) + os preços de cada arquivo já carregado (DB.invHist) e o
+   preço do último arquivo. Só leitura: nada aqui mexe em saldo, carteira ou DRE. */
+var GRAF_PER=[["7D",7],["30D",30],["6M",182],["YTD","ytd"],["1A",365],["5A",1827]];
+if(typeof window.__grafPer!=="string") window.__grafPer="1A";
+if(typeof window.__grafCod!=="string") window.__grafCod="";
+var GRAF_PTS=null;
+function grafISO(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+/* série completa do código: histórico do script + preços dos arquivos carregados (o mais novo vale) */
+function grafSerie(cod){
+  cod=String(cod||"").trim().toUpperCase(); var m={};
+  try{ var s=DB.invSerie&&DB.invSerie.ativos&&DB.invSerie.ativos[cod]; if(s) for(var i=0;i<s.d.length;i++) m[s.d[i]]=s.c[i]; }catch(e){ rmLogErr(e,"graf-serie"); }
+  var ult=Object.keys(m).sort().pop()||"";
+  try{ (DB.invHist||[]).forEach(function(h){ var p=h&&h.precos&&Number(h.precos[cod]); if(p>0&&h.data>ult) m[h.data]=p; }); }catch(e){}
+  try{ var c=invCotacoesGet(); var p=c&&c.dados[cod]&&Number(c.dados[cod].preco); if(p>0&&c.data>=ult) m[c.data]=p; }catch(e){}
+  var d=Object.keys(m).sort(); return {d:d,c:d.map(function(k){ return m[k]; })};
+}
+function grafRecorte(s,per){
+  if(!s.d.length) return s;
+  var fim=new Date(s.d[s.d.length-1]+"T12:00:00"), ini;
+  if(per==="ytd") ini=fim.getFullYear()+"-01-01";
+  else { var x=new Date(fim); x.setDate(x.getDate()-per); ini=grafISO(x); }
+  /* começa no último fechamento antes do início, para a variação do período bater com a de corretoras */
+  var i0=0; for(var i=0;i<s.d.length;i++){ if(s.d[i]>=ini){ i0=Math.max(0,per==="ytd"?i-1:i); break; } i0=i; }
+  return {d:s.d.slice(i0),c:s.c.slice(i0)};
+}
+function grafDataBR(iso,curta){ var p=String(iso).split("-"); return curta?p[2]+"/"+p[1]:p[2]+"/"+p[1]+"/"+p[0].slice(2); }
+function grafCardHTML(){
+  var cod=window.__grafCod; if(!cod) return '<div class="card" id="grafCard"><div class="sub">📈 Toque num cartão acima para ver o gráfico da cotação.</div></div>';
+  var per=GRAF_PER.find(function(p){ return p[0]===window.__grafPer; })||GRAF_PER[4];
+  var tudo=grafSerie(cod), s=grafRecorte(tudo,per[1]);
+  var h='<div class="card" id="grafCard"><div class="graf-top"><h3 style="margin:0">Cotação '+esc(cod)+'</h3><div class="toolbar seg graf-per" role="group" aria-label="Período">'
+    +GRAF_PER.map(function(p){ return '<button type="button" data-grafper="'+p[0]+'" class="'+(p[0]===per[0]?"on":"")+'">'+p[0]+'</button>'; }).join("")+'</div></div>';
+  if(s.d.length<2){
+    var fonte=!(DB.invSerie&&DB.invSerie.ativos&&DB.invSerie.ativos[cod]);
+    return h+'<div class="empty">'+(fonte?'Ainda sem histórico de '+esc(cod)+'. Rode <b>Atualizar cotações</b> no PC: o script agora baixa até 5 anos de cotação, e o gráfico aparece quando o arquivo do dia for carregado.':'Poucos pregões neste período. Escolha um período maior.')+'</div></div>';
+  }
+  var a=s.c[0], b=s.c[s.c.length-1], v=(b-a)/a*100, cor=v<0?"#e0695c":"#4caf7d";
+  h+='<div class="graf-preco"><b>'+esc(BRL(b))+'</b> <span style="color:'+cor+'">'+(v>0?"+":"")+esc(brDec(v,2))+'% ('+esc(per[0])+')</span><span class="sub graf-ponto" id="grafPonto"></span></div>'
+    +'<canvas class="chart" id="grafCv" height="240" aria-label="Gráfico da cotação de '+esc(cod)+'"></canvas>'
+    +'<div class="sub">Fechamento de cada pregão, de '+esc(grafDataBR(s.d[0]))+' a '+esc(grafDataBR(s.d[s.d.length-1]))+'. Mínima '+esc(BRL(Math.min.apply(null,s.c)))+' · máxima '+esc(BRL(Math.max.apply(null,s.c)))+'.'
+    +(DB.invSerie&&DB.invSerie.fonte==="yahoo"?' Histórico: Yahoo Finance.':'')+(per[1]===1827?' Antes de um ano, um ponto por semana.':'')+'</div></div>';
+  GRAF_PTS={d:s.d,c:s.c,cor:cor};
+  return h;
+}
+function grafDesenhar(marca){
+  var cv=document.getElementById("grafCv"); if(!cv||!GRAF_PTS) return;
+  var P=GRAF_PTS, n=P.c.length, T=TH(), dpr=window.devicePixelRatio||1, W=cv.clientWidth||600, H=Math.max(200,Math.min(320,Math.round(W*0.42)));
+  cv.width=W*dpr; cv.height=H*dpr; cv.style.height=H+"px";
+  var ctx=cv.getContext("2d"); ctx.scale(dpr,dpr); ctx.fillStyle=T.bg; ctx.fillRect(0,0,W,H);
+  var mn=Math.min.apply(null,P.c), mx=Math.max.apply(null,P.c); if(mx-mn<0.01){ mx+=0.5; mn-=0.5; } var pad=(mx-mn)*0.08; mn-=pad; mx+=pad;
+  var L=W<420?44:54,R=10,Tp=10,B=26, X=function(i){ return L+(W-L-R)*(n===1?0:i/(n-1)); }, Y=function(v){ return Tp+(H-Tp-B)*(1-(v-mn)/(mx-mn)); };
+  ctx.font="11px sans-serif"; ctx.strokeStyle=T.grid; ctx.fillStyle=T.mut; ctx.lineWidth=1;
+  for(var g=0;g<=4;g++){ var vv=mn+(mx-mn)*g/4, yy=Y(vv); ctx.beginPath(); ctx.moveTo(L,yy); ctx.lineTo(W-R,yy); ctx.stroke(); ctx.fillText(brDec(vv,2),4,yy+4); }
+  var curta=(P.d[n-1].slice(0,4)===P.d[0].slice(0,4)), nl=Math.max(2,Math.min(5,n,Math.floor((W-L-R)/(curta?52:70))+1));
+  for(var k=0;k<nl;k++){ var ix=Math.round(k*(n-1)/Math.max(1,nl-1)), tx=grafDataBR(P.d[ix],curta), tw=ctx.measureText(tx).width, xx=Math.min(W-R-tw,Math.max(L,X(ix)-tw/2)); ctx.fillText(tx,xx,H-8); }
+  ctx.beginPath(); for(var i=0;i<n;i++){ var x=X(i), y=Y(P.c[i]); if(i) ctx.lineTo(x,y); else ctx.moveTo(x,y); }
+  ctx.strokeStyle=P.cor; ctx.lineWidth=1.8; ctx.stroke();
+  ctx.lineTo(X(n-1),H-B); ctx.lineTo(X(0),H-B); ctx.closePath(); var gr=ctx.createLinearGradient(0,Tp,0,H-B); gr.addColorStop(0,P.cor==="#e0695c"?"rgba(224,105,92,.28)":"rgba(76,175,125,.28)"); gr.addColorStop(1,"rgba(0,0,0,0)"); ctx.fillStyle=gr; ctx.fill();
+  if(marca!=null&&marca>=0&&marca<n){ var mxp=X(marca), myp=Y(P.c[marca]); ctx.strokeStyle=T.mut; ctx.lineWidth=1; ctx.setLineDash([4,3]); ctx.beginPath(); ctx.moveTo(mxp,Tp); ctx.lineTo(mxp,H-B); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle=P.cor; ctx.beginPath(); ctx.arc(mxp,myp,4,0,Math.PI*2); ctx.fill(); }
+  cv._grafX={L:L,R:R,W:W,n:n};
+}
+function grafPintar(){
+  var old=document.getElementById("grafCard"); if(!old) return;
+  var d=document.createElement("div"); GRAF_PTS=null; d.innerHTML=grafCardHTML(); var novo=d.firstChild; old.replaceWith(novo);
+  novo.querySelectorAll("[data-grafper]").forEach(function(b){ b.onclick=function(){ window.__grafPer=b.dataset.grafper; grafPintar(); }; });
+  var cv=document.getElementById("grafCv"); if(!cv) return; grafDesenhar(null);
+  var ponto=function(ev){ var g=cv._grafX; if(!g||!GRAF_PTS) return; var r=cv.getBoundingClientRect(), cx=((ev.touches&&ev.touches[0])?ev.touches[0].clientX:ev.clientX)-r.left;
+    var i=Math.round((cx-g.L)/(g.W-g.L-g.R)*(g.n-1)); i=Math.max(0,Math.min(g.n-1,i)); grafDesenhar(i);
+    var el=document.getElementById("grafPonto"); if(el) el.textContent=" · "+grafDataBR(GRAF_PTS.d[i])+": "+BRL(GRAF_PTS.c[i]); };
+  cv.addEventListener("pointermove",ponto); cv.addEventListener("pointerdown",ponto);
+  cv.addEventListener("pointerleave",function(){ grafDesenhar(null); var el=document.getElementById("grafPonto"); if(el) el.textContent=""; });
+}
+/* chamado depois de desenhar a aba Observação */
+function grafLigar(){
+  var grid=document.querySelector("#viewCtn .obs-cards"); if(!grid) return;
+  var cods=[].map.call(grid.querySelectorAll(".obs-card[data-invwatch]"),function(c){ return c.dataset.invwatch; });
+  if(window.__grafCod&&cods.indexOf(window.__grafCod)<0) window.__grafCod="";
+  var marcar=function(){ grid.querySelectorAll(".obs-card").forEach(function(c){ var on=c.dataset.invwatch===window.__grafCod; c.classList.toggle("obs-sel",on); c.setAttribute("aria-pressed",on?"true":"false"); }); };
+  grid.querySelectorAll(".obs-card[data-invwatch]").forEach(function(c){
+    c.classList.add("obs-clic"); c.setAttribute("role","button"); c.setAttribute("tabindex","0");
+    var abrir=function(ev){ if(ev&&ev.target&&ev.target.closest&&ev.target.closest("[data-invwatchdel]")) return; window.__grafCod=c.dataset.invwatch; marcar(); grafPintar();
+      try{ var g=document.getElementById("grafCard"); if(g&&g.getBoundingClientRect().top>window.innerHeight-120) g.scrollIntoView({behavior:"smooth",block:"start"}); }catch(e){} };
+    c.addEventListener("click",abrir); c.addEventListener("keydown",function(ev){ if(ev.key==="Enter"||ev.key===" "){ ev.preventDefault(); abrir(ev); } });
+  });
+  var holder=document.createElement("div"); holder.innerHTML='<div class="card" id="grafCard"></div>'; grid.insertAdjacentElement("afterend",holder.firstChild);
+  marcar(); grafPintar();
+}
+window.addEventListener("resize",function(){ try{ if(document.getElementById("grafCv")) grafDesenhar(null); }catch(e){} });
+try{ window.RM.grafSerie=grafSerie; window.RM.grafRecorte=grafRecorte; window.RM.cotAplicarTexto=function(t){ invCotacoesAplicar(invParseCotacoesTexto(t)); return save(); }; }catch(e){ rmLogErr(e); }
 /* primeira tela: só depois de todos os módulos (antes, cartões que usam listas definidas mais abaixo falhavam na abertura) */
 try{ show(current||"dashboard"); }catch(e){ rmLogErr(e,"primeira-tela"); }
 
