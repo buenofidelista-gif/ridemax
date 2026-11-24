@@ -1750,6 +1750,7 @@ body[data-sol="1"] .irpf-gc{background:#fff!important;color:#000!important;borde
 .res-rent .tblwrap{max-height:320px;overflow-y:auto}
 @media (max-width:700px){ .rent-kpis{grid-template-columns:1fr 1fr} }
 @media (max-width:700px){ .res-rent .tblwrap{max-height:none;overflow:visible} }
+.cls-pesos[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -15283,6 +15284,16 @@ try{ window.RM.maisAbrir=maisAbrir; window.RM.maisIr=maisIr; }catch(e){ rmLogErr
    Só leitura: deixa os testes lerem o registro de erros internos (o mesmo do Diagnóstico). */
 try{ window.RM.errLog=function(){ return RM_ERRLOG.map(function(x){ return {msg:x.msg,origem:x.origem,n:x.n,stack:x.stack}; }); }; }catch(e){ rmLogErr(e); }
 
+/* Gerador da base de teste (testes/gerar-base-teste.js): cria os registros pelo MESMO caminho das telas
+   (recebível da corrida, despesa/recarga na rua com "pago na hora", títulos), para os saldos fecharem. */
+try{ window.RM.gerar={
+  tituloCorrida:function(r){ return criarTituloDeCorrida(r); },
+  tituloDespesa:function(e){ return criarTituloDeDespesa(e); },
+  tituloRecarga:function(r){ return criarTituloDeRecarga(r); },
+  pagar:function(t,conta,data){ return pagoAplicar(t,{pago:true,conta:conta},data); },
+  /* repasse da semana pelo valor que o app espera (recebíveis − taxas das corridas em dinheiro), com baixa no lote */
+  repasse:function(pid,de,ate,data){ var r=loteCriarCore(pid,de,ate); if(!r.ok) return {ok:false,msg:r.erro}; var rp={id:uid(),date:data,platform_id:pid,start:de,end:ate,amount:r.L.esperado,adjustments:[],notes:""}; (DB.repasses=DB.repasses||[]).push(rp); return repLoteBaixar(rp); }
+}; }catch(e){ rmLogErr(e); }
 /* ---------- RENDA ESTIMADA DE PROVENTOS ----------
    Quanto a carteira deve pagar por ano/mês em proventos, por ativo e no total. Só leitura.
    Valor por cota em 12 meses, nesta ordem:
