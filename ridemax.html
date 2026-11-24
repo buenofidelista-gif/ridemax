@@ -1648,7 +1648,7 @@ body.fit-lock #viewCtn:has(.inv-rolar){display:block;overflow-y:auto;overflow-x:
 .cls-kpi small{font-size:11px;color:var(--muted);text-align:right}
 .cls-vazio{padding:10px 14px}
 .pos-tab{display:flex;flex-direction:column}
-.pos-lin{display:grid;grid-template-columns:minmax(110px,1.4fr) .7fr 1fr 1fr .9fr .9fr 1fr .8fr .9fr .8fr;gap:8px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:13px}
+.pos-lin{display:grid;grid-template-columns:minmax(110px,1.4fr) .7fr 1fr 1fr .9fr .9fr 1fr .8fr .8fr .9fr .8fr;gap:8px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:13px}
 .pos-lin>span{text-align:right;min-width:0}
 .pos-lin>.c-ativo{text-align:left;display:flex;flex-direction:column}
 .pos-lin>.c-ativo small{color:var(--muted);font-size:11px}
@@ -1677,11 +1677,11 @@ body[data-sol="1"] .cmp-nao{background:#fff!important;color:#a01d0f!important;bo
   .cls-kpi{align-items:flex-start}
   .cls-kpi small{text-align:left}
   .pos-head{display:none}
-  .pos-lin{grid-template-columns:1fr auto auto;grid-template-areas:"ativo saldo saldo" "var rent pct" "qtd pm preco" "leit comp comp";gap:6px 10px;padding:10px 14px}
+  .pos-lin{grid-template-columns:1fr auto auto;grid-template-areas:"ativo saldo saldo" "var rent pct" "qtd pm preco" "leit ideal comp";gap:6px 10px;padding:10px 14px}
   .pos-lin>.c-ativo{grid-area:ativo}.pos-lin>.c-saldo{grid-area:saldo;font-size:15px}
   .pos-lin>.c-var{grid-area:var;text-align:left}.pos-lin>.c-rent{grid-area:rent}.pos-lin>.c-pct{grid-area:pct}
   .pos-lin>.c-qtd{grid-area:qtd;text-align:left}.pos-lin>.c-pm{grid-area:pm}.pos-lin>.c-preco{grid-area:preco}
-  .pos-lin>.c-leit{grid-area:leit;text-align:left}.pos-lin>.c-comp{grid-area:comp;text-align:right}
+  .pos-lin>.c-leit{grid-area:leit;text-align:left}.pos-lin>.c-ideal{grid-area:ideal}.pos-lin>.c-comp{grid-area:comp;text-align:right}
   .pos-lin>span[data-rot]::before{content:attr(data-rot) " ";color:var(--muted);font-size:11px;font-weight:400}
 }
 .inv-screen.inv-rolar .inv-col>.card,.inv-screen.inv-rolar .inv-list-card{flex:0 0 auto!important}
@@ -1698,6 +1698,45 @@ body[data-sol="1"] .cmp-nao{background:#fff!important;color:#a01d0f!important;bo
 .inv-prov-reinv{margin-top:var(--s3)}
 .prov-tbl td.pv-cota,.prov-tbl td.pv-bruto,.prov-tbl td.pv-liq,.prov-tbl td.pv-qtd{white-space:nowrap!important}
 @media (min-width:701px){ .prov-tbl td.pv-cod{max-width:280px} }
+/* IRPF */
+.irpf-main{display:flex;flex-direction:column;gap:var(--s3)}
+.irpf-main>.card,.irpf-cols>.card{margin:0!important}
+.irpf-ano label.f{max-width:320px}
+.irpf-bens{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:10px;margin-bottom:8px}
+.irpf-bem{border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;background:var(--input);display:flex;flex-direction:column;gap:6px;min-width:0}
+.irpf-bem-top{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.irpf-bem-top b{font-size:16px}
+.irpf-gc{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(90,159,212,.18);color:#5a9fd4}
+.irpf-sit{display:flex;gap:24px}
+.irpf-sit>div{display:flex;flex-direction:column}
+.irpf-sit small{color:var(--muted);font-size:11.5px}
+.irpf-disc{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.4}
+.irpf-disc span{flex:1;min-width:0}
+.irpf-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s3)}
+.irpf-bloco{border-top:1px solid var(--border);padding:8px 0}
+.irpf-bloco:first-of-type{border-top:0}
+.irpf-lin-tit{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.irpf-cod{font-size:11.5px;color:var(--muted);padding:1px 7px;border:1px solid var(--border);border-radius:10px}
+.irpf-tot{margin-left:auto}
+.irpf-tbl td{padding:4px 6px!important;font-size:13px}
+@media (max-width:1099.98px){ .irpf-cols{grid-template-columns:minmax(0,1fr)} }
+body[data-sol="1"] .irpf-gc{background:#fff!important;color:#000!important;border:1px solid #000}
+/* Proventos mês a mês + por ativo */
+.prov-mais{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s3);margin-top:var(--s3)}
+.prov-mais>.card{margin:0!important;min-width:0}
+.prov-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:8px}
+.prov-kpis>div{display:flex;flex-direction:column}
+.prov-kpis small{color:var(--muted);font-size:11.5px}
+#provMesCv{width:100%;display:block}
+@media (max-width:1099.98px){ .prov-mais{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:700px){ .prov-kpis{grid-template-columns:1fr 1fr} }
+
+.cls-pesos-btn{margin-left:6px}
+.cls-pesos{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--input);display:flex;flex-direction:column;gap:8px}
+.cls-pesos-lin{display:flex;flex-wrap:wrap;gap:8px 14px}
+.cls-pesos-lin label.f{width:120px;margin:0}
+.ap-ativos{font-size:12px;color:var(--muted);margin:-2px 0 6px 10px}
+.prov-rank td,.prov-rank th{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -2318,6 +2357,8 @@ function sanitizeSettings(s){
   try{ var _sy=(s.sync&&typeof s.sync==="object"&&!Array.isArray(s.sync))?s.sync:{}; var _cid=(typeof _sy.clientId==="string")?_sy.clientId.trim().slice(0,200):""; if(_cid&&!/^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$/i.test(_cid)) _cid=""; d.sync={clientId:_cid,auto:_sy.auto?1:0}; }catch(_eSy){ d.sync={clientId:"",auto:0}; }
   try{ var _oc=(s.orcamento&&typeof s.orcamento==="object"&&!Array.isArray(s.orcamento))?s.orcamento:{}, _oo={}, _on=0; Object.keys(_oc).forEach(function(k){ var v=Number(_oc[k]); if(_on<100&&typeof k==="string"&&k.length<=64&&isFinite(v)&&v>0){ _oo[k]=Math.round(v*100)/100; _on++; } }); d.orcamento=_oo; }catch(_eOc){ d.orcamento={}; }
   try{ d.mesFechadoAte=(typeof s.mesFechadoAte==="string"&&/^[0-9]{4}-(0[1-9]|1[0-2])$/.test(s.mesFechadoAte))?s.mesFechadoAte:null; }catch(_eMf){ d.mesFechadoAte=null; }
+  /* peso de cada ativo dentro da sua classe (%): {CODIGO: peso}. Sem peso = partes iguais na classe. */
+  try{ var _pc=(s.invPesos&&typeof s.invPesos==="object"&&!Array.isArray(s.invPesos))?s.invPesos:{}, _po={}, _pn=0; Object.keys(_pc).forEach(function(k){ var v=Number(_pc[k]), c=String(k).trim().toUpperCase(); if(_pn<300&&/^[A-Z0-9]{1,12}$/.test(c)&&isFinite(v)&&v>=0&&v<=100){ _po[c]=Math.round(v*100)/100; _pn++; } }); d.invPesos=_po; }catch(_ePe){ d.invPesos={}; }
   return d;
 }
 function seed(){
@@ -9451,8 +9492,12 @@ function invRebalance(aporte){
   return {ok:true,aporte:a,fixa:f,variavel:v,totalNovo:Tn,pctF:pf,pctV:pv,alvoF:st.alvoFixa,alvoV:st.alvoVariavel,classes:cls};
 }
 function invRebalanceHTML(r){
-  if(r.classes) return r.classes.map(function(c){ return '<div class="kv"><span>Para '+esc(c.nome)+'</span><b>'+BRL(c.valor)+'</b></div>'; }).join("")
-    +'<div class="sub">Depois do aporte: '+r.classes.map(function(c){ return esc(c.nome)+" "+brDec(c.pctNovo,1)+"% (alvo "+brDec(c.alvoPct,0)+"%)"; }).join(" · ")+'.</div>';
+  if(r.classes){ var _RC=null; try{ _RC=resCalc(); }catch(_e){ _RC=null; }
+    var _porAtivo=function(c){ if(!(c.valor>0.004)||!_RC||!_RC.cls[c.k]) return ""; var ps=_RC.cls[c.k].pos; if(!ps.length) return '<div class="ap-ativos">→ ainda sem ativo nesta classe: escolha um para comprar.</div>'; if(ps.length===1) return '<div class="ap-ativos">→ '+esc(ps[0].codigo)+'</div>';
+      var dv=invDividirAporte(ps.map(function(x){ return {valor:x.valor,alvoPct:x.idealClasse}; }),c.valor);
+      return '<div class="ap-ativos">→ '+ps.map(function(x,i){ return {c:x.codigo,v:dv[i]}; }).filter(function(o){ return o.v>0.004; }).map(function(o){ return esc(o.c)+" "+esc(BRL(o.v)); }).join(" · ")+'</div>'; };
+    return r.classes.map(function(c){ return '<div class="kv"><span>Para '+esc(c.nome)+'</span><b>'+BRL(c.valor)+'</b></div>'+_porAtivo(c); }).join("")
+    +'<div class="sub">Depois do aporte: '+r.classes.map(function(c){ return esc(c.nome)+" "+brDec(c.pctNovo,1)+"% (alvo "+brDec(c.alvoPct,0)+"%)"; }).join(" · ")+'.</div>'; }
   return '<div class="kv"><span>Para a fixa</span><b>'+BRL(r.fixa)+'</b></div><div class="kv"><span>Para a variável</span><b>'+BRL(r.variavel)+'</b></div><div class="sub">Depois do aporte: '+String(r.pctF).replace(".",",")+'% fixa × '+String(r.pctV).replace(".",",")+'% variável.</div>';
 }
 /* ---------- FASE 8H — RESERVA DE EMERGÊNCIA (só leitura; nunca saldo/DRE/MEI/invProventos) ----------
@@ -9884,14 +9929,21 @@ function rInvest(){
   var perLabel=(invPeriodo==="todos")?"Todo o período":(invPeriodo==="mes"?"Este mês":(invPeriodo==="90"?"Últimos 90 dias":"Últimos 30 dias"));
   var perioTxt=rg?(" de "+isoToBR(rg.ini)+" a "+isoToBR(rg.fim)):" (todo o período)";
   if(typeof window.__invTab!=="number") window.__invTab=4;
-  var _invTab=(window.__invTab===5)?5:(window.__invTab===4)?4:((window.__invTab===3)?3:((window.__invTab===1)?1:((window.__invTab===2)?2:0)));
+  var _invTab=(window.__invTab===6)?6:(window.__invTab===5)?5:(window.__invTab===4)?4:((window.__invTab===3)?3:((window.__invTab===1)?1:((window.__invTab===2)?2:0)));
   try{ window.__invTab=_invTab; }catch(e){}
-  var html='<div class="fit-screen inv-screen inv-tab'+_invTab+((_invTab===0||_invTab===2||_invTab===4||_invTab===5)?" inv-rolar":"")+'"><div class="card inv-bar"><h3>Investimentos<button type="button" class="infoBtn" data-tip="Total investido = dinheiro nas contas de investimento + valor dos ativos (cotação carregada; sem cotação, preço médio; CDB pelo CDI). Aporte é transferência para a conta de investimento; resgate é transferência saindo dela." aria-label="Sobre este bloco">i</button></h3>'
-    +'<div class="inv-bar-row"><div class="toolbar seg" id="invTabs"><button type="button" data-t="4" class="'+(_invTab===4?"on":"")+'">📋 Resumo</button><button type="button" data-t="0" class="'+(_invTab===0?"on":"")+'">💼 Carteira</button><button type="button" data-t="5" class="'+(_invTab===5?"on":"")+'">🔁 Movimentos</button><button type="button" data-t="2" class="'+(_invTab===2?"on":"")+'">💰 Proventos</button><button type="button" data-t="1" class="'+(_invTab===1?"on":"")+'">👀 Observação</button><button type="button" data-t="3" class="'+(_invTab===3?"on":"")+'">🧭 Planejamento</button></div>'
+  var html='<div class="fit-screen inv-screen inv-tab'+_invTab+((_invTab===0||_invTab===2||_invTab===4||_invTab===5||_invTab===6)?" inv-rolar":"")+'"><div class="card inv-bar"><h3>Investimentos<button type="button" class="infoBtn" data-tip="Total investido = dinheiro nas contas de investimento + valor dos ativos (cotação carregada; sem cotação, preço médio; CDB pelo CDI). Aporte é transferência para a conta de investimento; resgate é transferência saindo dela." aria-label="Sobre este bloco">i</button></h3>'
+    +'<div class="inv-bar-row"><div class="toolbar seg" id="invTabs"><button type="button" data-t="4" class="'+(_invTab===4?"on":"")+'">📋 Resumo</button><button type="button" data-t="0" class="'+(_invTab===0?"on":"")+'">💼 Carteira</button><button type="button" data-t="5" class="'+(_invTab===5?"on":"")+'">🔁 Movimentos</button><button type="button" data-t="2" class="'+(_invTab===2?"on":"")+'">💰 Proventos</button><button type="button" data-t="1" class="'+(_invTab===1?"on":"")+'">👀 Observação</button><button type="button" data-t="3" class="'+(_invTab===3?"on":"")+'">🧭 Planejamento</button><button type="button" data-t="6" class="'+(_invTab===6?"on":"")+'">🧾 IRPF</button></div>'
     +(_invTab!==5?"":'<div class="toolbar"><span>Período:</span><select id="invPer"><option value="mes">Este mês</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="todos">Todo o período</option></select></div><span class="tip">'+esc(perLabel+perioTxt)+'</span>')
     +'<span class="sub" id="invCotTopo">'+esc((function(){ var _c=invCotacoesGet(); if(!_c) return "sem cotações carregadas"; var _dd=""; try{ _dd=isoToBR(_c.data).slice(0,5); }catch(e){rmLogErr(e)} var _n=0; try{ _n=Object.keys(_c.dados||{}).length; }catch(e){rmLogErr(e)} var _id=invCotIdadeDias(); var _t="cotações de "+_dd+" · "+_n+" ativo(s)"; if(_id!=null&&_id>1) _t+=" · ⚠️ desatualizada ("+_id+" dias)"; return _t; })())+'</span>'
     +((_invTab===0)?cotPastaBtnHTML()+'<button class="btn sm accent" id="invExpLista">Exportar lista</button><button class="btn sm teal" id="invImpCot">Carregar cotações</button>':"")+((_invTab===0||_invTab===5)?'<button class="btn sm green" id="invOpNovoBtn">Nova operação</button><button class="btn sm green" id="invEvNovoBtn">Novo evento</button>':"")+((_invTab===0)?'<span class="msg-ok" id="invCotMsg"></span>':"")
     +'</div></div>';
+  if(_invTab===6){
+    html+=(function(){ try{ return irpfTabHTML(); }catch(_eI){ rmLogErr(_eI,"irpf"); return '<div class="card"><div class="empty">Não consegui montar o relatório.</div></div>'; } })()+'</div>';
+    viewCtn.innerHTML=html;
+    document.querySelectorAll("#invTabs button").forEach(function(b){ b.onclick=function(){ window.__invTab=Number(b.dataset.t)||0; rInvest(); }; });
+    try{ irpfLigar(); }catch(_eIL){ rmLogErr(_eIL,"irpf-ligar"); }
+    return;
+  }
   if(_invTab===4){
     html+=resResumoHTML()+'</div>';
     viewCtn.innerHTML=html;
@@ -10087,8 +10139,9 @@ function rInvest(){
     return;
   }
   if(_invTab===2){
-    html+=invProvTabHTML()+(function(){ try{ return '<div class="inv-prov-reinv">'+invReinvestTabHTML()+'</div>'; }catch(_eRe){ rmLogErr(_eRe,"reinvest"); return ""; } })()+'</div>';
+    html+=invProvTabHTML()+(function(){ try{ return provMaisHTML(); }catch(_ePm){ rmLogErr(_ePm,"prov-mais"); return ""; } })()+(function(){ try{ return '<div class="inv-prov-reinv">'+invReinvestTabHTML()+'</div>'; }catch(_eRe){ rmLogErr(_eRe,"reinvest"); return ""; } })()+'</div>';
     viewCtn.innerHTML=html;
+    try{ provMesDesenhar(); }catch(_ePd){ rmLogErr(_ePd,"prov-mes"); }
     var _sp2=document.getElementById("invPer"); if(_sp2){ _sp2.value=invPeriodo; _sp2.onchange=function(){ invPeriodo=_sp2.value; rInvest(); }; }
     document.querySelectorAll("#invTabs button").forEach(function(b){ b.onclick=function(){ window.__invTab=Number(b.dataset.t)||0; if(String(b.dataset.t)==="0") window.__invTab=0; rInvest(); }; });
     var _pt=document.getElementById("invPTipo"), _irW=document.getElementById("invPIrWrap");
@@ -15648,7 +15701,7 @@ function resCalc(){
   R.temAlvo=!!(D&&D.classes); R.dist=D;
   RES_ORDEM.forEach(function(k){ var C=R.cls[k]; C.valor=Math.round(C.valor*100)/100; C.custo=Math.round(C.custo*100)/100;
     var sem=C.pos.some(function(x){ return x.semCot; }); C.varP=sem?null:resPct(C.valor-C.custo,C.custo); C.rentP=sem?null:resPct(C.valor-C.custo+C.prov,C.custo);
-    var tot=C.valor; C.pos.forEach(function(x){ x.pctClasse=tot>0?x.valor/tot*100:0; x.pctCart=R.valor>0?x.valor/R.valor*100:0; x.comprar=resComprar(x,C,R); }); });
+    var tot=C.valor; C.pos.forEach(function(x){ x.pctClasse=tot>0?x.valor/tot*100:0; x.pctCart=R.valor>0?x.valor/R.valor*100:0; }); resPesosAplicar(C); C.pos.forEach(function(x){ x.comprar=resComprar(x,C,R); }); });
   return R;
 }
 /* "Comprar?": a classe está abaixo do alvo, o ativo não está entre os maiores da classe e a leitura não é vermelha */
@@ -15656,8 +15709,18 @@ function resComprar(x,C,R){
   if(!R.temAlvo) return {v:"—",motivo:"Defina os pesos por classe em Planejamento › Metas e alvos."};
   if(!(C.diff>0.004)) return {v:"Não",motivo:"A classe "+C.nome+" já está no alvo ou acima dele."};
   if(x.leit&&x.leit.vermelho) return {v:"Não",motivo:"A classe está abaixo do alvo, mas a leitura deste ativo está vermelha."};
-  var n=C.pos.length||1; if(n>1&&x.pctClasse>100/n+0.5) return {v:"Não",motivo:"A classe está abaixo do alvo, mas este ativo já é dos maiores dela. Os menores vêm primeiro."};
-  return {v:"Sim",motivo:"A classe "+C.nome+" está abaixo do alvo (faltam "+BRL(C.diff)+")"+(n>1?" e este ativo é dos menores dela.":".")};
+  var n=C.pos.length||1, qual=C.pesosProprios?"o peso que você definiu":"partes iguais";
+  if(n>1&&!(x.idealClasse>0.004)) return {v:"Não",motivo:"Este ativo está com peso 0 dentro da classe "+C.nome+"."};
+  if(n>1&&x.pctClasse>x.idealClasse+0.5) return {v:"Não",motivo:"A classe está abaixo do alvo, mas este ativo já passou do peso dele dentro dela ("+brDec(x.pctClasse,1)+"% da classe; ideal "+brDec(x.idealClasse,1)+"% — "+qual+")."};
+  return {v:"Sim",motivo:"A classe "+C.nome+" está abaixo do alvo (faltam "+BRL(C.diff)+")"+(n>1?" e este ativo está abaixo do peso dele dentro dela ("+brDec(x.pctClasse,1)+"% da classe; ideal "+brDec(x.idealClasse,1)+"% — "+qual+").":".")};
+}
+/* peso de cada ativo dentro da classe: DB.settings.invPesos {COD:%}. Se nenhum ativo da classe tem peso, partes iguais. */
+function resPesos(){ var o=DB.settings&&DB.settings.invPesos; return (o&&typeof o==="object"&&!Array.isArray(o))?o:{}; }
+function resPesosAplicar(C){
+  var P=resPesos(), cods=[]; C.pos.forEach(function(x){ if(cods.indexOf(x.codigo)<0) cods.push(x.codigo); });
+  var proprio=cods.some(function(c){ return P[c]!=null; }); C.pesosProprios=proprio;
+  C.pos.forEach(function(x){ var w=proprio?(Number(P[x.codigo])||0):(cods.length?100/cods.length:0); var rep=C.pos.filter(function(o){ return o.codigo===x.codigo; }).length||1;
+    x.idealClasse=w/rep; x.idealCart=C.alvo!=null?C.alvo*x.idealClasse/100:null; });
 }
 /* ---------- Meus ativos (aba Carteira) ---------- */
 function resKpi(rot,val,cor,sub){ return '<div class="cls-kpi"><span>'+esc(rot)+'</span><b'+(cor?' style="color:'+cor+'"':'')+'>'+val+'</b>'+(sub?'<small>'+sub+'</small>':'')+'</div>'; }
@@ -15666,14 +15729,18 @@ function resGrupoHTML(C,R){
   if(!n&&!(C.alvo>0)) return "";
   var pctTxt=(C.pctAtual!=null?brDec(C.pctAtual,0)+"%":"0%")+(C.alvo!=null?' / '+brDec(C.alvo,0)+'%':'');
   var difTxt=""; if(C.alvo!=null&&C.diff!=null){ difTxt=C.diff>0.004?'<span style="color:#e0695c">faltam '+esc(BRL(C.diff))+'</span>':(C.diff<-0.004?'<span style="color:#5a9fd4">'+esc(BRL(-C.diff))+' acima</span>':'<span style="color:#4caf7d">no alvo</span>'); }
-  var h='<section class="card cls-grupo" data-cls="'+C.k+'"><div class="cls-cab"><div class="cls-nome"><span class="cls-ic">'+C.ic+'</span><b>'+esc(C.nome)+'</b><span class="sub">'+n+(n===1?" ativo":" ativos")+'</span></div><div class="cls-kpis">'
+  var h='<section class="card cls-grupo" data-cls="'+C.k+'"><div class="cls-cab"><div class="cls-nome"><span class="cls-ic">'+C.ic+'</span><b>'+esc(C.nome)+'</b><span class="sub">'+n+(n===1?" ativo":" ativos")+'</span>'+(n>=2?'<button type="button" class="btn sm accent cls-pesos-btn" data-pesos="'+C.k+'" aria-expanded="false">⚖️ Pesos'+(C.pesosProprios?" (seus)":"")+'</button>':"")+'</div><div class="cls-kpis">'
     +resKpi("Valor total",esc(BRL(C.valor)))
     +resKpi("Variação",esc(resPctTxt(C.varP)),resCor(C.varP))
     +resKpi("Rentabilidade",esc(resPctTxt(C.rentP)),resCor(C.rentP),C.prov>0.004?"com "+esc(BRL(C.prov))+" de proventos":"")
     +resKpi("% na carteira",esc(pctTxt),"",C.alvo!=null?"atual / alvo"+(difTxt?" · "+difTxt:""):"")
     +'</div></div>';
   if(!n) return h+'<div class="sub cls-vazio">Nenhum ativo desta classe ainda.</div></section>';
-  h+='<div class="pos-tab" role="table"><div class="pos-lin pos-head" role="row"><span class="c-ativo">Ativo</span><span class="c-qtd">Qtd</span><span class="c-pm">Preço médio</span><span class="c-preco">Preço atual</span><span class="c-var">Variação</span><span class="c-rent">Rentab.</span><span class="c-saldo">Saldo</span><span class="c-pct">% carteira</span><span class="c-leit">Leitura</span><span class="c-comp">Comprar?</span></div>';
+  if(n>=2){ var P=resPesos(), cods=[]; C.pos.forEach(function(x){ if(cods.indexOf(x.codigo)<0) cods.push(x.codigo); }); var igual=brDec(100/cods.length,1);
+    h+='<div class="cls-pesos" data-pesosed="'+C.k+'" hidden><div class="sub">Quanto cada ativo deve pesar <b>dentro de '+esc(C.nome)+'</b> (%). Os pesos somam 100. Em branco em todos = partes iguais ('+igual+'% cada). Usado no Comprar? e na divisão do Próximo aporte.</div><div class="cls-pesos-lin">'
+      +cods.map(function(c){ var v=P[c]; return '<label class="f"><span>'+esc(c)+'</span><input inputmode="decimal" data-peso="'+esc(c)+'" placeholder="'+igual+'" value="'+(C.pesosProprios&&v!=null?esc(brDec(v,v%1?2:0)):"")+'"></label>'; }).join("")
+      +'</div><div class="sub" data-pesosoma="'+C.k+'"></div><div class="btnrow"><button type="button" class="btn sm green" data-pesosalva="'+C.k+'">Salvar pesos</button><button type="button" class="btn sm accent" data-pesoiguais="'+C.k+'">Partes iguais</button></div></div>'; }
+  h+='<div class="pos-tab" role="table"><div class="pos-lin pos-head" role="row"><span class="c-ativo">Ativo</span><span class="c-qtd">Qtd</span><span class="c-pm">Preço médio</span><span class="c-preco">Preço atual</span><span class="c-var">Variação</span><span class="c-rent">Rentab.</span><span class="c-saldo">Saldo</span><span class="c-pct">% carteira</span><span class="c-ideal" title="Peso ideal deste ativo na carteira = alvo da classe × peso do ativo na classe">% ideal</span><span class="c-leit">Leitura</span><span class="c-comp">Comprar?</span></div>';
   C.pos.slice().sort(function(a,b){ return b.valor-a.valor; }).forEach(function(x){
     var al=""; try{ var _al=invEventoFracaoAlerta(x.conta,x.codigo); if(_al) al='<small style="color:var(--yellow)">'+esc(_al.msg)+'</small>'; }catch(e){}
     var pr=x.semCot?'<span class="sub">sem cotação</span>':(x.peloCusto?'<span class="sub">pelo custo</span>':esc(BRL(x.preco)));
@@ -15687,6 +15754,7 @@ function resGrupoHTML(C,R){
       +'<span class="c-rent" data-rot="Rentab." title="Variação + proventos recebidos deste ativo ('+esc(BRL(x.prov))+')"><i class="pill" style="color:'+resCor(x.rentP)+'">'+esc(resPctTxt(x.rentP))+'</i></span>'
       +'<span class="c-saldo"><b>'+esc(BRL(x.valor))+'</b></span>'
       +'<span class="c-pct" data-rot="% carteira">'+esc(brDec(x.pctCart,2))+'%</span>'
+      +'<span class="c-ideal" data-rot="% ideal">'+(x.idealCart!=null?esc(brDec(x.idealCart,2))+"%":"—")+'</span>'
       +'<span class="c-leit">'+(x.leit?'<i class="selo '+x.leit.cls+'">'+esc(x.leit.txt)+'</i>':'<span class="sub">—</span>')+'</span>'
       +'<span class="c-comp" title="'+esc(cp.motivo)+'"><i class="cmp '+cpCls+'">'+esc(cp.v==="Sim"?"✓ Sim":(cp.v==="Não"?"✕ Não":"—"))+'</i></span>'
       +'</div><div class="pos-det" data-det="'+esc(x.key)+'" hidden></div>';
@@ -15708,7 +15776,25 @@ function resDetalheHTML(x){
   if(x.tipo==="acao"||x.tipo==="fii"||x.tipo==="etf") h+='<div class="card" id="grafCard"></div>';
   return h+'</div>';
 }
+function resPesosSoma(k){ var s=0, alg=false; document.querySelectorAll('.cls-pesos[data-pesosed="'+k+'"] [data-peso]').forEach(function(i){ var t=String(i.value||"").trim(); if(t){ alg=true; var v=parseBR(t); if(isFinite(v)) s+=v; } }); return {soma:Math.round(s*100)/100,alg:alg}; }
+function resPesosLigar(){
+  document.querySelectorAll("[data-pesos]").forEach(function(b){ b.onclick=function(ev){ ev.stopPropagation(); var ed=document.querySelector('.cls-pesos[data-pesosed="'+b.dataset.pesos+'"]'); if(!ed) return; ed.hidden=!ed.hidden; b.setAttribute("aria-expanded",ed.hidden?"false":"true"); if(!ed.hidden) pinta(b.dataset.pesos); }; });
+  var pinta=function(k){ var el=document.querySelector('[data-pesosoma="'+k+'"]'); if(!el) return; var r=resPesosSoma(k); el.innerHTML=r.alg?('Soma: <b style="color:'+(Math.abs(r.soma-100)<0.01?"#4caf7d":"#e0695c")+'">'+esc(brDec(r.soma,r.soma%1?2:0))+'%</b>'+(Math.abs(r.soma-100)<0.01?"":" — ajuste para dar 100% (vazio conta como 0)")):"Partes iguais."; };
+  document.querySelectorAll("[data-peso]").forEach(function(i){ i.oninput=function(){ var ed=i.closest(".cls-pesos"); if(ed) pinta(ed.dataset.pesosed); }; });
+  var gravar=function(k,novo){ var R=resCalc(), C=R.cls[k]; if(!C) return; var antes=JSON.parse(JSON.stringify(resPesos())), P=JSON.parse(JSON.stringify(antes));
+    C.pos.forEach(function(x){ delete P[x.codigo]; }); Object.keys(novo).forEach(function(c){ P[c]=novo[c]; });
+    DB.settings.invPesos=P; if(!save()){ DB.settings.invPesos=antes; customAlert(SAVE_FAIL_MSG,"Pesos"); return; } rInvest(); try{ qrToast("⚖️ Pesos de "+C.nome+" salvos",3000); }catch(e){} };
+  document.querySelectorAll("[data-pesoiguais]").forEach(function(b){ b.onclick=function(){ gravar(b.dataset.pesoiguais,{}); }; });
+  document.querySelectorAll("[data-pesosalva]").forEach(function(b){ b.onclick=function(){ var k=b.dataset.pesosalva, novo={}, ruim=false;
+    document.querySelectorAll('.cls-pesos[data-pesosed="'+k+'"] [data-peso]').forEach(function(i){ var t=String(i.value||"").trim(); var v=t?parseBR(t):0; if(!(isFinite(v)&&v>=0&&v<=100)) ruim=true; novo[i.dataset.peso]=Math.round(v*100)/100; });
+    var r=resPesosSoma(k);
+    if(ruim){ customAlert("Peso inválido. Use números de 0 a 100.","Pesos"); return; }
+    if(!r.alg){ gravar(k,{}); return; }
+    if(Math.abs(r.soma-100)>0.01){ customAlert("Os pesos de "+RES_CLS[k].nome+" precisam somar 100% (agora: "+brDec(r.soma,r.soma%1?2:0)+"%). Deixe todos em branco para partes iguais.","Pesos"); return; }
+    gravar(k,novo); }; });
+}
 function resMeusAtivosLigar(){
+  try{ resPesosLigar(); }catch(e){ rmLogErr(e,"pesos-ligar"); }
   var R=null; var achar=function(k){ if(!R) R=resCalc(); return R.pos.find(function(x){ return x.key===k; }); };
   document.querySelectorAll(".meus-ativos .pos-lin[data-pos]").forEach(function(l){
     var abrir=function(){ var k=l.dataset.pos, det=document.querySelector('.pos-det[data-det="'+CSS.escape(k)+'"]'); if(!det) return;
@@ -15831,6 +15917,156 @@ function fabCompra(){
   try{ var op=document.getElementById("invOp"); if(op&&op.value!=="compra"){ op.value="compra"; op.dispatchEvent(new Event("change",{bubbles:true})); } var d=document.getElementById("invData"); if(d) d.focus(); }catch(e){ rmLogErr(e,"fab-compra-foco"); }
 }
 try{ window.RM.resCalc=resCalc; window.RM.resEvolucao=resEvolucao; }catch(e){ rmLogErr(e); }
+/* ---------- RELATÓRIO PARA O IRPF (declaração anual) ----------
+   Aba Investimentos › IRPF. Monta, para o ano escolhido, o que vai em cada ficha da declaração:
+   · Bens e Direitos: cada posição em 31/12 do ano anterior e do ano, pelo CUSTO (preço médio), nunca pela cotação.
+     Códigos (guias das corretoras para IRPF 2025/2026): Ações 03/01 · FII 07/03 · ETF 07/06 · Tesouro e CDB 04/02.
+   · Rendimentos isentos: dividendos (linha 09), rendimentos de FII (linha 99 – Outros),
+     lucro em vendas de ações no mês com vendas até a isenção (linha 20).
+   · Tributação exclusiva: JCP (linha 10), rendimentos de Tesouro/CDB registrados (linha 06).
+   · Renda variável: resumo mês a mês das vendas (mesma conta do IR estimado).
+   Só leitura. Não é apuração oficial: confira com os informes da corretora e no programa da Receita. */
+var IRPF_COD={acao:{g:"03",c:"01",nome:"Ações (inclusive as listadas em bolsa)",tipo:"ações"},fii:{g:"07",c:"03",nome:"Fundos Imobiliários (FII)",tipo:"cotas do FII"},etf:{g:"07",c:"06",nome:"Fundos de índice (ETF)",tipo:"cotas do ETF"},tesouro:{g:"04",c:"02",nome:"Títulos públicos e privados sujeitos à tributação (Tesouro Direto, CDB…)",tipo:"títulos do Tesouro Direto"},cdb:{g:"04",c:"02",nome:"Títulos públicos e privados sujeitos à tributação (Tesouro Direto, CDB…)",tipo:"CDB"}};
+if(typeof window.__irpfAno!=="number") window.__irpfAno=0;
+function irpfAnos(){
+  var a={}, hoje=+todayISO().slice(0,4);
+  (DB.invMovs||[]).forEach(function(m){ if(m&&validISO(m.data)){ for(var y=+m.data.slice(0,4);y<=hoje;y++) a[y]=1; } });
+  (DB.invProventos||[]).forEach(function(p){ if(p&&validISO(p.dataPag)) a[+p.dataPag.slice(0,4)]=1; });
+  var l=Object.keys(a).map(Number).filter(function(y){ return y<=hoje; }).sort(function(x,y){ return y-x; });
+  return l.length?l:[hoje];
+}
+function irpfAnoPadrao(){ var l=irpfAnos(), hoje=+todayISO().slice(0,4); return l.indexOf(hoje-1)>=0?hoje-1:l[0]; }
+function irpfCalc(ano){
+  var fim=ano+"-12-31", fimAnt=(ano-1)+"-12-31", ini=ano+"-01-01", R={ano:ano,bens:[],div:[],fii:[],outros:[],jcp:[],aplic:[],meses:[],isentoAcoes:0,totBensAnt:0,totBens:0};
+  var chaves={}; (DB.invMovs||[]).forEach(function(m){ if(!m) return; var c=String(m.codigo||"").trim().toUpperCase(); chaves[String(m.conta)+"||"+c]={conta:m.conta,codigo:c}; });
+  Object.keys(chaves).sort().forEach(function(k){ var c=chaves[k], a=null, b=null; try{ a=invPosicaoDe(c.conta,c.codigo,fimAnt,null); b=invPosicaoDe(c.conta,c.codigo,fim,null); }catch(e){ return; }
+    var qa=a&&a.qtd>0.0000001?a.qtd:0, qb=b&&b.qtd>0.0000001?b.qtd:0; if(!qa&&!qb) return;
+    var t=null; try{ t=invDistTipo(c.conta,c.codigo); }catch(e){} var C=IRPF_COD[t]||IRPF_COD.acao;
+    var cA=qa?Math.round(a.total*100)/100:0, cB=qb?Math.round(b.total*100)/100:0, conta=""; try{ conta=contaNome(c.conta); }catch(e){}
+    var disc=qb?(rendaQtdTxt(qb)+" "+C.tipo+" "+c.codigo+", preço médio "+BRL(b.pm)+", custo total "+BRL(cB)+". Custódia: "+conta+". CNPJ: (ver no informe da corretora)."):("Posição de "+c.codigo+" zerada em "+ano+" (vendida). Custódia: "+conta+".");
+    R.bens.push({codigo:c.codigo,conta:conta,tipo:t,g:C.g,c:C.c,nome:C.nome,qtdAnt:qa,custoAnt:cA,qtd:qb,custo:cB,disc:disc});
+    R.totBensAnt+=cA; R.totBens+=cB; });
+  var add=function(lista,cod,v,extra){ var x=lista.find(function(i){ return i.codigo===cod; }); if(!x){ x={codigo:cod,valor:0,bruto:0,ir:0}; lista.push(x); } x.valor+=v; if(extra){ x.bruto+=extra.bruto; x.ir+=extra.ir; } };
+  (DB.invProventos||[]).forEach(function(p){ if(!p||!validISO(p.dataPag)||p.dataPag<ini||p.dataPag>fim||p.dataPag>todayISO()) return;
+    var cod=String(p.codigo||"").trim().toUpperCase(), t=null; try{ t=invDistTipo(p.conta,cod); }catch(e){}
+    var liq=Number(invProvValor(p))||0, br=Number(invProvBruto(p))||0;
+    if(p.tipo==="jcp") add(R.jcp,cod,liq,{bruto:br,ir:Math.round((br-liq)*100)/100});
+    else if(t==="fii") add(R.fii,cod,liq);
+    else if(t==="tesouro"||t==="cdb") add(R.aplic,cod,liq);
+    else if(p.tipo==="dividendo") add(R.div,cod,liq);
+    else add(R.outros,cod,liq); });
+  try{ invIrResumoMeses().forEach(function(m){ if(String(m.mes).slice(0,4)!==String(ano)) return; R.meses.push(m); if(m.isentoAcoes&&m.lucroAcoes>0) R.isentoAcoes+=m.lucroAcoes; }); }catch(e){ rmLogErr(e,"irpf-vendas"); }
+  ["totBensAnt","totBens","isentoAcoes"].forEach(function(f){ R[f]=Math.round(R[f]*100)/100; });
+  [R.div,R.fii,R.outros,R.jcp,R.aplic].forEach(function(l){ l.forEach(function(x){ x.valor=Math.round(x.valor*100)/100; x.bruto=Math.round(x.bruto*100)/100; x.ir=Math.round(x.ir*100)/100; }); l.sort(function(a,b){ return b.valor-a.valor; }); });
+  return R;
+}
+function irpfSoma(l,f){ return Math.round(l.reduce(function(s,x){ return s+(x[f||"valor"]||0); },0)*100)/100; }
+function irpfListaHTML(tit,linha,lista,vazio,jcp){
+  var tot=irpfSoma(lista);
+  var h='<div class="irpf-bloco"><div class="irpf-lin-tit"><b>'+esc(tit)+'</b><span class="irpf-cod">'+esc(linha)+'</span><b class="irpf-tot">'+esc(BRL(tot))+'</b></div>';
+  if(!lista.length) return h+'<div class="sub">'+esc(vazio)+'</div></div>';
+  h+='<table class="tbl irpf-tbl"><tbody>'+lista.map(function(x){ return '<tr><td class="l"><b>'+esc(x.codigo)+'</b></td>'+(jcp?'<td>bruto '+esc(BRL(x.bruto))+' · IR '+esc(BRL(x.ir))+'</td>':'')+'<td><b>'+esc(BRL(x.valor))+'</b></td></tr>'; }).join("")+'</tbody></table>';
+  return h+'</div>';
+}
+function irpfTabHTML(){
+  var anos=irpfAnos(); if(anos.indexOf(window.__irpfAno)<0) window.__irpfAno=irpfAnoPadrao();
+  var ano=window.__irpfAno, R=irpfCalc(ano), hoje=todayISO(), parcial=String(ano)===hoje.slice(0,4);
+  var h='<div class="irpf-main"><div class="card irpf-topo"><div class="irpf-ano"><label class="f">Ano-calendário<select id="irpfAno">'+anos.map(function(y){ return '<option value="'+y+'"'+(y===ano?' selected':'')+'>'+y+' (declaração de '+(y+1)+')</option>'; }).join("")+'</select></label>'
+    +'<div class="sub">'+(parcial?'⚠️ '+ano+' ainda não terminou: os números vão mudar até 31/12. ':'')+'Use junto com os informes de rendimentos da corretora e das empresas. Os códigos vêm dos guias das corretoras; confira no programa da Receita. Não é apuração oficial.</div></div></div>';
+  /* Bens e Direitos */
+  h+='<div class="card"><h3>📦 Bens e Direitos<button type="button" class="infoBtn" data-tip="Cada ativo em 31/12 pelo CUSTO de compra (quantidade × preço médio), nunca pela cotação. Situação em 31/12 do ano anterior e do ano. Ativo vendido no ano aparece com o ano atual zerado. O CNPJ da empresa/fundo está no informe da corretora. O dinheiro parado na conta da corretora vai em 06/01 (Depósito em conta), com o saldo do extrato de 31/12." aria-label="Sobre Bens e Direitos">i</button></h3>';
+  if(!R.bens.length) h+='<div class="empty">Nenhum ativo em 31/12/'+(ano-1)+' nem em 31/12/'+ano+'.</div>';
+  else{
+    h+='<div class="irpf-bens">'+R.bens.map(function(b,i){ return '<div class="irpf-bem"><div class="irpf-bem-top"><span class="irpf-gc">Grupo '+b.g+' · Código '+b.c+'</span><b>'+esc(b.codigo)+'</b><span class="sub">'+esc(b.nome)+'</span></div>'
+      +'<div class="irpf-sit"><div><small>31/12/'+(ano-1)+'</small><b>'+esc(BRL(b.custoAnt))+'</b></div><div><small>31/12/'+ano+'</small><b>'+esc(BRL(b.custo))+'</b></div></div>'
+      +'<div class="irpf-disc"><span>'+esc(b.disc)+'</span><button type="button" class="btn sm accent" data-irpfcopia="'+i+'">Copiar</button></div></div>'; }).join("")+'</div>'
+      +'<div class="kv"><span>Total pelo custo</span><b>'+esc(BRL(R.totBensAnt))+' → '+esc(BRL(R.totBens))+'</b></div>';
+  }
+  h+='</div>';
+  /* Rendimentos */
+  h+='<div class="irpf-cols"><div class="card"><h3>✅ Rendimentos isentos e não tributáveis</h3>'
+    +irpfListaHTML("Dividendos","Linha 09",R.div,"Nenhum dividendo recebido em "+ano+".")
+    +irpfListaHTML("Rendimentos de FII","Linha 99 – Outros",R.fii,"Nenhum rendimento de FII em "+ano+".")
+    +'<div class="irpf-bloco"><div class="irpf-lin-tit"><b>Lucro em vendas de ações (mês com vendas até '+esc(BRL(invIrSettings().isencaoAcoesMes))+')</b><span class="irpf-cod">Linha 20</span><b class="irpf-tot">'+esc(BRL(R.isentoAcoes))+'</b></div></div>'
+    +(R.outros.length?irpfListaHTML("Outros rendimentos registrados","Confira no informe",R.outros,""):"")
+    +'</div><div class="card"><h3>🧾 Tributação exclusiva/definitiva</h3>'
+    +irpfListaHTML("Juros sobre capital próprio (JCP)","Linha 10",R.jcp,"Nenhum JCP recebido em "+ano+".",true)
+    +irpfListaHTML("Rendimentos de Tesouro/CDB registrados","Linha 06",R.aplic,"Nenhum rendimento de Tesouro/CDB registrado em "+ano+".")
+    +'<div class="sub">O JCP já vem com 15% de IR retido; informe o valor do informe de rendimentos da empresa (normalmente o líquido).</div></div></div>';
+  /* Renda variável */
+  h+='<div class="card"><h3>📊 Renda variável (ganhos de capital, mês a mês)<button type="button" class="infoBtn" data-tip="Mesma conta do IR estimado: lucro = (preço de venda − preço médio na data) × quantidade, sem compensar prejuízo de meses anteriores. Na declaração: ficha Renda Variável › Operações comuns/day trade (ações e ETF) e Operações de fundos de investimento imobiliário (FII), mês a mês." aria-label="Sobre renda variável">i</button></h3>';
+  if(!R.meses.length) h+='<div class="empty">Nenhuma venda de ação, FII ou ETF em '+ano+'.</div>';
+  else h+='<div class="tblwrap"><table class="tbl"><thead><tr><th style="text-align:left">Mês</th><th>Vendas ações</th><th>Lucro ações</th><th>Lucro FII</th><th>Lucro ETF</th><th>Day trade</th><th>IR estimado</th></tr></thead><tbody>'
+    +R.meses.map(function(m){ return '<tr><td class="l">'+esc(m.mes.slice(5,7)+"/"+m.mes.slice(0,4))+'</td><td>'+esc(BRL(m.vendasAcoes))+'</td><td>'+esc(BRL(m.lucroAcoes))+(m.isentoAcoes?' <span class="sub" style="display:inline">isento</span>':'')+'</td><td>'+esc(BRL(m.lucroFii))+'</td><td>'+esc(BRL(m.lucroEtf))+'</td><td>'+esc(BRL(m.lucroDay))+'</td><td><b>'+esc(BRL(m.total))+'</b></td></tr>'; }).join("")+'</tbody></table></div>';
+  h+='</div></div>';
+  return h;
+}
+function irpfLigar(){
+  var s=document.getElementById("irpfAno"); if(s) s.onchange=function(){ window.__irpfAno=Number(s.value)||0; rInvest(); };
+  var R=null;
+  document.querySelectorAll("[data-irpfcopia]").forEach(function(b){ b.onclick=function(){ if(!R) R=irpfCalc(window.__irpfAno); var x=R.bens[Number(b.dataset.irpfcopia)]; if(!x) return;
+    var ok=function(){ b.textContent="✓ Copiado"; setTimeout(function(){ b.textContent="Copiar"; },1800); };
+    try{ navigator.clipboard.writeText(x.disc).then(ok,function(){ customAlert(x.disc,"Copie o texto"); }); }catch(e){ customAlert(x.disc,"Copie o texto"); } }; });
+}
+try{ window.RM.irpfCalc=irpfCalc; }catch(e){ rmLogErr(e); }
+/* ---------- PROVENTOS: MÊS A MÊS + POR ATIVO (yield on cost) ----------
+   Aba Investimentos › Proventos. Só leitura.
+   · Por mês: líquido recebido em cada um dos últimos 12 meses (pagamento até hoje) e o que está a receber nos próximos.
+   · Por ativo: recebido em 12 meses, total recebido, custo atual da posição,
+     yield on cost 12m = recebido em 12 meses ÷ custo atual; estimado/ano (mesma conta da renda estimada) e yield estimado. */
+var PROVM=null;
+function provMesesCalc(){
+  var hoje=todayISO(), y=+hoje.slice(0,4), m=+hoje.slice(5,7), meses=[], idx={};
+  for(var i=11;i>=-2;i--){ var d=new Date(y,m-1-i,1), k=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); idx[k]=meses.length; meses.push({key:k,rec:0,fut:0,futuro:i<0}); }
+  (DB.invProventos||[]).forEach(function(p){ if(!p||!validISO(p.dataPag)) return; var k=p.dataPag.slice(0,7); if(idx[k]==null) return; var v=Number(invProvValor(p))||0; if(p.dataPag<=hoje) meses[idx[k]].rec+=v; else meses[idx[k]].fut+=v; });
+  meses.forEach(function(x){ x.rec=Math.round(x.rec*100)/100; x.fut=Math.round(x.fut*100)/100; });
+  var ult=meses.filter(function(x){ return !x.futuro; }), tot=ult.reduce(function(s,x){ return s+x.rec; },0);
+  var melhor=ult.reduce(function(a,x){ return (!a||x.rec>a.rec)?x:a; },null);
+  var comRec=ult.filter(function(x){ return x.rec>0.004; }).length;
+  return {meses:meses,tot:Math.round(tot*100)/100,media:Math.round(tot/12*100)/100,melhor:melhor,comRec:comRec};
+}
+function provAtivosCalc(){
+  var hoje=todayISO(), ini=somaDiasISO(hoje,-365), por={};
+  var pega=function(cod){ if(!por[cod]) por[cod]={codigo:cod,r12:0,tot:0,custo:0,qtd:0,tipo:null,est:null}; return por[cod]; };
+  (DB.invProventos||[]).forEach(function(p){ if(!p||!validISO(p.dataPag)||p.dataPag>hoje) return; var x=pega(String(p.codigo||"").trim().toUpperCase()); var v=Number(invProvValor(p))||0; x.tot+=v; if(p.dataPag>ini) x.r12+=v; });
+  try{ var map=invPosicoes(null); Object.keys(map).forEach(function(k){ var p=map[k]; if(!p||!(p.qtd>0.0000001)) return; var t=null; try{ t=invDistTipo(p.conta,p.codigo); }catch(e){} if(t!=="acao"&&t!=="fii"&&t!=="etf"&&!por[p.codigo]) return; var x=pega(p.codigo); x.custo+=p.total; x.qtd+=p.qtd; x.tipo=t; }); }catch(e){ rmLogErr(e,"prov-ativos"); }
+  var l=Object.keys(por).map(function(c){ var x=por[c]; x.r12=Math.round(x.r12*100)/100; x.tot=Math.round(x.tot*100)/100; x.custo=Math.round(x.custo*100)/100;
+    x.yoc=x.custo>0.004?x.r12/x.custo*100:null;
+    if(x.qtd>0&&(x.tipo==="acao"||x.tipo==="fii")){ var r=null; try{ r=rendaPorCota(c); }catch(e){} if(r){ x.est=Math.round(x.qtd*r.v*100)/100; x.yocEst=x.custo>0.004?x.est/x.custo*100:null; } }
+    return x; });
+  l.sort(function(a,b){ return (b.r12-a.r12)||((b.est||0)-(a.est||0)); });
+  return l;
+}
+function provMaisHTML(){
+  var M=provMesesCalc(), A=provAtivosCalc(); PROVM=M;
+  if(!M.tot&&!A.some(function(x){ return x.tot>0||x.est>0; })&&!M.meses.some(function(x){ return x.fut>0; })) return "";
+  var h='<div class="prov-mais"><div class="card prov-mes"><h3>📅 Proventos mês a mês<button type="button" class="infoBtn" data-tip="Líquido recebido em cada mês (pela data de pagamento). Os dois últimos meses, mais claros, são o que já está registrado como a receber." aria-label="Sobre o gráfico">i</button></h3>'
+    +'<div class="prov-kpis"><div><small>Últimos 12 meses</small><b>'+esc(BRL(M.tot))+'</b></div><div><small>Média por mês</small><b>'+esc(BRL(M.media))+'</b></div><div><small>Melhor mês</small><b>'+(M.melhor&&M.melhor.rec>0?esc(PLANO_MES[+M.melhor.key.slice(5,7)-1].slice(0,3)+"/"+M.melhor.key.slice(2,4)+" · "+BRL(M.melhor.rec)):"—")+'</b></div><div><small>Meses com provento</small><b>'+M.comRec+' de 12</b></div></div>'
+    +'<canvas id="provMesCv" class="chart" height="200" aria-label="Proventos mês a mês"></canvas></div>';
+  var linhas=A.filter(function(x){ return x.tot>0||x.est>0||x.qtd>0; });
+  h+='<div class="card prov-ativos"><h3>🏅 Por ativo<button type="button" class="infoBtn" data-tip="Yield on cost = quanto o ativo pagou nos últimos 12 meses ÷ quanto você pagou nele (custo da posição de hoje). Estimado/ano = quantidade × proventos por cota em 12 meses (do arquivo de cotações ou dos seus registros). Ordem: quem mais pagou em 12 meses." aria-label="Sobre o ranking">i</button></h3>';
+  if(!linhas.length) h+='<div class="empty">Sem ativos com proventos ainda.</div>';
+  else h+='<div class="tblwrap"><table class="tbl prov-rank"><thead><tr><th style="text-align:left">Ativo</th><th>Recebido 12m</th><th>Total recebido</th><th>Custo hoje</th><th title="Recebido em 12 meses ÷ custo da posição">Yield on cost</th><th>Estimado/ano</th><th title="Estimado por ano ÷ custo da posição">Yield estimado</th></tr></thead><tbody>'
+    +linhas.map(function(x){ return '<tr><td class="l"><b>'+esc(x.codigo)+'</b>'+(x.qtd>0?'':'<br><span class="sub" style="display:inline">vendido</span>')+'</td><td data-rot="Recebido 12m">'+esc(BRL(x.r12))+'</td><td data-rot="Total">'+esc(BRL(x.tot))+'</td><td data-rot="Custo">'+(x.custo>0?esc(BRL(x.custo)):"—")+'</td><td data-rot="Yield on cost"><b>'+(x.yoc!=null?esc(brDec(x.yoc,2))+"%":"—")+'</b></td><td data-rot="Estimado/ano">'+(x.est!=null?esc(BRL(x.est)):"—")+'</td><td data-rot="Yield estimado">'+(x.yocEst!=null?esc(brDec(x.yocEst,2))+"%":"—")+'</td></tr>'; }).join("")+'</tbody></table></div>';
+  return h+'</div></div>';
+}
+function provMesDesenhar(){
+  var cv=document.getElementById("provMesCv"); if(!cv||!PROVM) return;
+  var E=PROVM.meses, T=TH(), dpr=window.devicePixelRatio||1, W=cv.clientWidth||600, H=Math.max(170,Math.min(240,Math.round(W*0.32)));
+  cv.width=W*dpr; cv.height=H*dpr; cv.style.height=H+"px"; var ctx=cv.getContext("2d"); ctx.scale(dpr,dpr); ctx.fillStyle=T.bg; ctx.fillRect(0,0,W,H);
+  var mx=Math.max.apply(null,E.map(function(e){ return e.rec+e.fut; }).concat([1]))*1.15;
+  var L=46,R=8,Tp=16,B=22, Y=function(v){ return Tp+(H-Tp-B)*(1-v/mx); };
+  ctx.font="11px sans-serif"; ctx.strokeStyle=T.grid; ctx.fillStyle=T.mut;
+  for(var g=0;g<=3;g++){ var v=mx*g/3, y=Y(v); ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(W-R,y); ctx.stroke(); ctx.fillText(brDec(v,0),4,y+4); }
+  var n=E.length, bw=(W-L-R)/n, larg=Math.max(6,Math.min(30,bw*0.6)), passo=W<420?2:1;
+  E.forEach(function(e,i){ var x=L+bw*i+(bw-larg)/2;
+    if(e.rec>0){ ctx.fillStyle="#4caf7d"; ctx.fillRect(x,Y(e.rec),larg,Y(0)-Y(e.rec)); }
+    if(e.fut>0){ ctx.fillStyle="rgba(76,175,125,.35)"; ctx.fillRect(x,Y(e.rec+e.fut),larg,Y(e.rec)-Y(e.rec+e.fut)); }
+    var tot=e.rec+e.fut; if(tot>0&&bw>34){ ctx.fillStyle=T.txt; var t=brDec(tot,0), tw=ctx.measureText(t).width; ctx.fillText(t,x+larg/2-tw/2,Y(tot)-4); }
+    if(i%passo===0){ ctx.fillStyle=T.mut; var r=PLANO_MES[+e.key.slice(5,7)-1].slice(0,3), rw=ctx.measureText(r).width; ctx.fillText(r,x+larg/2-rw/2,H-7); } });
+}
+window.addEventListener("resize",function(){ try{ if(document.getElementById("provMesCv")) provMesDesenhar(); }catch(e){} });
+try{ window.RM.provMesesCalc=provMesesCalc; window.RM.provAtivosCalc=provAtivosCalc; }catch(e){ rmLogErr(e); }
 /* primeira tela: só depois de todos os módulos (antes, cartões que usam listas definidas mais abaixo falhavam na abertura) */
 try{ show(current||"dashboard"); }catch(e){ rmLogErr(e,"primeira-tela"); }
 
