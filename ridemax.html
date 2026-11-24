@@ -1905,6 +1905,8 @@ var DEFAULT_CATS = [
 ];
 /* ---------- utils ---------- */
 function uid(){ return "id"+Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36); }
+/* Alvo da carteira por classe (Ações, FIIs, ETFs, Renda fixa): pesos de 0 a 100 que somam 100; senão null. */
+function invAlvoClassesNorm(o){ if(!o||typeof o!=="object"||Array.isArray(o)) return null; var r={}, s=0, ks=["acao","fii","etf","fixa"]; for(var i=0;i<ks.length;i++){ var x=o[ks[i]], n=(x==null||x==="")?0:Number(x); if(!(isFinite(n)&&n>=0&&n<=100)) return null; r[ks[i]]=Math.round(n*100)/100; s+=r[ks[i]]; } return Math.abs(s-100)<0.001?r:null; }
 function isFuturo(iso){ try{ return String(iso||"")>todayISO(); }catch(e){ return false; } }
 var SAVE_FAIL_MSG="N\u00e3o foi poss\u00edvel salvar. Exporte um backup e libere espa\u00e7o.";
 function todayISO(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
@@ -2165,6 +2167,7 @@ function sanitizeSettings(s){
     var _mm8e=Number(_iv8e.metaRendaMensal); d.inv.metaRendaMensal=(isFinite(_mm8e)&&_mm8e>=0)?Math.round(_mm8e*100)/100:0;
     var _af8e=Number(_iv8e.alvoFixa), _av8e=Number(_iv8e.alvoVariavel);
     if(isFinite(_af8e)&&isFinite(_av8e)&&_af8e>=0&&_af8e<=100&&_av8e>=0&&_av8e<=100&&Math.abs(_af8e+_av8e-100)<0.000001){ d.inv.alvoFixa=_af8e; d.inv.alvoVariavel=_av8e; }
+    var _ac8e=invAlvoClassesNorm(_iv8e.alvoClasses); if(_ac8e){ d.inv.alvoClasses=_ac8e; d.inv.alvoFixa=_ac8e.fixa; d.inv.alvoVariavel=Math.round((100-_ac8e.fixa)*100)/100; }
     /* FASE 8H — reserva de emergência: meses (padrão 6) e custo de vida manual (padrão vazio); backup antigo abre com os padrões. */
     var _mr8h=Number(_iv8e.mesesReserva); d.inv.mesesReserva=(isFinite(_mr8h)&&_mr8h>=1&&_mr8h<=120)?Math.round(_mr8h):6;
     var _cv8h=_iv8e.custoVidaManual; if(_cv8h===""||_cv8h==null){ d.inv.custoVidaManual=""; } else { var _cvn8h=parseBR(String(_cv8h)); d.inv.custoVidaManual=(isFinite(_cvn8h)&&_cvn8h>=0)?Math.round(_cvn8h*100)/100:""; }
@@ -9161,11 +9164,12 @@ function invProvTabHTML(){
    meses desde o primeiro se <12). Distribuição: fixa = tesouro+cdb (sempre pelo
    custo), variável = acao+fii+etf (cotação, ou custo se sem cotação). */
 function invAcompSettings(){
-  var d={metaRendaMensal:0,alvoFixa:66,alvoVariavel:34,cdiAnual:"",cdiData:null,mesesReserva:6,custoVidaManual:"",selic:"",selicData:null,ir:{isencaoAcoesMes:20000,aliqAcoes:15,aliqDayTrade:20,aliqFii:20,aliqEtf:15}};
+  var d={metaRendaMensal:0,alvoFixa:66,alvoVariavel:34,alvoClasses:null,cdiAnual:"",cdiData:null,mesesReserva:6,custoVidaManual:"",selic:"",selicData:null,ir:{isencaoAcoesMes:20000,aliqAcoes:15,aliqDayTrade:20,aliqFii:20,aliqEtf:15}};
   try{ var s=DB.settings&&DB.settings.inv; if(s&&typeof s==="object"&&!Array.isArray(s)){
     var m=Number(s.metaRendaMensal); d.metaRendaMensal=(isFinite(m)&&m>=0)?Math.round(m*100)/100:0;
     var f=Number(s.alvoFixa), v=Number(s.alvoVariavel);
     if(isFinite(f)&&isFinite(v)&&f>=0&&f<=100&&v>=0&&v<=100&&Math.abs(f+v-100)<0.000001){ d.alvoFixa=f; d.alvoVariavel=v; }
+    var _ac=invAlvoClassesNorm(s.alvoClasses); if(_ac){ d.alvoClasses=_ac; d.alvoFixa=_ac.fixa; d.alvoVariavel=Math.round((100-_ac.fixa)*100)/100; }
     if(s.cdiAnual===""||s.cdiAnual==null){ d.cdiAnual=""; d.cdiData=null; }
     else{ var _cn=Number(String(s.cdiAnual).replace(",",".")); if(isFinite(_cn)&&_cn>0&&_cn<=100){ d.cdiAnual=Math.round(_cn*100)/100; d.cdiData=(typeof s.cdiData==="string"&&validISO(s.cdiData))?s.cdiData:null; } }
     if(s.selic===""||s.selic==null){ d.selic=""; d.selicData=null; }
@@ -9187,6 +9191,28 @@ function invSelicLinhaHTML(){ var _s=null; try{ _s=invSelicGet(); }catch(e){ _s=
 function invSimPrazo(inicial,aporteMensal,taxaAnualPct,anos){ var _P=Math.round(Number(inicial)*100)/100; var _A=Math.round(Number(aporteMensal)*100)/100; var _t=Number(taxaAnualPct); var _n=Math.round(Number(anos))*12; if(!(_P>=0)||!(_A>=0)||!(_t>=0)||!(_n>0)) return null; var _fv; if(!(_t>0)){ _fv=_P+_A*_n; } else { var _i=Math.pow(1+_t/100,1/12)-1; var _f=Math.pow(1+_i,_n); _fv=_P*_f+_A*((_f-1)/_i); } var _tot=Math.round(_fv*100)/100; var _apo=Math.round((_P+_A*_n)*100)/100; return {anos:Math.round(Number(anos)),meses:_n,total:_tot,aportado:_apo,juros:Math.round((_tot-_apo)*100)/100}; }
 function invSimular(inicial,aporteMensal,taxaAnualPct){ var _P=Number(inicial), _A=Number(aporteMensal), _t=Number(taxaAnualPct); if(!(isFinite(_P)&&_P>=0&&_P<=1000000000000)) return {ok:false,msg:"Valor inicial inválido. Use 0 ou mais."}; if(!(isFinite(_A)&&_A>=0&&_A<=1000000000000)) return {ok:false,msg:"Aporte mensal inválido. Use 0 ou mais."}; if(!(isFinite(_t)&&_t>=0&&_t<=100)) return {ok:false,msg:"Taxa anual inválida. Use de 0 a 100."}; var _l=[]; for(var k=0;k<3;k++){ var _a=[10,20,30][k]; var _r=invSimPrazo(_P,_A,_t,_a); if(!_r) return {ok:false,msg:"Falha no cálculo."}; _l.push(_r); } return {ok:true,inicial:Math.round(_P*100)/100,aporte:Math.round(_A*100)/100,taxa:Math.round(_t*100)/100,linhas:_l}; }
 function invSimTabHTML(){ var _i=(typeof window.__invSimIni==="string")?window.__invSimIni:""; var _a=(typeof window.__invSimApo==="string")?window.__invSimApo:""; var _t=(typeof window.__invSimTaxa==="string")?window.__invSimTaxa:""; var _res=""; try{ if(String(_i).trim()!==""||String(_a).trim()!==""||String(_t).trim()!==""){ var _r=invSimular(parseBR(_i===""?"0":_i),parseBR(_a===""?"0":_a),parseBR(_t===""?"0":_t)); if(_r.ok){ var _rh=""; for(var k=0;k<_r.linhas.length;k++){ var _L=_r.linhas[k]; _rh+='<tr><td class="l"><b>'+_L.anos+' anos</b></td><td style="white-space:nowrap"><b>'+BRL(_L.total)+'</b></td><td style="white-space:nowrap">'+BRL(_L.aportado)+'</td><td style="white-space:nowrap">'+BRL(_L.juros)+'</td></tr>'; } _res='<div class="tblwrap"><table class="tbl"><thead><tr><th style="text-align:left">Prazo</th><th>Total final</th><th>Aportado</th><th>Juros</th></tr></thead><tbody>'+_rh+'</tbody></table></div>'; } } }catch(e){rmLogErr(e)} var _h='<div class="card"><h3>Simulador de juros compostos<button type="button" class="infoBtn" data-tip="Só leitura: nada grava, não mexe em saldo, DRE, MEI nem investimentos. Taxa mensal = (1 + anual)^(1/12) − 1; aporte no fim de cada mês." aria-label="Sobre este bloco">i</button></h3>'; if(_res){ _h+='<div style="margin-top:8px">'+_res+'</div>'; } else { _h+='<div class="empty">Sem simulação. Abra e calcule.</div>'; } _h+='<div class="btnrow" style="margin-top:8px"><button class="btn sm green" id="invSimEditBtn">Simular</button></div></div>'; return _h; }
+/* Campos do painel Metas e alvos: um peso por classe + soma ao vivo. Sem pesos salvos ainda,
+   parte do alvo antigo (fixa × variável, com a variável toda em Ações). */
+function invAlvoCamposHTML(st){
+  var ac=(st&&st.alvoClasses)||{etf:0,acao:st?st.alvoVariavel:34,fii:0,fixa:st?st.alvoFixa:66};
+  var h='<div class="f" style="grid-column:1/-1"><b>Distribuição alvo da carteira (%)</b><span class="tip">Mude quando quiser. Os pesos precisam somar 100. A reserva de emergência fica fora.</span></div>';
+  INV_CLASSES.forEach(function(c){ var x=Number(ac[c.k])||0; h+='<label class="f">'+esc(c.nome)+' (%)<input data-alvocl="'+c.k+'" inputmode="decimal" value="'+esc(brDec(x,x%1?2:0))+'"></label>'; });
+  return h+'<div class="sub" id="invAlvoSoma" style="grid-column:1/-1"></div>';
+}
+function invAlvoLerCampos(){
+  var o={}, bad=null; document.querySelectorAll("[data-alvocl]").forEach(function(i){ var t=String(i.value||"").trim(); var n=t===""?0:parseBR(t); if(!(isFinite(n)&&n>=0&&n<=100)) bad=i; o[i.dataset.alvocl]=isFinite(n)?n:NaN; });
+  if(bad) return {ok:false,msg:"Peso inválido. Use números de 0 a 100 (vazio = 0)."};
+  var s=0; Object.keys(o).forEach(function(k){ s+=o[k]; }); s=Math.round(s*100)/100;
+  var c=invAlvoClassesNorm(o); if(!c) return {ok:false,msg:"Os pesos precisam somar 100% (agora: "+brDec(s,s%1?2:0)+"%)."};
+  return {ok:true,classes:c,soma:s};
+}
+function invAlvoSomaPintar(){
+  var el=document.getElementById("invAlvoSoma"); if(!el) return; var s=0;
+  document.querySelectorAll("[data-alvocl]").forEach(function(i){ var t=String(i.value||"").trim(); var n=t===""?0:parseBR(t); if(isFinite(n)) s+=n; }); s=Math.round(s*100)/100;
+  var fx=0; try{ var f=document.querySelector('[data-alvocl="fixa"]'); fx=f&&String(f.value).trim()!==""?parseBR(f.value):0; }catch(e){}
+  var okS=Math.abs(s-100)<0.001;
+  el.innerHTML='Soma: <b style="color:'+(okS?"#4caf7d":"#e0695c")+'">'+esc(brDec(s,s%1?2:0))+'%</b>'+(okS?' · '+esc(brDec(100-fx,(100-fx)%1?2:0))+'% renda variável / '+esc(brDec(fx,fx%1?2:0))+'% renda fixa':' — ajuste para dar 100%');
+}
 function invAcompValidarAlvos(f,v){
   if(!(isFinite(f)&&isFinite(v))) return {ok:false,msg:"Alvos inválidos. Use números de 0 a 100."};
   if(f<0||f>100||v<0||v>100) return {ok:false,msg:"Alvos precisam estar entre 0 e 100."};
@@ -9244,6 +9270,7 @@ function invDistTipo(contaId,codigo){
 function invDistribuicao(){
   var st=invAcompSettings();
   var F={valor:0,n:0,custo:true}, V={valor:0,n:0,custo:true}, R8h={valor:0,n:0};
+  var CL={acao:{valor:0,n:0,custo:true},fii:{valor:0,n:0,custo:true},etf:{valor:0,n:0,custo:true}};
   try{
     var map=invPosicoes(null);
     Object.keys(map).forEach(function(k){
@@ -9259,7 +9286,8 @@ function invDistribuicao(){
       var vCar8h=Math.round((v-vRes8h)*100)/100;
       R8h.valor=Math.round((R8h.valor+vRes8h)*100)/100; if(vRes8h>0.004) R8h.n++;
       if(fixa){ F.valor=Math.round((F.valor+vCar8h)*100)/100; if(vCar8h>0.004) F.n++; if(!pc) F.custo=false; }
-      else{ V.valor=Math.round((V.valor+vCar8h)*100)/100; if(vCar8h>0.004) V.n++; if(!pc) V.custo=false; }
+      else{ V.valor=Math.round((V.valor+vCar8h)*100)/100; if(vCar8h>0.004) V.n++; if(!pc) V.custo=false;
+        var _cl=CL[t]||CL.acao; _cl.valor=Math.round((_cl.valor+vCar8h)*100)/100; if(vCar8h>0.004) _cl.n++; if(!pc) _cl.custo=false; }
     });
   }catch(e){rmLogErr(e)}
   var total=Math.round((F.valor+V.valor)*100)/100;
@@ -9269,7 +9297,21 @@ function invDistribuicao(){
   return {reserva:{valor:R8h.valor,n:R8h.n},
     fixa:{valor:F.valor,pct:pf,alvoPct:st.alvoFixa,alvoR:alvoR_F,diff:Math.round((alvoR_F-F.valor)*100)/100,peloCusto:F.custo,n:F.n},
     variavel:{valor:V.valor,pct:pv,alvoPct:st.alvoVariavel,alvoR:alvoR_V,diff:Math.round((alvoR_V-V.valor)*100)/100,peloCusto:V.custo,n:V.n},
-    total:total,geral:Math.round((total+R8h.valor)*100)/100,vazia:((F.n+V.n+R8h.n)===0)};
+    total:total,geral:Math.round((total+R8h.valor)*100)/100,vazia:((F.n+V.n+R8h.n)===0),
+    classes:(function(){ if(!st.alvoClasses) return null; var Q={acao:CL.acao,fii:CL.fii,etf:CL.etf,fixa:F}; return INV_CLASSES.map(function(c){ var o=Q[c.k], ap=st.alvoClasses[c.k], ar=Math.round(total*ap)/100;
+      return {k:c.k,nome:c.nome,valor:o.valor,pct:total>0?Math.round(o.valor/total*10000)/100:0,alvoPct:ap,alvoR:ar,diff:Math.round((ar-o.valor)*100)/100,peloCusto:o.custo&&o.n>0,n:o.n}; }); })()};
+}
+var INV_CLASSES=[{k:"etf",nome:"ETFs"},{k:"acao",nome:"Ações"},{k:"fii",nome:"FIIs"},{k:"fixa",nome:"Renda fixa"}];
+/* Divide o aporte entre as classes sem vender nada: cada classe recebe o que falta para o alvo
+   (sobre o total depois do aporte); se o aporte não cobre tudo, divide na proporção do que falta;
+   se sobra, divide pelo peso do alvo. Com 2 classes dá o mesmo resultado da conta antiga. */
+function invDividirAporte(itens,a){
+  var T=0; itens.forEach(function(x){ T+=x.valor; }); var Tn=T+a, need=[], sn=0;
+  itens.forEach(function(x){ var q=Math.max(0,x.alvoPct*Tn/100-x.valor); need.push(q); sn+=q; });
+  var out=itens.map(function(x,i){ return sn>a?(sn>0?a*need[i]/sn:0):need[i]+(a-sn)*x.alvoPct/100; });
+  var r=out.map(function(v){ return Math.round(v*100)/100; }), dif=Math.round((a-r.reduce(function(s,v){ return s+v; },0))*100)/100;
+  if(Math.abs(dif)>0.0001){ var im=0; r.forEach(function(v,i){ if(v>r[im]) im=i; }); r[im]=Math.round((r[im]+dif)*100)/100; }
+  return r;
 }
 function invRebalance(aporte){
   var a=Number(aporte);
@@ -9282,7 +9324,13 @@ function invRebalance(aporte){
   var Tn=Math.round((T+a)*100)/100;
   var pf=Tn>0?Math.round((d.fixa.valor+f)/Tn*10000)/100:st.alvoFixa;
   var pv=Tn>0?Math.round((d.variavel.valor+v)/Tn*10000)/100:st.alvoVariavel;
-  return {ok:true,aporte:a,fixa:f,variavel:v,totalNovo:Tn,pctF:pf,pctV:pv,alvoF:st.alvoFixa,alvoV:st.alvoVariavel};
+  var cls=null; if(d.classes){ var _dv=invDividirAporte(d.classes,a); cls=d.classes.map(function(c,i){ return {k:c.k,nome:c.nome,valor:_dv[i],pctNovo:Tn>0?Math.round((c.valor+_dv[i])/Tn*10000)/100:c.alvoPct,alvoPct:c.alvoPct}; }); }
+  return {ok:true,aporte:a,fixa:f,variavel:v,totalNovo:Tn,pctF:pf,pctV:pv,alvoF:st.alvoFixa,alvoV:st.alvoVariavel,classes:cls};
+}
+function invRebalanceHTML(r){
+  if(r.classes) return r.classes.map(function(c){ return '<div class="kv"><span>Para '+esc(c.nome)+'</span><b>'+BRL(c.valor)+'</b></div>'; }).join("")
+    +'<div class="sub">Depois do aporte: '+r.classes.map(function(c){ return esc(c.nome)+" "+brDec(c.pctNovo,1)+"% (alvo "+brDec(c.alvoPct,0)+"%)"; }).join(" · ")+'.</div>';
+  return '<div class="kv"><span>Para a fixa</span><b>'+BRL(r.fixa)+'</b></div><div class="kv"><span>Para a variável</span><b>'+BRL(r.variavel)+'</b></div><div class="sub">Depois do aporte: '+String(r.pctF).replace(".",",")+'% fixa × '+String(r.pctV).replace(".",",")+'% variável.</div>';
 }
 /* ---------- FASE 8H — RESERVA DE EMERGÊNCIA (só leitura; nunca saldo/DRE/MEI/invProventos) ----------
    Compra pode levar a marca reserva:1 (só na compra; sem marca, como no backup
@@ -9380,8 +9428,8 @@ function invAcompTabHTML(){
   var st=invAcompSettings(), rp=invRendaPassiva(), dt=invDistribuicao();
   var hMetas='<div class="card"><h3>Metas e alvos<button type="button" class="infoBtn" data-tip="Só leitura no resto da tela: nada aqui grava movimento, nem mexe em saldo, DRE ou MEI." aria-label="Sobre este bloco">i</button></h3>'
     +'<div class="kv"><span>Meta de renda mensal</span><b>'+BRL(st.metaRendaMensal)+'</b></div>'
-    +'<div class="kv"><span>Alvo renda fixa</span><b>'+esc(String(st.alvoFixa).replace(".",","))+'%</b></div>'
-    +'<div class="kv"><span>Alvo renda variável</span><b>'+esc(String(st.alvoVariavel).replace(".",","))+'%</b></div>'
+    +(st.alvoClasses?INV_CLASSES.map(function(c){ return '<div class="kv"><span>Alvo '+esc(c.nome)+'</span><b>'+esc(brDec(st.alvoClasses[c.k],st.alvoClasses[c.k]%1?2:0))+'%</b></div>'; }).join(""):('<div class="kv"><span>Alvo renda fixa</span><b>'+esc(String(st.alvoFixa).replace(".",","))+'%</b></div>'
+    +'<div class="kv"><span>Alvo renda variável</span><b>'+esc(String(st.alvoVariavel).replace(".",","))+'%</b></div>'))
     +'<div class="kv"><span>Selic anual</span><b>'+esc(st.selic===""?"—":String(st.selic).replace(".",","))+(st.selic===""?"":'%')+'</b></div>'
     +'<div class="kv"><span>CDI anual</span><b>'+esc(st.cdiAnual===""?"—":String(st.cdiAnual).replace(".",","))+(st.cdiAnual===""?"":'%')+'</b></div>'
     +'<div class="btnrow"><button class="btn sm green" id="invAEditBtn">Editar metas</button></div></div>';
@@ -9407,17 +9455,19 @@ function invAcompTabHTML(){
       else _dt='<span style="color:#5a9fd4">'+BRL(Math.abs(_d))+' acima</span>';
       return '<tr><td class="l"><b>'+nome+'</b>'+(o.peloCusto?'<br><span style="font-size:11px;color:var(--muted)">pelo custo</span>':"")+'</td><td style="white-space:nowrap"><b>'+BRL(o.valor)+'</b><br><span style="font-size:11px;color:var(--muted)">'+String(o.pct).replace(".",",")+'%</span></td><td style="white-space:nowrap">'+String(o.alvoPct).replace(".",",")+'%</td><td style="white-space:nowrap">'+_dt+'</td></tr>';
     };
-    hDistrib+='<div class="card"><h3>Distribuição alvo × atual<button type="button" class="infoBtn" data-tip="'+esc('A reserva vem antes da carteira de risco: o alvo '+String(dt.fixa.alvoPct).replace(".",",")+'/'+String(dt.variavel.alvoPct).replace(".",",")+' vale só para o que não é reserva. Renda fixa = Tesouro (preço do arquivo; sem preço, pelo custo) + CDB (CDI até hoje; sem CDI ou sem %, pelo custo, bruto sem IR). Renda variável = ação + FII + ETF (cotação do último arquivo; sem cotação, pelo custo). Reserva: '+BRL(dt.reserva.valor)+' · Carteira de risco: '+BRL(dt.total)+'.')+'" aria-label="Sobre este bloco">i</button></h3>'+invSelicLinhaHTML()
+    hDistrib+='<div class="card"><h3>Distribuição alvo × atual<button type="button" class="infoBtn" data-tip="'+esc('A reserva vem antes da carteira de risco: o alvo '+(dt.classes?dt.classes.map(function(c){ return brDec(c.alvoPct,0); }).join("/")+" (ETFs/Ações/FIIs/Renda fixa)":String(dt.fixa.alvoPct).replace(".",",")+'/'+String(dt.variavel.alvoPct).replace(".",","))+' vale só para o que não é reserva. Renda fixa = Tesouro (preço do arquivo; sem preço, pelo custo) + CDB (CDI até hoje; sem CDI ou sem %, pelo custo, bruto sem IR). Renda variável = ação + FII + ETF (cotação do último arquivo; sem cotação, pelo custo). Reserva: '+BRL(dt.reserva.valor)+' · Carteira de risco: '+BRL(dt.total)+'.')+'" aria-label="Sobre este bloco">i</button></h3>'+invSelicLinhaHTML()
       +'<div class="tblwrap"><table class="tbl"><thead><tr><th style="text-align:left">Classe</th><th>Atual</th><th>Alvo</th><th>Diferença</th></tr></thead><tbody>'
       +'<tr><td class="l"><b>🧯 Reserva de emergência</b><br><span style="font-size:11px;color:var(--muted)">fora do alvo</span></td><td style="white-space:nowrap"><b>'+BRL(dt.reserva.valor)+'</b></td><td style="white-space:nowrap">—</td><td style="white-space:nowrap">—</td></tr>'
-      +_row("Renda fixa",dt.fixa)+_row("Renda variável",dt.variavel)
+      +(dt.classes?dt.classes.map(function(c){ return _row(esc(c.nome),c); }).join(""):_row("Renda fixa",dt.fixa)+_row("Renda variável",dt.variavel))
       +(function(){ var cx=0; try{ invContas().forEach(function(c){ if(c.ativa) cx+=saldoConta(c); }); }catch(e){} cx=Math.round(cx*100)/100; return Math.abs(cx)>0.004?'<tr><td class="l"><b>💵 Dinheiro na corretora</b><br><span style="font-size:11px;color:var(--muted)">fora do alvo · ainda não aplicado</span></td><td style="white-space:nowrap"><b>'+BRL(cx)+'</b></td><td style="white-space:nowrap">—</td><td style="white-space:nowrap">—</td></tr>':""; })()
-      +'</tbody></table></div></div>';
+      +'</tbody></table></div>'
+      +(function(){ var L=dt.classes||[dt.fixa,dt.variavel]; return L.some(function(o){ return o.diff<-0.004; })?'<div class="sub" id="invSemVenda" style="margin-top:6px">Acima do alvo não precisa vender: os próximos aportes vão para o que está abaixo até equilibrar.</div>':""; })()
+      +'</div>';
   }
   var _apTxt=(typeof window.__invAporteTxt==="string")?window.__invAporteTxt:"";
   var _res="";
   try{
-    if(_apTxt.trim()!==""){ var _r0=invRebalance(parseBR(_apTxt)); if(_r0.ok){ _res='<div class="kv"><span>Para a fixa</span><b>'+BRL(_r0.fixa)+'</b></div><div class="kv"><span>Para a variável</span><b>'+BRL(_r0.variavel)+'</b></div><div class="sub">Depois do aporte: '+String(_r0.pctF).replace(".",",")+'% fixa × '+String(_r0.pctV).replace(".",",")+'% variável.</div>'; } }
+    if(_apTxt.trim()!==""){ var _r0=invRebalance(parseBR(_apTxt)); if(_r0.ok){ _res=invRebalanceHTML(_r0); } }
   }catch(e){rmLogErr(e)}
   var hAporte='<div class="card formgrid f2"><h3>Próximo aporte<button type="button" class="infoBtn" data-tip="Quanto vai para cada classe para chegar mais perto do alvo, sem vender nada e sem contar a reserva. Se o aporte não bastar, vai todo para a classe mais abaixo do alvo." aria-label="Sobre este bloco">i</button></h3>'
     +'<label class="f">Valor do próximo aporte (R$)<input id="invAAporte" inputmode="decimal" placeholder="ex: 1.000,00" value="'+esc(_apTxt)+'"></label>'
@@ -9728,8 +9778,7 @@ function rInvest(){
       if(invAcMetasPanel){
         html+='<div class="tit-panel-bk" id="invAcMetasBk"><div class="tit-panel" role="dialog" aria-modal="true"><div class="tit-panel-head"><h3>Metas e alvos</h3><button type="button" class="tit-panel-x" id="invAcMetasX" aria-label="Fechar">\u2715</button></div><div class="tit-panel-body"><div class="tit-form">'
           +'<label class="f">Meta de renda mensal (R$)<input id="invAMeta" inputmode="decimal" value="'+esc(String((_stA?_stA.metaRendaMensal:0)).replace(".",","))+'"><span class="tip">ex: 80 — 0 esconde a comparação.</span></label>'
-          +'<label class="f">Alvo renda fixa (%)<input id="invAAlvoF" inputmode="decimal" value="'+esc(String((_stA?_stA.alvoFixa:66)).replace(".",","))+'"><span class="tip">ex: 66.</span></label>'
-          +'<label class="f">Alvo renda variável (%)<input id="invAAlvoV" inputmode="decimal" value="'+esc(String((_stA?_stA.alvoVariavel:34)).replace(".",","))+'"><span class="tip">ex: 34.</span></label>'
+          +invAlvoCamposHTML(_stA)
           +'<label class="f">Selic anual (%)<input id="invASelic" inputmode="decimal" placeholder="ex: 10,00" value="'+esc((_stA&&_stA.selic!=="")?String(_stA.selic).replace(".",","):"")+'"><span class="tip">ex: 10 — só informativa; vazio = esconde.</span></label>'
           +'<label class="f">CDI anual (%)<input id="invACdi" inputmode="decimal" placeholder="ex: 10,00" value="'+esc((_stA&&_stA.cdiAnual!=="")?String(_stA.cdiAnual).replace(".",","):"")+'"><span class="tip">ex: 10 — usado só no CDB; vazio = CDB pelo custo.</span></label>'
           +'<div class="msg-ok" id="invAMsg"></div></div></div><div class="tit-panel-foot"><button class="btn green" id="invASave">Salvar metas</button><button class="btn sm accent" id="invAcMetasVoltar">Voltar</button></div></div></div>';
@@ -9778,15 +9827,16 @@ function rInvest(){
     if(!window.__invAcompEscWired){ window.__invAcompEscWired=1; document.addEventListener("keydown",function(ev){ try{ if(ev&&ev.key==="Escape"){ if(document.getElementById("invAcResBk")||document.getElementById("invAcMetasBk")||document.getElementById("invAcIrBk")||document.getElementById("invAcSimBk")){ ev.preventDefault(); invAcompClose(); } } }catch(e){rmLogErr(e)} }); }
     var _sp3=document.getElementById("invPer"); if(_sp3){ _sp3.value=invPeriodo; _sp3.onchange=function(){ invPeriodo=_sp3.value; rInvest(); }; }
     document.querySelectorAll("#invTabs button").forEach(function(b){ b.onclick=function(){ window.__invTab=Number(b.dataset.t)||0; if(String(b.dataset.t)==="0") window.__invTab=0; rInvest(); }; });
+    document.querySelectorAll("[data-alvocl]").forEach(function(i){ i.oninput=invAlvoSomaPintar; }); invAlvoSomaPintar();
     var _aSave=document.getElementById("invASave");
     if(_aSave){ _aSave.onclick=function(){
       var msg=document.getElementById("invAMsg");
       var err=function(t){ msg.style.color="#e0695c"; msg.textContent="⚠️ "+t; customAlert(t,"Acompanhar"); };
       var meta=parseBR(document.getElementById("invAMeta").value);
       if(!(isFinite(meta))||meta<0){ err("Meta inválida. Use 0 ou mais (ex: 80)."); return; }
-      var f=parseBR(document.getElementById("invAAlvoF").value), v=parseBR(document.getElementById("invAAlvoV").value);
-      var vv=invAcompValidarAlvos(f,v);
-      if(!vv.ok){ err(vv.msg); return; }
+      var _alv=invAlvoLerCampos();
+      if(!_alv.ok){ err(_alv.msg); return; }
+      var f=_alv.classes.fixa, v=Math.round((100-f)*100)/100;
       var _cdRaw=null; try{ _cdRaw=document.getElementById("invACdi")?document.getElementById("invACdi").value:""; }catch(_e){ _cdRaw=""; }
       var _cdv=null; try{ _cdv=invCdiValidar(_cdRaw); }catch(_e){ _cdv={ok:false,msg:"CDI inválido."}; }
       if(!_cdv.ok){ err(_cdv.msg); return; }
@@ -9804,7 +9854,7 @@ function rInvest(){
       var _keepMes8h=6, _keepCv8h="";
       try{ var _ks8h=invAcompSettings(); if(_ks8h){ _keepMes8h=_ks8h.mesesReserva; _keepCv8h=_ks8h.custoVidaManual; } }catch(_e8h){rmLogErr(_e8h)}
       var _keepIr8j=null; try{ var _ksir=invAcompSettings(); if(_ksir&&_ksir.ir) _keepIr8j=JSON.parse(JSON.stringify(_ksir.ir)); }catch(_e8jir){ _keepIr8j=null; } if(!_keepIr8j) _keepIr8j=invIrPadrao();
-      DB.settings.inv={metaRendaMensal:Math.round(meta*100)/100,alvoFixa:f,alvoVariavel:v,cdiAnual:_cdv.valor,cdiData:_cdData,mesesReserva:_keepMes8h,custoVidaManual:_keepCv8h,selic:_selv.valor,selicData:_selData,ir:_keepIr8j};
+      DB.settings.inv={metaRendaMensal:Math.round(meta*100)/100,alvoFixa:f,alvoVariavel:v,alvoClasses:_alv.classes,cdiAnual:_cdv.valor,cdiData:_cdData,mesesReserva:_keepMes8h,custoVidaManual:_keepCv8h,selic:_selv.valor,selicData:_selData,ir:_keepIr8j};
       if(!save()){ try{ DB.settings.inv=_oldInv; }catch(e){rmLogErr(e)} msg.style.color="#e0695c"; msg.textContent=SAVE_FAIL_MSG; return; }
       invAcMetasPanel=false;
       rInvest();
@@ -9835,7 +9885,7 @@ function rInvest(){
       if(!v.ok){ err(v.msg); return; }
       if(!DB.settings) DB.settings=defaultSettings();
       var _oldInv=null; try{ _oldInv=(DB.settings.inv!=null)?JSON.parse(JSON.stringify(DB.settings.inv)):null; }catch(e){ _oldInv=null; }
-      try{ var _cur=invAcompSettings(); DB.settings.inv={metaRendaMensal:_cur.metaRendaMensal,alvoFixa:_cur.alvoFixa,alvoVariavel:_cur.alvoVariavel,cdiAnual:_cur.cdiAnual,cdiData:_cur.cdiData,mesesReserva:_cur.mesesReserva,custoVidaManual:_cur.custoVidaManual,selic:_cur.selic,selicData:_cur.selicData,ir:v.valor}; }catch(e){ err("Falha ao salvar."); return; }
+      try{ var _cur=invAcompSettings(); DB.settings.inv={metaRendaMensal:_cur.metaRendaMensal,alvoFixa:_cur.alvoFixa,alvoVariavel:_cur.alvoVariavel,alvoClasses:_cur.alvoClasses,cdiAnual:_cur.cdiAnual,cdiData:_cur.cdiData,mesesReserva:_cur.mesesReserva,custoVidaManual:_cur.custoVidaManual,selic:_cur.selic,selicData:_cur.selicData,ir:v.valor}; }catch(e){ err("Falha ao salvar."); return; }
       if(!save()){ try{ DB.settings.inv=_oldInv; }catch(e){rmLogErr(e)} msg.style.color="#e0695c"; msg.textContent=SAVE_FAIL_MSG; return; }
       invAcIrPanel=false;
       rInvest();
@@ -9850,7 +9900,7 @@ function rInvest(){
       var r=null; try{ r=invRebalance(parseBR(window.__invAporteTxt)); }catch(e){ r={ok:false,msg:"Falha no cálculo."}; }
       if(!r.ok){ if(msg2){ msg2.style.color="#e0695c"; msg2.textContent="⚠️ "+r.msg; } if(res) res.innerHTML=""; try{ customAlert(r.msg,"Acompanhar"); }catch(e){rmLogErr(e)} return; }
       if(msg2) msg2.textContent="";
-      if(res) res.innerHTML='<div class="kv"><span>Para a fixa</span><b>'+BRL(r.fixa)+'</b></div><div class="kv"><span>Para a variável</span><b>'+BRL(r.variavel)+'</b></div><div class="sub">Depois do aporte: '+String(r.pctF).replace(".",",")+'% fixa × '+String(r.pctV).replace(".",",")+'% variável.</div>';
+      if(res) res.innerHTML=invRebalanceHTML(r);
     }; }
     var _selBtn=document.getElementById("invSelicInfoBtn");
     if(_selBtn){ _selBtn.onclick=function(){ var _t=document.getElementById("invSelicTip"); if(_t) _t.hidden=!_t.hidden; }; }
