@@ -12014,7 +12014,7 @@ function qrDefaultPlat(){ var ps=qrActivePlats(); if(!ps.length) return null; va
 function qrEnsureDom(){
   if(document.getElementById("qrFab")) return;
   var fab=document.createElement("button"); fab.id="qrFab"; fab.type="button"; fab.setAttribute("aria-label","Lançar corrida rápida"); fab.title="Lançar corrida rápida (atalho: N)"; fab.innerHTML='<span aria-hidden="true">+</span> Corrida';
-  fab.onclick=function(){ qrOpen(); };
+  fab.onclick=function(){ if(current==="investimentos"){ try{ fabCompra(); }catch(e){ rmLogErr(e,"fab-compra"); } return; } qrOpen(); };
   var bk=document.createElement("div"); bk.id="qrBk"; bk.hidden=true;
   bk.innerHTML='<div id="qrBox" role="dialog" aria-modal="true" aria-labelledby="qrTitle"></div>';
   bk.addEventListener("click",function(ev){ if(ev.target===bk) qrClose(); });
@@ -12032,7 +12032,10 @@ function qrEnsureDom(){
     }
   });
 }
-function qrFabSync(){ try{ qrEnsureDom(); var f=document.getElementById("qrFab"); if(f) f.hidden=(current==="nova"); }catch(e){ rmLogErr(e,"qr-fab"); } }
+function qrFabSync(){ try{ qrEnsureDom(); var f=document.getElementById("qrFab"); var inv=(current==="investimentos");
+    if(f){ f.hidden=(current==="nova"); var rot=inv?"Compra":"Corrida"; if(f.dataset.rot!==rot){ f.dataset.rot=rot; f.innerHTML='<span aria-hidden="true">+</span> '+rot; f.setAttribute("aria-label",inv?"Registrar compra de ativo":"Lançar corrida rápida"); f.title=inv?"Registrar compra de ativo (Nova operação)":"Lançar corrida rápida (atalho: N)"; } }
+    var mb=document.querySelector("#mbar .mplus"); if(mb){ var r=mb.querySelector(".mplus-rot"); if(r) r.textContent=inv?"Compra":"Corrida"; mb.setAttribute("aria-label",inv?"Registrar compra de ativo":"Nova corrida rápida"); }
+  }catch(e){ rmLogErr(e,"qr-fab"); } }
 function qrToast(txt,ms){ try{ var t=document.getElementById("qrToast"); if(!t) return; t.textContent=txt; t.hidden=false; clearTimeout(qrToast._t); qrToast._t=setTimeout(function(){ t.hidden=true; },ms||3500); }catch(e){ rmLogErr(e); } }
 function qrMoreLabel(){ return qrMoreOpen?"▾ Menos":"▸ Km, gorjeta e horário"; }
 function qrRender(pref){
@@ -13335,7 +13338,7 @@ function mbarIni(){
   var b=document.createElement("nav"); b.id="mbar"; b.setAttribute("aria-label","Navegação principal");
   b.innerHTML='<button type="button" data-mb="inicio"><span class="pill">'+MBAR_SVG.inicio+'</span>Início</button>'
     +'<button type="button" data-mb="corridas"><span class="pill">'+MBAR_SVG.corridas+'</span>Corridas</button>'
-    +'<button type="button" data-mb="mais-corrida" class="mplus" aria-label="Nova corrida rápida"><span class="fab">'+MBAR_SVG.mais2+'</span>Corrida</button>'
+    +'<button type="button" data-mb="mais-corrida" class="mplus" aria-label="Nova corrida rápida"><span class="fab">'+MBAR_SVG.mais2+'</span><span class="mplus-rot">Corrida</span></button>'
     +'<button type="button" data-mb="dinheiro"><span class="pill">'+MBAR_SVG.dinheiro+'</span>Financeiro</button>'
     +'<button type="button" data-mb="menu" aria-haspopup="true"><span class="pill">'+MBAR_SVG.mais+'</span>Mais</button>';
   /* dentro do #app: ele tem camada própria (z-index:1, efeito de vidro); fora dele a gaveta ficaria por baixo */
@@ -13346,7 +13349,7 @@ function mbarIni(){
     if(k!=="menu"&&document.body.classList.contains("mais-open")){ try{ maisFechar(); }catch(e){ rmLogErr(e,"mbar-mais"); } }
     if(k==="inicio") show("dashboard");
     else if(k==="corridas") show("historico");
-    else if(k==="mais-corrida"){ try{ qrOpen(); }catch(e){ rmLogErr(e,"mbar-qr"); show("nova"); } }
+    else if(k==="mais-corrida"){ try{ if(current==="investimentos"){ fabCompra(); return; } qrOpen(); }catch(e){ rmLogErr(e,"mbar-qr"); show("nova"); } }
     else if(k==="dinheiro"){ try{ window.__finTab=0; }catch(e){} show("financeiro"); }
     else if(k==="menu"){ if(document.body.classList.contains("mais-open")) maisFechar(); else if(document.body.classList.contains("nav-open")) navFechar(); else maisAbrir(); }
   });
@@ -15819,6 +15822,14 @@ function resResumoLigar(){
   document.querySelectorAll("[data-resir]").forEach(function(b){ b.onclick=function(){ window.__invTab=Number(b.dataset.resir)||0; rInvest(); }; });
 }
 window.addEventListener("resize",function(){ try{ if(document.getElementById("resEvoCv")) resDesenharEvo(); }catch(e){} });
+/* botão flutuante (PC) e botão do meio da barra (celular) em Investimentos: "+ Compra" abre a Nova operação já como compra */
+function fabCompra(){
+  var tem=false; try{ tem=invContas().some(function(c){ return c.ativa; }); }catch(e){}
+  if(!tem){ customAlert("Cadastre primeiro uma conta do tipo investimento (Configurações › Contas › Investimento). A compra sai do saldo dessa conta.","Registrar compra"); return; }
+  if(window.__invTab!==0&&window.__invTab!==5) window.__invTab=0;
+  invOpPanel=true; invEvPanel=false; rInvest();
+  try{ var op=document.getElementById("invOp"); if(op&&op.value!=="compra"){ op.value="compra"; op.dispatchEvent(new Event("change",{bubbles:true})); } var d=document.getElementById("invData"); if(d) d.focus(); }catch(e){ rmLogErr(e,"fab-compra-foco"); }
+}
 try{ window.RM.resCalc=resCalc; window.RM.resEvolucao=resEvolucao; }catch(e){ rmLogErr(e); }
 /* primeira tela: só depois de todos os módulos (antes, cartões que usam listas definidas mais abaixo falhavam na abertura) */
 try{ show(current||"dashboard"); }catch(e){ rmLogErr(e,"primeira-tela"); }
