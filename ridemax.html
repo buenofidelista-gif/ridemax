@@ -1691,6 +1691,13 @@ body[data-sol="1"] .cmp-nao{background:#fff!important;color:#a01d0f!important;bo
   #invTabs{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible!important;width:100%;gap:2px}
   #invTabs button{min-width:0;padding:8px 2px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
+/* Proventos: A receber e Recebidos um embaixo do outro, com todas as colunas */
+.inv-screen.inv-tab2 .inv-prov-right{grid-template-columns:minmax(0,1fr)!important;align-content:start}
+.inv-screen.inv-tab2 .inv-prov-right>.card .tblwrap{overflow-x:auto;overflow-y:visible;max-height:none}
+.inv-screen.inv-tab2 .inv-prov-main{align-items:start}
+.inv-prov-reinv{margin-top:var(--s3)}
+.prov-tbl td.pv-cota,.prov-tbl td.pv-bruto,.prov-tbl td.pv-liq,.prov-tbl td.pv-qtd{white-space:nowrap!important}
+@media (min-width:701px){ .prov-tbl td.pv-cod{max-width:280px} }
 </style>
 </head>
 <body>
@@ -9246,7 +9253,7 @@ function invProvTabHTML(){
   var rowH=function(p){
     var q=invProvQtd(p), b=invProvBruto(p), liq=invProvValor(p);
     var irT=(p.tipo==="jcp")?(BRL(Math.round(b*invProvIrPct(p))/100)+" ("+String(invProvIrPct(p)).replace(".",",")+"%)"):'<span style="color:var(--muted)">—</span>';
-    return '<tr><td>'+isoToBR(p.dataCom)+'<br><span style="font-size:11px;color:var(--muted)">pag '+isoToBR(p.dataPag)+'</span></td><td class="l"><b>'+esc(p.codigo)+'</b><br><span style="font-size:11px;color:var(--muted)">'+esc(invProvTipoLabel(p.tipo))+' · '+esc(contaNome(p.conta))+'</span></td><td>'+String(q).replace(".",",")+'</td><td style="white-space:nowrap">'+BRL(Number(p.valorPorCota))+'</td><td style="white-space:nowrap">'+BRL(b)+'</td><td style="white-space:nowrap">'+irT+'</td><td style="white-space:nowrap"><b>'+BRL(liq)+'</b>'+(p.conciliado?' 🔒':"")+'</td><td><button class="btn sm rowdel" data-invprovdel="'+esc(p.id)+'">🗑</button></td></tr>';
+    return '<tr><td class="pv-data">'+isoToBR(p.dataCom)+'<br><span style="font-size:11px;color:var(--muted)">pag '+isoToBR(p.dataPag)+'</span></td><td class="l pv-cod"><b>'+esc(p.codigo)+'</b><br><span style="font-size:11px;color:var(--muted)">'+esc(invProvTipoLabel(p.tipo))+' · '+esc(contaNome(p.conta))+'</span></td><td class="pv-qtd" data-rot="Qtd">'+String(q).replace(".",",")+'</td><td class="pv-cota" style="white-space:nowrap" data-rot="Por cota">'+BRL(Number(p.valorPorCota))+'</td><td class="pv-bruto" style="white-space:nowrap" data-rot="Bruto">'+BRL(b)+'</td><td class="pv-ir" style="white-space:nowrap" data-rot="IR">'+irT+'</td><td class="pv-liq" style="white-space:nowrap"><b>'+BRL(liq)+'</b>'+(p.conciliado?' 🔒':"")+'</td><td class="pv-del"><button class="btn sm rowdel" data-invprovdel="'+esc(p.id)+'">🗑</button></td></tr>';
   };
   var hR="", hG="";
   if(!rec.length) hR='<tr><td colspan="8" style="color:var(--muted)">Nada a receber. Pagamento futuro entra aqui como agenda e não mexe no saldo.</td></tr>';
@@ -9267,10 +9274,10 @@ function invProvTabHTML(){
     +'<label class="f" id="invPIrWrap">IR do JCP (%) *<input id="invPIr" inputmode="decimal" value="15"><span class="tip">ex: 15 — só vale para JCP; outros tipos ignoram.</span></label>'
     +'<div class="msg-ok" id="invPMsg"></div><div class="btnrow inv-actions"><button class="btn green" id="invPSave">Salvar provento</button></div></div></div><div class="inv-prov-right">'
   h+='<div class="card inv-list-card"><h3>⏳ A receber ('+rec.length+') · '+BRL(totR)+'<button type="button" class="infoBtn" data-tip="Pagamento futuro: agenda, fora do saldo." aria-label="Sobre este bloco">i</button></h3>'
-    +'<div class="tblwrap"><table class="tbl"><thead><tr><th>Data-com / pag</th><th style="text-align:left">Código</th><th>Qtd na data-com</th><th>Por cota</th><th>Bruto</th><th>IR retido</th><th>Líquido</th><th></th></tr></thead><tbody>'+hR+'</tbody></table></div>'
+    +'<div class="tblwrap"><table class="tbl prov-tbl"><thead><tr><th>Data-com / pag</th><th style="text-align:left">Código</th><th title="Quantidade na data-com">Qtd</th><th>Por cota</th><th>Bruto</th><th>IR retido</th><th>Líquido</th><th></th></tr></thead><tbody>'+hR+'</tbody></table></div>'
     +'<div class="kv"><span>Total a receber (líquido)</span><b>'+BRL(totR)+'</b></div></div>';
   h+='<div class="card inv-list-card"><h3>✅ Recebidos ('+got.length+') · '+BRL(totG)+'<button type="button" class="infoBtn" data-tip="Pago até hoje: credita a conta na data de pagamento." aria-label="Sobre este bloco">i</button></h3>'
-    +'<div class="tblwrap"><table class="tbl"><thead><tr><th>Data-com / pag</th><th style="text-align:left">Código</th><th>Qtd na data-com</th><th>Por cota</th><th>Bruto</th><th>IR retido</th><th>Líquido</th><th></th></tr></thead><tbody>'+hG+'</tbody></table></div>'
+    +'<div class="tblwrap"><table class="tbl prov-tbl"><thead><tr><th>Data-com / pag</th><th style="text-align:left">Código</th><th title="Quantidade na data-com">Qtd</th><th>Por cota</th><th>Bruto</th><th>IR retido</th><th>Líquido</th><th></th></tr></thead><tbody>'+hG+'</tbody></table></div>'
     +'<div class="kv"><span>Total recebido (líquido)</span><b>'+BRL(totG)+'</b></div></div></div></div>';
   return h;
 }
