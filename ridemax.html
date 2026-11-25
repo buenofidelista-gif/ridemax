@@ -760,7 +760,7 @@ table.dtbl td.nn.warn{color:var(--yellow);font-weight:700}
 .rateio-foot b{color:var(--text)}
 @media(max-width:700px){.rateio-line{grid-template-columns:minmax(0,1fr) 96px 70px 34px;gap:var(--s2)}.rateio-line select,.rateio-line input{padding:var(--s2);font-size:var(--f-sm)}}
 /* ---------- FASE 3A — LOCAL DA RECARGA ---------- */
-.shortgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 var(--s4);grid-column:1/-1}
+.shortgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 var(--s4);grid-column:1/-1;align-items:end}
 .shortgrid>label.f{min-width:0}
 @media(max-width:420px){.shortgrid{gap:0 var(--s2)}}
 /* ---------- FASE 2B — SÉRIES (recorrente e parcelado) ---------- */
@@ -921,7 +921,9 @@ body[data-glass]:not([data-glass="off"]) #undoBar{background:color-mix(in srgb, 
 .card{padding-left:var(--s5)!important;padding-right:var(--s5)!important}
 .kv,.mrow2{column-gap:var(--s3)}
 .kv>span{min-width:0;overflow-wrap:anywhere}
-.kv>b{min-width:0;max-width:64%;text-align:right;white-space:normal;overflow-wrap:anywhere}
+/* o valor não encolhe abaixo do próprio tamanho (quem quebra é o rótulo) e só quebra entre palavras */
+.kv{gap:8px}
+.kv>b{flex-shrink:0;min-width:0;max-width:64%;text-align:right;white-space:normal;overflow-wrap:break-word}
 .mrow2{flex-wrap:wrap}
 .mrow2>div{min-width:0;overflow-wrap:anywhere}
 .conf{white-space:normal!important;overflow-wrap:anywhere;max-width:100%}
@@ -1254,7 +1256,7 @@ body.fit-lock #finBox:has(.fin-dre){display:block;overflow:visible}
   .f3-topo{display:flex;flex-direction:column;gap:12px;margin:4px 0 8px;grid-column:1/-1}
   .f3-fixo{grid-column:1/-1}
   .f3-topo label.f{margin:0}
-  .f3-linha{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .f3-linha{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
   .f3-linha label.f{margin:0;min-width:0}
   .f3-cab{font-size:14px;color:var(--muted);margin-bottom:6px}
   .f3-chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -1318,12 +1320,13 @@ body.fit-lock #finBox:has(.fin-dre){display:block;overflow:visible}
 }
 /* ---------- CELULAR — blocos recolhíveis + área de toque dos "i" ---------- */
 @media(max-width:860px){
-  .f5-bloco>h3{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;-webkit-tap-highlight-color:transparent}
-  .f5-bloco>h3::after{content:"▾";margin-left:auto;color:var(--muted);font-size:16px;padding-left:8px}
-  .f5-bloco.f5-fechado>h3::after{content:"▸"}
+  .f5-bloco>h3:first-of-type{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;-webkit-tap-highlight-color:transparent}
+  .f5-bloco>h3:first-of-type>.f5-tit{min-width:0}
+  .f5-bloco>h3:first-of-type::after{content:"▾";margin-left:auto;color:var(--muted);font-size:16px;padding-left:8px}
+  .f5-bloco.f5-fechado>h3:first-of-type::after{content:"▸"}
   .f5-bloco.f5-fechado{padding-top:10px!important;padding-bottom:10px!important}
-  .f5-bloco.f5-fechado>h3{margin:0!important}
-  .f5-bloco.f5-fechado>:not(h3){display:none!important}
+  .f5-bloco.f5-fechado>h3:first-of-type{margin:0!important}
+  .f5-bloco.f5-fechado>:not(h3:first-of-type){display:none!important}
   /* "i" e "?": 32px na tela, 48px para o dedo */
   .infoBtn,.hbtn{position:relative}
   .infoBtn::after,.hbtn::after{content:"";position:absolute;inset:-8px}
@@ -1848,7 +1851,7 @@ body[data-sol="1"] #fSave{background:#0a6a35!important;border:2px solid #000!imp
 .ph-pouca{font-size:12px;line-height:1.1;text-align:center}
 #phDet{margin-top:8px}
 /* bloco recolhido no celular esconde tudo menos o título (vence a regra das barras de abas) */
-@media (max-width:860px){ #viewCtn .f5-bloco.f5-fechado>:not(h3){display:none!important} }
+@media (max-width:860px){ #viewCtn .f5-bloco.f5-fechado>:not(h3:first-of-type){display:none!important} }
 /* DRE mês a mês: tabela larga que rola de lado dentro da caixa, 1ª coluna fixa */
 .dm-wrap{overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}
 table.dm-tbl{width:auto;min-width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
@@ -2226,8 +2229,9 @@ function isoToBR(iso){ if(!iso) return "–"; var p=String(iso).split("-"); retu
 function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function brGroup(d){ return String(d).replace(/\B(?=(\d{3})+(?!\d))/g,"."); }
 function brDec(v,dec){ var n=Number(v); if(!isFinite(n)) n=0; var neg=n<0, f=Math.abs(n).toFixed(dec).split("."); return (neg?"-":"")+brGroup(f[0])+(f.length>1?","+f[1]:""); }
-function BRL(v){ return "R$ "+brDec(v,2); }
-function BRLd(v,dec){ return "R$ "+brDec(v,dec); }
+/* espaço que não quebra (\u00A0): "R$" nunca fica numa linha e o número na outra */
+function BRL(v){ return "R$\u00A0"+brDec(v,2); }
+function BRLd(v,dec){ return "R$\u00A0"+brDec(v,dec); }
 function normName(s){ try{ return String(s==null?"":s).trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); }catch(e){ return String(s==null?"":s).trim().toLowerCase(); } }
 /* Ponto 4 — parser moeda BR robusto: "1.234,56" -> 1234.56 */
 function parseBR(s){
@@ -4582,7 +4586,7 @@ function statCard(ic,val,lb,color,sub){ return '<div class="stat"><div class="vl
 function bar(v,max,width,color,h){ var pct=max>0?Math.min(1,v/max):0; return '<span class="bar-bg" style="width:'+(width||130)+'px;height:'+(h||10)+'px"><span class="bar-fill" style="width:'+Math.max(4,Math.round((width||130)*pct))+'px;background:'+validColor(color,"#4caf7d")+'"></span></span>'; }
 function pagerHTML(page,pages,total){
   var a=(total===0)?0:(page-1)*PER_PAGE+1, b=Math.min(total,page*PER_PAGE);
-  return '<div class="pager"><span>Mostrando '+a+'–'+b+' de '+total+' · Página '+page+'/'+pages+'</span><button class="btn sm accent" data-pg="prev"'+(page<=1?" disabled":"")+'>◀</button><button class="btn sm accent" data-pg="next"'+(page>=pages?" disabled":"")+'>▶</button></div>';
+  return '<div class="pager"><span>Mostrando '+a+'–'+b+' de '+total+' · Página '+page+'/'+pages+'</span><button class="btn sm accent" data-pg="prev" aria-label="Página anterior"'+(page<=1?" disabled":"")+'>◀</button><button class="btn sm accent" data-pg="next" aria-label="Próxima página"'+(page>=pages?" disabled":"")+'>▶</button></div>';
 }
 function wirePager(root,onGo){
   root.querySelectorAll("[data-pg]").forEach(function(btn){ btn.onclick=function(){ onGo(btn.dataset.pg==="next"?1:-1); }; });
@@ -5213,7 +5217,7 @@ function rNova(){
       if(!rows.length){ box.innerHTML='<div class="empty">Ainda não há corrida lançada neste dia de trabalho.</div>'; return; }
       var h='<div class="tblwrap"><table class="tbl"><thead><tr><th style="text-align:left">Hora</th><th style="text-align:left">Plataforma</th><th>Valor</th></tr></thead><tbody>';
       rows.forEach(function(r){
-        var tip=(Number(r.tip)||0)>0?'<br><span style="font-size:12px;color:var(--muted)">+'+BRL(Number(r.tip)).replace("R$ ","")+' gorjeta</span>':"";
+        var tip=(Number(r.tip)||0)>0?'<br><span style="font-size:12px;color:var(--muted)">+'+BRL(Number(r.tip)).replace(/^R\$\s/,"")+' gorjeta</span>':"";
         var csh=isCashRide(r)?'<br><span class="conf media">💵 dinheiro</span>':"";
         h+='<tr><td style="text-align:left;white-space:nowrap">'+esc(r.start_time||"–")+'</td><td class="l">'+esc(platName(r.platform_id))+'</td><td style="white-space:nowrap"><b>'+BRL(rideTotal(r))+'</b>'+tip+csh+'</td></tr>';
       });
@@ -5876,7 +5880,7 @@ function drawRecTrend(cv,unit){
 function maintCard(){
   var items=maintVisible(), mo=maxOdo();
   var hc=maintHiddenCount();
-  var h='<div class="card"><h3>Manutenção — pelo odômetro'+(mo!=null?(' <span style="font-weight:400">· atual: '+Number(mo).toFixed(0)+' km</span>'):"")+'</h3>';
+  var h='<div class="card"><h3>Manutenção — pelo odômetro'+(mo!=null?(' <span style="font-weight:400">· atual: '+Number(mo).toLocaleString("pt-BR",{maximumFractionDigits:0})+' km</span>'):"")+'</h3>';
   if(mo==null){ h+='<div class="empty">Registre o odômetro em uma recarga/abastecimento para ativar os alertas.</div>'; }
   else if(!items.length){ h+='<div class="empty">Nenhum item configurado. <a href="#" id="mGoCfg" style="color:var(--blue)">Configurar em Configurações › Veículo e energia › Manutenção e gastos anuais</a>.</div>'; }
   else{
@@ -7488,7 +7492,7 @@ function cfgSecManut(){
   var hid=maintHiddenCount();
   h+='</tbody></table></div>';
   (function(){ var _cp=maintCostPerKm(); if(_cp.any) h+='<div class="kv"><span>Total provisão manutenção</span><b>'+fmtPerKm(_cp.total)+'</b></div>'; else h+='<div class="sub">Informe o custo estimado ao lado de cada item para ativar a provisão (R$/km = custo ÷ intervalo).</div>'; })();
-  h+='<div class="toolbar"><input id="sMaintName" placeholder="novo item (ex: Correia dentada)" style="flex:2;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px"><input id="sMaintInt" inputmode="numeric" placeholder="km (ex: 60000)" style="flex:1;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px"><select id="sMaintScope" style="background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px"><option value="both">ambos</option><option value="ev">⚡ elétrico</option><option value="fuel">⛽ combustão</option></select><button class="btn sm green" id="sMaintAdd">Adicionar</button></div>';
+  h+='<div class="toolbar"><input id="sMaintName" placeholder="novo item (ex: Correia dentada)" style="flex:2;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px"><input id="sMaintInt" inputmode="numeric" placeholder="km (ex: 60000)" style="flex:1;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px"><select id="sMaintScope" aria-label="Vale para (tipo de energia)" style="background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px"><option value="both">ambos</option><option value="ev">⚡ elétrico</option><option value="fuel">⛽ combustão</option></select><button class="btn sm green" id="sMaintAdd">Adicionar</button></div>';
   h+='<div class="sub">ex.: 60000 ou 60.000</div>';
   if(hid>0) h+='<div class="sub">'+hid+' item(ns) oculto(s) — só valem para '+(em?"veículo elétrico":"combustão")+'. Troque o tipo de energia acima para vê-los.</div>';
   h+='<p class="tip">O botão "Feita" registra a manutenção no odômetro atual (maior leitura). Alertas também aparecem na tela de '+(em?"Abastecimento":"Recarga")+'.</p>';
@@ -13806,6 +13810,7 @@ function f5Blocos(){
   cards.forEach(function(c,i){
     if(c.dataset.f5) return; c.dataset.f5="1";
     var h=c.querySelector(":scope > h3");
+    try{ if(!h.querySelector(":scope > .f5-tit")){ var _tt=document.createElement("span"); _tt.className="f5-tit"; var _n=h.firstChild; while(_n&&!(_n.nodeType===1&&/^(BUTTON|A|SELECT|INPUT)$/.test(_n.tagName))&&!(_n.nodeType===1&&_n.matches&&_n.matches(".seg,.infoBtn,.conf"))){ var _nx=_n.nextSibling; _tt.appendChild(_n); _n=_nx; } if(_tt.childNodes.length) h.insertBefore(_tt,h.firstChild); } }catch(_eT){ rmLogErr(_eT,"f5-tit"); }
     var tit=(h.textContent||"").replace(/\s+/g," ").replace(/\d+/g,"#").trim().slice(0,60);
     var chave=v+"|"+sub+"|"+tit;
     var aberto=false; /* regra: todo recolhível começa recolhido */
@@ -16299,7 +16304,7 @@ function resRentabilidade(per,cls){
 }
 function resMesRot(key,emCurso){ return PLANO_MES[+key.slice(5,7)-1].slice(0,3)+"/"+key.slice(2,4)+(emCurso?"*":""); }
 function resFiltrosHTML(){
-  var sel=function(id,opts,v){ return '<select id="'+id+'">'+opts.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===v?' selected':'')+'>'+esc(o[1])+'</option>'; }).join("")+'</select>'; };
+  var sel=function(id,opts,v){ return '<select id="'+id+'" aria-label="'+(id==="resPer"?"Período dos gráficos":"Classe dos gráficos")+'">'+opts.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===v?' selected':'')+'>'+esc(o[1])+'</option>'; }).join("")+'</select>'; };
   return '<div class="card res-filtros"><span class="sub">Gráficos:</span>'+sel("resPer",[["12","Últimos 12 meses"],["tudo","Desde o início"]],window.__resPer)
     +sel("resCls",[["","Todas as classes"],["acao","Ações"],["fii","FIIs"],["etf","ETFs"],["fixa","Renda fixa"]],window.__resCls)+'</div>';
 }
@@ -16417,6 +16422,7 @@ function copiarTexto(txt,botao,titulo){
   var volta=botao?botao.textContent:"";
   var ok=function(){ if(!botao) return; botao.textContent="✓ Copiado"; setTimeout(function(){ botao.textContent=volta; },1800); };
   var manual=function(){ customAlert(txt,titulo||"Copie o texto"); };
+  txt=String(txt).replace(/\u00A0/g," ");
   try{ if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok,manual); else manual(); }catch(e){ manual(); }
 }
 /* um ouvinte só para os botões do cartão (o Início é redesenhado sempre) */
@@ -16518,7 +16524,7 @@ function phCardHTML(){
       else if(C.status==="vence") txt='<span class="ph-win"><i style="background:'+phCor(C.melhor)+'"></i>'+esc(platName(C.melhor))+'</span><small>+'+Math.round(C.dif)+'%</small>';
       else if(C.status==="empate") txt='<span class="ph-emp">empate</span>';
       else txt='<span class="ph-pouca">pouca<br>amostra</span>';
-      h+='<button type="button" class="ph-cel'+(wd===hoje&&f===fAgora?" agora":"")+'" data-phk="'+k+'">'+txt+'</button>';
+      h+='<button type="button" class="ph-cel'+(wd===hoje&&f===fAgora?" agora":"")+'" data-phk="'+k+'" aria-label="'+esc(DIAS_S[wd]+", "+PH_FAIXAS[f][0]+": "+(!C?"sem dados":(C.status==="vence"?platName(C.melhor)+" rende "+Math.round(C.dif)+"% mais":(C.status==="empate"?"empate":"pouca amostra"))))+'">'+txt+'</button>';
     }
   }
   h+='</div><div class="piedet" id="phDet">Toque numa célula para ver o R$/h de cada app naquela faixa.</div>';
@@ -16636,6 +16642,77 @@ function rDreMensal(box){
 }
 try{ RM.dreMensal=function(n,f,r){ return dreMensal(n,f,r).meses.map(function(m){ return {ym:m.ym,label:m.label,atual:m.atual,fechado:m.fechado,ini:m.ini,fim:m.fim,brutaT:m.D.brutaT,varT:m.D.varT,fixT:m.D.fixT,das:m.D.das,liquido:m.D.liquido,margem:m.D.margem,nRides:m.D.nRides,km:m.D.km}; }); };
   RM.dreSetVisao=function(v,n){ dreVisao=v==="mensal"?"mensal":"periodo"; if(n) dreMeses=dreNormMeses(n); }; }catch(e){}
+/* ---------- ACESSIBILIDADE (leitor de tela e teclado) ----------
+   Ajusta o que as telas desenham, sempre que algo muda na página, sem precisar mexer tela por tela:
+   - campo sem rótulo: usa o texto ao lado (ex.: "Período:") ou o texto de exemplo como nome
+   - item que responde a toque (onclick) mas não é botão: entra no Tab e responde a Enter/Espaço
+   - botão de aba/seletor (.seg): diz qual está escolhido (aria-pressed)
+   - janela (role=dialog) sem nome: usa o título dela
+   - gráfico (canvas): vira imagem com o título do cartão como descrição
+   Nada aqui muda a aparência. Ver testes/acessibilidade.js (relatório). */
+function a11yTxt(e){ return (e&&e.textContent||"").replace(/\s+/g," ").trim(); }
+function a11yTemNome(e){
+  if((e.getAttribute("aria-label")||"").trim()||e.getAttribute("aria-labelledby")) return true;
+  if(e.id){ try{ var l=document.querySelector('label[for="'+e.id+'"]'); if(l&&a11yTxt(l)) return true; }catch(_){} }
+  var p=e.closest("label"); if(p){ var c=p.cloneNode(true); [].forEach.call(c.querySelectorAll("input,select,textarea,.tip"),function(x){ x.remove(); }); if(a11yTxt(c)) return true; }
+  return false;
+}
+function a11yRotulos(raiz){
+  [].forEach.call(raiz.querySelectorAll("input:not([type=hidden]),select,textarea"),function(e){
+    if(a11yTemNome(e)) return;
+    var n="", ant=e.previousElementSibling;
+    if(ant&&/^(SPAN|B|LABEL|STRONG|SMALL)$/.test(ant.tagName)&&!ant.querySelector("input,select,button")) n=a11yTxt(ant).replace(/[:*]\s*$/,"");
+    if(!n){ var td=e.closest("td"), tb=td&&td.closest("table"); if(tb&&tb.rows[0]){ var hc=tb.rows[0].cells[td.cellIndex]; if(hc&&hc.tagName==="TH") n=a11yTxt(hc); } }
+    if(!n&&e.type==="checkbox"){ var lin=e.closest("tr,li,.kv,div"); if(lin) n=a11yTxt(lin).slice(0,80); }
+    if(!n) n=e.getAttribute("placeholder")||e.getAttribute("title")||"";
+    if(!n&&e.type==="color") n="Cor";
+    if(n) e.setAttribute("aria-label",n.slice(0,80));
+  });
+}
+function a11yClicaveis(raiz){
+  [].forEach.call(raiz.querySelectorAll("tr,td,div,span,li,h3,b,i,small,canvas"),function(e){
+    if(typeof e.onclick!=="function"||e.hasAttribute("tabindex")) return;
+    if(e.closest("button,a,label")) return;
+    e.setAttribute("tabindex","0"); if(!e.getAttribute("role")) e.setAttribute("role","button"); e.setAttribute("data-a11y-btn","1");
+  });
+}
+function a11ySeg(raiz){
+  [].forEach.call(raiz.querySelectorAll(".seg button"),function(b){ var on=b.classList.contains("on")?"true":"false"; if(b.getAttribute("aria-pressed")!==on&&!b.hasAttribute("aria-selected")) b.setAttribute("aria-pressed",on); });
+}
+function a11yDialogos(){
+  [].forEach.call(document.querySelectorAll("[role=dialog]"),function(d){
+    if(d.getAttribute("aria-label")||d.getAttribute("aria-labelledby")) return;
+    var h=d.querySelector("h2,h3"); if(h&&a11yTxt(h)) d.setAttribute("aria-label",a11yTxt(h).slice(0,80));
+  });
+}
+function a11yGraficos(raiz){
+  [].forEach.call(raiz.querySelectorAll("canvas"),function(c){
+    if(c.getAttribute("aria-label")) { if(!c.getAttribute("role")) c.setAttribute("role","img"); return; }
+    var card=c.closest(".card"), h=card&&card.querySelector("h3");
+    var t=h?a11yTxt(h).replace(/\bi$/,"").trim():"Gráfico";
+    c.setAttribute("role","img"); c.setAttribute("aria-label","Gráfico: "+t.slice(0,80));
+  });
+}
+var A11Y_SIMB={"🗑":"Excluir","🗑️":"Excluir","✏️":"Editar","✎":"Editar","✕":"Fechar","×":"Fechar","◀":"Anterior","▶":"Próximo","⧉":"Copiar","📋":"Copiar"};
+function a11ySimbolos(raiz){
+  [].forEach.call(raiz.querySelectorAll("button"),function(b){ if(b.getAttribute("aria-label")||b.getAttribute("title")) return; var n=A11Y_SIMB[a11yTxt(b)]; if(n) b.setAttribute("aria-label",n); });
+}
+var A11Y_PEND=false;
+function a11yAjustar(){
+  A11Y_PEND=false;
+  try{ var r=document.body; a11yRotulos(r); a11yClicaveis(r); a11ySimbolos(r); a11ySeg(r); a11yDialogos(); a11yGraficos(r); }catch(e){ rmLogErr(e,"a11y"); }
+}
+try{
+  new MutationObserver(function(){ if(A11Y_PEND) return; A11Y_PEND=true; requestAnimationFrame(a11yAjustar); })
+    .observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class"]});
+  /* item que virou "botão": Enter e Espaço tocam nele */
+  document.addEventListener("keydown",function(ev){
+    var t=ev.target; if(!t||!t.getAttribute||t.getAttribute("data-a11y-btn")!=="1") return;
+    if(ev.key==="Enter"||ev.key===" "){ ev.preventDefault(); t.click(); }
+  });
+  a11yAjustar();
+}catch(e){ rmLogErr(e,"a11y-init"); }
+try{ window.RM.a11yAjustar=a11yAjustar; }catch(e){}
 /* primeira tela: só depois de todos os módulos (antes, cartões que usam listas definidas mais abaixo falhavam na abertura) */
 try{ show(current||"dashboard"); }catch(e){ rmLogErr(e,"primeira-tela"); }
 
