@@ -2,6 +2,10 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
+<!-- Segurança: a página só fala com Google (login e Drive da sincronização) e OpenWeatherMap (clima).
+     Mesmo se um dia algum texto virasse código, ele não conseguiria mandar dados para outro site.
+     127.0.0.1 é só para os testes no PC. Se a sincronização parar de funcionar, apague esta linha e me avise. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; connect-src 'self' https://www.googleapis.com https://api.openweathermap.org https://accounts.google.com/gsi/ http://127.0.0.1:*; frame-src https://accounts.google.com/gsi/; img-src 'self' data: blob:; font-src 'self' data:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#15181f">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1379,7 +1383,8 @@ body.pin-aberto{overflow:hidden}
 .pin-ok{min-height:48px;min-width:200px;border:0;border-radius:var(--r);background:var(--green);color:#0f1116;font:inherit;font-size:17px;font-weight:800;cursor:pointer}
 .pin-link{background:none;border:0;color:var(--blue);font:inherit;font-size:15px;min-height:44px;cursor:pointer}
 .pin-link[hidden]{display:none}
-@media print{ #pinTela{display:none!important} }
+/* impressão: travado, só sai a tela do PIN (antes ela sumia e os dados saíam no papel/PDF); destravado, o PIN não aparece */
+@media print{ body:not(.pin-aberto) #pinTela{display:none!important} body.pin-aberto>*:not(#pinTela){display:none!important} }
 /* ---------- MODO SOL (alto contraste) — por cima do tema claro ---------- */
 #solSideBtn{display:block;margin:0 var(--s4) var(--s2);width:calc(100% - 2*var(--s4));background:var(--input);border:1px solid var(--border);color:var(--text);border-radius:var(--r-sm);padding:var(--s2);font:inherit;font-size:var(--f-sm);cursor:pointer;min-height:40px}
 body[data-sol="1"]{--bg:#ffffff;--panel:#ffffff;--card:#ffffff;--input:#ffffff;--accent:#0b4a8a;--text:#000000;--muted:#25292f;--border:#5b6472;--red:#a3170b;--green:#0a6a35;--yellow:#7a5200;--blue:#0b4a8a;--orange:#8a3f0a;--purple:#4b2f86;--teal:#0b5c54;--neg-solid:#a3170b}
@@ -2639,7 +2644,7 @@ function sanitizeDB(d, rawBackup){
     }
     /* "Outros" (ou outro nome genérico) sem nenhum lançamento: sai. Com lançamento fica, com aviso em Configurações › Categorias. */
     try{
-      var _usoTxt=JSON.stringify([d.expenses||[],d.titulos||[],d.series||[],d.dre_manual||[]]);
+      var _usoTxt=JSON.stringify([d.expenses||[],d.titulos||[],d.series||[],d.dre_manual||[],d.trash||[],d.settings||{}]);
       d.expense_categories=d.expense_categories.filter(function(c){ return !(catNomeGenerico(c.name)&&_usoTxt.indexOf(JSON.stringify(String(c.id)))<0&&d.expense_categories.length>1); });
     }catch(_eG){ rmLogErr(_eG,"cat-generica"); }
     if(!d.expense_categories.some(function(c){return /combust/i.test(c.name||"");})&&!d.catRemoved.some(function(n){return /combust/.test(n);})){ d.expense_categories.push({id:uid()+"comb",name:"Combustível",icon:"⛽",color:"#e17055"}); }
@@ -8302,15 +8307,6 @@ function computeDRECustom(ini,fim,label,filtro,regime){
   if(!isCaixa){
     if(!_ridesUberOk) rides=[];
     rides.forEach(function(x){ var n=platName(x.platform_id), t=rideTotal(x); byPlat[n]=(byPlat[n]||0)+t; bruta+=t; tipT+=(Number(x.tip)||0); km+=Number(x.distance)||0; });
-    (DB.titulos||[]).forEach(function(t){
-      if(!titManualReceber(t)||t.status==="cancelado") return;
-      tituloBaixas(t).forEach(function(b){
-        if(!b||!validISO(b.data)||!inRange(b.data,r.ini,r.fim)) return;
-        var v=Number(b.valor)||0; if(!(v>0.004)) return;
-        var sl=Math.round(Number(dreEncSlice(v,t,b,f,ids))*100)/100; if(!(sl>0.004)) return;
-        byPlat["Outras receitas"]=Math.round(((byPlat["Outras receitas"]||0)+sl)*100)/100; bruta=Math.round((bruta+sl)*100)/100;
-      });
-    });
   } else {
     /* CAIXA — receita: corridas em DINHEIRO no mês da corrida + baixas de
        recebíveis no mês da baixa (pelo valor baixado). Recebível em aberto
@@ -8318,9 +8314,9 @@ function computeDRECustom(ini,fim,label,filtro,regime){
     rides=_ridesUberOk?(DB.rides||[]).filter(function(x){ return x&&isCashRide(x)&&inRange(x.date,r.ini,r.fim); }):[];
     rides.forEach(function(x){ var n=platName(x.platform_id), t=rideTotal(x); byPlat[n]=Math.round(((byPlat[n]||0)+t)*100)/100; bruta=Math.round((bruta+t)*100)/100; tipT=Math.round((tipT+(Number(x.tip)||0))*100)/100; km+=Number(x.distance)||0; });
     (DB.titulos||[]).forEach(function(t){
-      if(!t||t.tipo!=="receber"||t.status==="cancelado") return;
+      if(!t||t.tipo!=="receber"||t.status==="cancelado"||titManualReceber(t)) return;
       var rc=null; try{ rc=corridaDoTitulo(t); }catch(e){ rc=null; }
-      var rn=rc?platName(rc.platform_id):(titManualReceber(t)?"Outras receitas":"Recebíveis");
+      var rn=rc?platName(rc.platform_id):"Recebíveis";
       var tv=Number(t.valor)||0;
       var bs=tituloBaixas(t);
       for(var _ri=0;_ri<bs.length;_ri++){
@@ -8345,11 +8341,24 @@ function computeDRECustom(ini,fim,label,filtro,regime){
       }
     });
   }
+  /* conta a receber manual (fora das corridas): entra quando o dinheiro entra (data da baixa), nos dois regimes,
+     pelo que caiu na conta (valor + juros − desconto) — assim a DRE bate com o saldo. Não é corrida: fica fora de
+     bruta/byPlat/nRides (e do MEI e do comprovante de renda, que leem as corridas). */
+  var recebMan=0, recebItens=[];
+  (DB.titulos||[]).forEach(function(t){
+    if(!titManualReceber(t)||t.status==="cancelado") return;
+    tituloBaixas(t).forEach(function(b){
+      if(!b||!validISO(b.data)||!inRange(b.data,r.ini,r.fim)) return;
+      var v=baixaEntrada(b); if(!(v>0.004)) return;
+      var sl=Math.round(Number(dreEncSlice(v,t,b,f,ids))*100)/100; if(!(sl>0.004)) return;
+      recebMan=Math.round((recebMan+sl)*100)/100; recebItens.push({desc:t.descricao,date:b.data,v:sl});
+    });
+  });
   var nRides=isCaixa?(rides.length+nBxRec):rides.length;
   var man=DB.dre_manual.filter(function(x){return inRange(x.date,r.ini,r.fim);});
   var sumG=function(g){ return man.filter(function(x){return x.gid===g;}).reduce(function(s,x){ var _v=dreManualSlice(Number(x.amount),x.rateio,f,ids); return Math.round((s+_v*(x.gid==="ajuste"?x.signal:1))*100)/100; },0); };
   var receitasMan=sumG("receita"), ded=sumG("ded"), varMan=sumG("var"), fixMan=sumG("fix"), ajustes=sumG("ajuste");
-  var brutaT=bruta+receitasMan, liquida=brutaT-ded;
+  var brutaT=bruta+receitasMan+recebMan, liquida=brutaT-ded;
   var rc=DB.recharges.filter(function(x){return inRange(x.date,r.ini,r.fim);});
   /* Energia das recargas (rua e casa apurada) pertence ao centro Uber: entra só
      quando o filtro casa com o centro Uber (consolidado sempre casa). */
@@ -8521,7 +8530,7 @@ function computeDRECustom(ini,fim,label,filtro,regime){
   varT=Math.round(varT*100)/100; fixT=Math.round(fixT*100)/100;
   liquida=Math.round(liquida*100)/100; margem=Math.round(margem*100)/100;
   oper=Math.round(oper*100)/100; liquido=Math.round(liquido*100)/100;
-  return {range:r,regime:regime,nRides:nRides,byPlat:byPlat,bruta:bruta,tipT:tipT,receitasMan:receitasMan,brutaT:brutaT,ded:ded,liquida:liquida,energia:energia,kwh:kwh,liters:liters,man:man,expVar:expVar,vT:vT,varMan:varMan,varT:varT,margem:margem,expFix:expFix,fT:fT,fixMan:fixMan,das:dasM,fixT:fixT,oper:oper,ajustes:ajustes,liquido:liquido,km:km,ignored:ignored,emAberto:emAberto,jurosEnc:jurosEnc,descEnc:descEnc,titPrincipal:titPrincipal,filtro:f};
+  return {range:r,regime:regime,nRides:nRides,byPlat:byPlat,bruta:bruta,tipT:tipT,receitasMan:receitasMan,recebMan:recebMan,recebItens:recebItens,brutaT:brutaT,ded:ded,liquida:liquida,energia:energia,kwh:kwh,liters:liters,man:man,expVar:expVar,vT:vT,varMan:varMan,varT:varT,margem:margem,expFix:expFix,fT:fT,fixMan:fixMan,das:dasM,fixT:fixT,oper:oper,ajustes:ajustes,liquido:liquido,km:km,ignored:ignored,emAberto:emAberto,jurosEnc:jurosEnc,descEnc:descEnc,titPrincipal:titPrincipal,filtro:f};
 }
 function dreNormRegime(x){ return x==="caixa"?"caixa":"competencia"; }
 function computeDRE(key,filtro,regime){
@@ -8633,6 +8642,7 @@ function rDre(){
   var pks=Object.keys(D.byPlat).sort(function(a,b){return D.byPlat[b]-D.byPlat[a];});
   if(!pks.length) html+=det(muted("Corridas — sem movimento"),"–");
   pks.forEach(function(p){ html+=det('Corridas — '+esc(p),BRL(D.byPlat[p])); });
+  (D.recebItens||[]).forEach(function(x){ html+=det('⊕ '+esc(x.desc)+' <span style="color:var(--muted)">conta a receber · recebido em '+isoToBR(x.date)+'</span>',BRL(x.v)); });
   if((D.tipT||0)>0) html+=det('<span style="color:var(--muted)">↳ das quais gorjetas (informativo — já incluídas acima)</span>',BRL(D.tipT));
   D.man.filter(function(x){return x.gid==="receita";}).forEach(function(x){ var _v=dreManualSlice(Number(x.amount),x.rateio,fD,idsD); if(!(_v>0.004)) return; html+=det('⊕ '+esc(x.desc||"Receita")+' <span style="color:var(--muted)">'+isoToBR(x.date)+'</span>',BRL(_v)); });
   html+='</tbody>';
@@ -10759,6 +10769,12 @@ function fluxoPrevisto(de,ate){
     var _tl=DB.titulos||[];
     for(var i=0;i<_tl.length;i++){ var t=_tl[i]; if(!t||!titAberto(t)) continue;
       var f=tituloFalta(t); if(!(f>0.004)) continue;
+      if(titManualReceber(t)){
+        var dm=t.vencimento; if(!validISO(dm)||dm<de||dm>ate) continue;
+        entradas=Math.round((entradas+f)*100)/100;
+        itens.push({data:dm,tipo:"receber",descricao:t.descricao,valor:f,plataforma:null,plataformaNome:"—",conta:"—",tituloId:t.id});
+        continue;
+      }
       if(t.tipo==="receber"){
         var r=null; try{ r=corridaDoTitulo(t); }catch(e){ r=null; }
         var pid=r?String(r.platform_id||""):null;
@@ -10806,6 +10822,7 @@ function projecaoSaldo90(){
     for(var i=0;i<_tl.length;i++){ var t=_tl[i]; if(!t||!titAberto(t)) continue;
       var f=tituloFalta(t); if(!(f>0.004)) continue;
       if(t.tipo!=="receber"){ add(t.vencimento,-f); }
+      else if(titManualReceber(t)){ add(t.vencimento,f); }
       else {
         var r=null; try{ r=corridaDoTitulo(t); }catch(e){ r=null; }
         var pid=r?String(r.platform_id||""):null;
@@ -11171,7 +11188,7 @@ var titEditId=null, titBaixaId=null, titFiltro="aberto", titPage=1, titTipoF="pa
 /* Título novo a RECEBER (manual): dinheiro que alguém te deve, fora das corridas (origem "manual").
    Entra na DRE só quando o dinheiro entra (na data da baixa), nos dois regimes. Sem série e sem conta de luz. */
 var titNovoTipo="pagar";
-function titManualReceber(t){ return !!(t&&t.tipo==="receber"&&t.origem!=="corrida"); }
+function titManualReceber(t){ return !!(t&&t.tipo==="receber"&&t.origem!=="corrida"&&!t.vinculo); }
 var titNovoOpen=false;
 var titAgingOpen=false;
 var serieTipo="nenhuma", seriePer="mensal", serieDiaTxt="", serieNTxt="12";
@@ -12091,6 +12108,7 @@ try{ window.RM.dreGetRegime=function(){ try{ return dreNormRegime(typeof dreRegi
 try{ window.RM.dreSetRegime=function(v){ try{ dreRegime=dreNormRegime(v); }catch(e){rmLogErr(e)} return dreRegime; }; }catch(e){rmLogErr(e)}
 try{ window.RM.dreNormRegime=(typeof dreNormRegime!=="undefined"?dreNormRegime:function(x){ return x==="caixa"?"caixa":"competencia"; }); }catch(e){rmLogErr(e)}
 
+try{ window.RM.rmsBusy=function(){ return RMS.busy(); }; }catch(e){} /* testes: esperar a fila do IndexedDB antes de recarregar */
 /* ---------- APP INSTALÁVEL (PWA) ----------
    Só funciona com o app publicado em https (ou localhost): registra o service
    worker (sw.js, abre sem internet) e mostra "Instalar app" quando o navegador
@@ -12719,7 +12737,8 @@ function crDados(n,incluirAtual){
   var meses=crMesesLista(n,incluirAtual), plat={}, tot={n:0,bruta:0,desp:0,liq:0,km:0};
   meses.forEach(function(M){
     var D=computeDRECustom(M.ini,M.fim,"Comprovante","__uber","competencia");
-    var bruta=Math.round((Number(D.brutaT)||0)*100)/100, liq=Math.round((Number(D.liquido)||0)*100)/100;
+    /* comprovante de renda: sem conta a receber manual (empréstimo devolvido etc. não é renda do trabalho) */
+    var _rm=Number(D.recebMan)||0, bruta=Math.round(((Number(D.brutaT)||0)-_rm)*100)/100, liq=Math.round(((Number(D.liquido)||0)-_rm)*100)/100;
     M.n=D.nRides||0; M.bruta=bruta; M.liq=liq; M.desp=Math.round((bruta-liq)*100)/100; M.km=Number(D.km)||0;
     Object.keys(D.byPlat||{}).forEach(function(k){ plat[k]=(plat[k]||0)+(Number(D.byPlat[k])||0); });
     tot.n+=M.n; tot.bruta+=bruta; tot.desp+=M.desp; tot.liq+=liq; tot.km+=M.km;
@@ -13381,13 +13400,15 @@ async function syncAgora(interativo){
       } else r=syncJuntar(base,local,nuvem.conteudo.data);
     } else { r.est.daqui=bkpMov(local); }
     var limpo=sanitizeDB(r.dados);
+    /* a chave do clima é deste aparelho: não vem da nuvem e não vai para lá (mesma regra do backup) */
+    try{ var _kl=(local.wx&&local.wx.cfg&&local.wx.cfg.key)||""; if(limpo.wx&&limpo.wx.cfg) limpo.wx.cfg.key=_kl; }catch(_eK){ rmLogErr(_eK,"sync-chave"); }
     var mudouAqui=!syncEq(Object.assign({},limpo,{_rev:0}),Object.assign({},local,{_rev:0}));
     if(mudouAqui){
       try{ await bkpGuardarCopia("restauracao"); }catch(_e){}
       var antes=DB; DB=limpo; processVehicleReset();
       if(!saveLivre()){ DB=antes; return {ok:false,msg:"Não foi possível gravar a junção neste aparelho. Nada foi enviado."}; }
     }
-    var final=JSON.parse(JSON.stringify(DB)); delete final._rev;
+    var final=JSON.parse(JSON.stringify(DB)); delete final._rev; try{ if(final.wx&&final.wx.cfg) final.wx.cfg.key=""; }catch(_eK2){}
     var precisaEnviar=!(nuvem&&nuvem.conteudo&&syncEq(Object.assign({},nuvem.conteudo.data,{_rev:undefined}),Object.assign({},final,{_rev:undefined})));
     if(precisaEnviar){ var envio=JSON.parse(JSON.stringify(final)); await syncNuvemGravar(tok,nuvem&&nuvem.id,{app:"RideMax",v:1,enviadoEm:new Date().toISOString(),aparelho:syncAparelho(),data:envio}); }
     await syncBaseGravar(syncNorm(final));
@@ -14173,22 +14194,32 @@ function pinTelaGarante(){
     else if(b.id==="pinCancel") pinFecharTela(false);
     else if(b.id==="pinEsqueci") pinEsqueci();
   });
-  document.addEventListener("keydown",function(ev){ var tt=document.getElementById("pinTela"); if(!tt||tt.hidden) return; if(/^\d$/.test(ev.key)){ ev.preventDefault(); if(pinEntrada.length<6){ pinEntrada+=ev.key; pinDots(); if(pinModo==="desbloq"&&pinEntrada.length>=(pinCfg()&&pinCfg().len||4)) pinEnviar(); } } else if(ev.key==="Backspace"){ ev.preventDefault(); pinEntrada=pinEntrada.slice(0,-1); pinDots(); } else if(ev.key==="Enter"){ ev.preventDefault(); pinEnviar(); } else if(ev.key==="Escape"&&pinModo!=="desbloq"){ pinFecharTela(false); } },true);
+  document.addEventListener("keydown",function(ev){ var tt=document.getElementById("pinTela"); if(!tt||tt.hidden) return; if(/^\d$/.test(ev.key)){ ev.preventDefault(); if(pinEntrada.length<6){ pinEntrada+=ev.key; pinDots(); if(pinModo==="desbloq"&&pinEntrada.length>=(pinCfg()&&pinCfg().len||4)) pinEnviar(); } } else if(ev.key==="Backspace"){ ev.preventDefault(); pinEntrada=pinEntrada.slice(0,-1); pinDots(); } else if(ev.key==="Enter"){ ev.preventDefault(); pinEnviar(); } else if(ev.key==="Escape"&&pinModo!=="desbloq"){ pinFecharTela(false); }
+      /* com a tela do PIN aberta nenhuma tecla chega ao app (ex.: N abria a corrida rápida por trás do bloqueio) */
+      ev.stopPropagation(); },true);
   return t;
 }
 function pinDots(){ var d=document.getElementById("pinDots"); if(!d) return; var n=(pinModo==="desbloq"&&pinCfg())?(pinCfg().len||4):Math.max(4,pinEntrada.length); var h=""; for(var i=0;i<Math.max(n,pinEntrada.length);i++) h+='<span class="'+(i<pinEntrada.length?"on":"")+'"></span>'; d.innerHTML=h; }
 function pinMsg(t){ var m=document.getElementById("pinMsg"); if(m) m.textContent=t||""; }
+/* com o PIN aberto o resto da página fica inerte: sem foco pelo Tab, sem clique e fora do leitor de tela */
+function pinInerte(on){
+  [].forEach.call(document.body.children,function(el){
+    if(el.id==="pinTela") return;
+    if(on){ if(!el.hasAttribute("inert")){ el.setAttribute("inert",""); el.setAttribute("data-pin-inert","1"); } }
+    else if(el.getAttribute("data-pin-inert")){ el.removeAttribute("inert"); el.removeAttribute("data-pin-inert"); }
+  });
+}
 function pinAbrirTela(modo,sub,cb){
   var t=pinTelaGarante(); pinModo=modo; pinEntrada=""; pinPrimeiro=null; pinCb=cb||null;
   document.getElementById("pinSub").textContent=sub; pinMsg(""); pinDots();
   document.getElementById("pinCancel").hidden=(modo==="desbloq");
   document.getElementById("pinEsqueci").hidden=(modo!=="desbloq"); document.getElementById("pinInfo").hidden=true;
   var c=pinCfg(); document.getElementById("pinBio").style.visibility=(modo==="desbloq"&&c&&c.bio)?"visible":"hidden";
-  t.hidden=false; document.body.classList.add("pin-aberto");
+  t.hidden=false; document.body.classList.add("pin-aberto"); pinInerte(true);
   if(modo==="desbloq"){ document.body.classList.add("pin-travado"); var w=pinEsperaSeg(); if(w) pinMsg("Muitas tentativas. Aguarde "+w+" s."); }
   try{ document.getElementById("pinOk").focus(); }catch(e){}
 }
-function pinFecharTela(ok){ var t=document.getElementById("pinTela"); if(t) t.hidden=true; document.body.classList.remove("pin-aberto"); if(ok||pinModo!=="desbloq") document.body.classList.remove("pin-travado"); var cb=pinCb; pinCb=null; pinEntrada=""; if(cb) cb(!!ok); }
+function pinFecharTela(ok){ var t=document.getElementById("pinTela"); if(t) t.hidden=true; document.body.classList.remove("pin-aberto"); pinInerte(false); if(ok||pinModo!=="desbloq") document.body.classList.remove("pin-travado"); var cb=pinCb; pinCb=null; pinEntrada=""; if(cb) cb(!!ok); }
 function pinEnviar(){
   var p=pinEntrada;
   if(pinModo==="desbloq"){
@@ -16330,7 +16361,7 @@ function fiscalReceitaAno(Y){
   if(FISC_REC.k!==k||FISC_REC.ref!==DB) FISC_REC={k:k,ref:DB,v:{}};
   if(FISC_REC.v[Y]!=null) return FISC_REC.v[Y];
   var v=0;
-  try{ var D=computeDRECustom(Y+"-01-01",fim,"Ano "+Y); v=Number(D&&D.brutaT); v=isFinite(v)?Math.round(v*100)/100:0; }
+  try{ var D=computeDRECustom(Y+"-01-01",fim,"Ano "+Y); v=Number(D&&D.brutaT)-Number(D&&D.recebMan||0); v=isFinite(v)?Math.round(v*100)/100:0; }
   catch(e){ rmLogErr(e,"fiscal-receita"); v=0; }
   FISC_REC.v[Y]=v; return v;
 }
@@ -16413,12 +16444,14 @@ function fiscalLembretes(hoje,lim){
     for(var i=0;i<3;i++){
       var d=new Date(Y,Number(hoje.slice(5,7))-1+i,1), ym=d.getFullYear()+"-"+p2(d.getMonth()+1);
       if(ym+"-20"<hoje||ym+"-15">lim) continue;
-      itens.push({id:"das:"+ym,quando:ym+"-15",ate:ym+"-20",titulo:"DAS do MEI vence dia 20",texto:"Pague o DAS de "+isoToBR(ym+"-01").slice(3)+" até o dia 20."});
+      itens.push({id:"das:"+ym,quando:ym+"-15",ate:ym+"-20",titulo:"DAS do MEI vence dia 20",texto:"Pague o DAS de "+(function(){ var c=new Date(d.getFullYear(),d.getMonth()-1,1); return p2(c.getMonth()+1)+"/"+c.getFullYear(); })()+" até o dia 20."});
     }
     /* depois de 31/05 não há aviso da DASN: nem calcula a receita (a DRE do ano é cara) */
     var dasnQ=[[Y+"-01-15","dasn0"],[Y+"-05-02","dasn1"],[Y+"-05-25","dasn2"]].filter(function(q){ return q[0]<=lim&&fimPrazo>=hoje; });
     if(dasnQ.length&&fiscalDasnPendente(Y)){
-      var tx="Receita bruta de "+(Y-1)+": "+BRL(fiscalReceitaAno(Y-1))+". Prazo até 31/05.";
+      /* sem o valor no texto: o lembrete é agendado a cada gravação e somar o ano inteiro aqui pesava no celular.
+         O valor fica no cartão do Início (com Copiar). */
+      var tx="Declare a receita bruta de "+(Y-1)+" — o valor está no Início, no cartão Lembretes fiscais. Prazo até 31/05.";
       dasnQ.forEach(function(q){ itens.push({id:q[1]+":"+Y,quando:q[0],ate:fimPrazo,titulo:"Declaração anual do MEI (DASN)",texto:tx}); });
     }
   }
@@ -16563,7 +16596,8 @@ function dreMensalTabelaHTML(M){
   var L=dreMensalLinhas(temDas), nM=M.meses.length;
   /* Total = DRE do período inteiro; Média = só os meses completos (o mês em curso puxaria a média para baixo) */
   var T=dreMesCalc(M.meses[0].ini,M.meses[nM-1].fim,"Total",M.filtro,M.regime);
-  var fechados=M.meses.filter(function(m){ return !m.atual; });
+  /* meses antes de começar a usar (tudo zero) não entram na média */
+  var fechados=M.meses.filter(function(m){ var D=m.D||{}; return !m.atual&&((D.nRides||0)>0||Math.abs(D.brutaT||0)>0.004||Math.abs(D.varT||0)>0.004||Math.abs(D.fixT||0)>0.004); });
   var h='<div class="tblwrap dm-wrap" id="dreMWrap"><table class="tbl dm-tbl" data-f4="nao"><thead><tr><th class="dm-l">'+(M.regime==="caixa"?"Por caixa":"Por competência")+'</th>';
   M.meses.forEach(function(m){ h+='<th>'+esc(m.label)+(m.atual?"*":"")+(m.fechado?" 🔒":"")+'</th>'; });
   h+='<th class="dm-tot">Total</th><th class="dm-tot">Média</th></tr></thead><tbody>';
@@ -16575,7 +16609,7 @@ function dreMensalTabelaHTML(M){
     h+=dreMensalCel(f(T),tipo,"dm-tot")+dreMensalCel(vm,tipo,"dm-tot")+'</tr>';
   });
   h+='</tbody></table></div>';
-  h+='<div class="sub">* mês em curso, até hoje. 🔒 mês fechado. Total = o período inteiro; Média = média dos meses completos (sem o mês em curso). Cada coluna é o mesmo cálculo da DRE do mês, com o centro e o regime escolhidos acima.</div>';
+  h+='<div class="sub">* mês em curso, até hoje. 🔒 mês fechado. Total = o período inteiro; Média = média dos meses completos com movimento (sem o mês em curso e sem os meses vazios). Cada coluna é o mesmo cálculo da DRE do mês, com o centro e o regime escolhidos acima.</div>';
   return h;
 }
 /* ---- barra comum às duas visões da DRE (Período e Mês a mês) ---- */
