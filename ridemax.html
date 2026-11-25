@@ -1872,6 +1872,10 @@ table.dm-tbl tr.dm-pct td.dm-l{padding-left:18px}
 /* Título a receber (manual): sem categoria de despesa, sem conta de luz e sem série */
 .tit-rec label.f:has(#titCat),.tit-rec label.f:has(#titLuzChk),.tit-rec #titLuzBox,.tit-rec #serieBox{display:none!important}
 #titNovoTipoSeg{margin-bottom:4px}
+/* rosca atual × alvo: chave dos dois anéis */
+.don-chave{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--muted);margin:2px 0 8px}
+.don-chave span{display:inline-flex;align-items:center;gap:6px}
+.don-chave svg{color:var(--text);flex-shrink:0}
 </style>
 </head>
 <body>
@@ -2180,9 +2184,11 @@ var DEFAULT_CATS = [
   ["Lavagem","🚿","#4aa89b"],
   ["Celular/Internet","📋","#cf8a46"],
   ["Estacionamento","🅿️","#95a5a6"],
-  ["Alimentação","🍽️","#d35400"],
-  ["Outros","💼","#7f8c8d"]
+  ["Alimentação","🍽️","#d35400"]
 ];
+/* Categoria genérica ("Outros", "Diversos"…) esconde para onde o dinheiro foi: não existe no padrão e não pode ser criada. */
+function catNomeGenerico(n){ var k=normName(n); return /^(outros?|outras?|diversos?|diversas?|geral|gerais|variados?|variadas?|demais|misc|miscelanea|avulsos?)$/.test(k); }
+var CAT_GENERICA_MSG="Use um nome que diga o que é (ex.: Pedágio, Seguro). Categoria genérica como \"Outros\" esconde para onde o dinheiro foi.";
 /* ---------- utils ---------- */
 function uid(){ return "id"+Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36); }
 /* Alvo da carteira por classe (Ações, FIIs, ETFs, Renda fixa): pesos de 0 a 100 que somam 100; senão null. */
@@ -2631,6 +2637,11 @@ function sanitizeDB(d, rawBackup){
         var _o={id:String(c.id||uid()),name:String(c.name).slice(0,40),icon:String(c.icon||"💼").slice(0,4),color:validColor(c.color,"#8f96a3")}; if(_nat) _o.natureza=_nat; return _o;
       });
     }
+    /* "Outros" (ou outro nome genérico) sem nenhum lançamento: sai. Com lançamento fica, com aviso em Configurações › Categorias. */
+    try{
+      var _usoTxt=JSON.stringify([d.expenses||[],d.titulos||[],d.series||[],d.dre_manual||[]]);
+      d.expense_categories=d.expense_categories.filter(function(c){ return !(catNomeGenerico(c.name)&&_usoTxt.indexOf(JSON.stringify(String(c.id)))<0&&d.expense_categories.length>1); });
+    }catch(_eG){ rmLogErr(_eG,"cat-generica"); }
     if(!d.expense_categories.some(function(c){return /combust/i.test(c.name||"");})&&!d.catRemoved.some(function(n){return /combust/.test(n);})){ d.expense_categories.push({id:uid()+"comb",name:"Combustível",icon:"⛽",color:"#e17055"}); }
     var _hasJ=d.expense_categories.some(function(c){ return normName(c.name||"")==="juros e multas pagos"; });
     if(!_hasJ&&!d.catRemoved.some(function(n){ return normName(n)==="juros e multas pagos"; })){ d.expense_categories.push({id:uid()+"jurosmultas",name:"Juros e multas pagos",icon:"\uD83D\uDCB8",color:"#e74c3c",natureza:"despesa"}); }
@@ -7092,7 +7103,7 @@ function rPrev(){
   var wxOn=!!(DB.wx.cfg.enabled&&DB.wx.cfg.key);
   var html='<div class="card prev-top10"><h3>Top 10 Melhores Horários da Semana <span class="conf '+cf[1]+'">confiança '+cf[0]+' · '+full.total+' corridas · '+_nBons+' horário(s) com '+PREV_MIN_N+'+ corridas'+(full.capped?'· '+full.capped+' outlier(s) limitado(s)':'')+'</span></h3><div class="tblwrap"><table class="tbl"><tr><th>#</th><th>Dia</th><th>Horário</th>'+(wxOn?'<th>🌦️</th>':"")+'<th>R$/hora</th><th>Amostras</th><th>Força</th></tr><tbody>';
   var rankTop=["1º","2º","3º","4º","5º","6º","7º","8º","9º","10º"], mx=top.length?top[0].v:1;
-  top.forEach(function(s,i){ var ws=wxOn?wxSlot(s.wd,s.h):null; html+='<tr><td>'+rankTop[i]+'</td><td class="l">'+DIAS[s.wd]+(s.wd===twd?' <span style="color:#e0695c">●hoje</span>':"")+'</td><td>'+s.h+'–'+(s.h+1)+'h</td>'+(wxOn?'<td title="'+esc(ws?ws.title:"sem previsão")+'">'+(ws?ws.icon:"–")+'</td>':"")+'<td style="color:#4caf7d"><b>'+BRL(s.v)+'/h</b></td><td>n='+s.n+(s.n<PREV_MIN_N?' <span class="conf baixa">pouca amostra</span>':"")+'</td><td class="l">'+bar(s.v,mx,wxOn?80:120,"#4caf7d")+'</td></tr>'; });
+  top.forEach(function(s,i){ var ws=wxOn?wxSlot(s.wd,s.h):null; html+='<tr><td>'+rankTop[i]+'</td><td class="l">'+DIAS[s.wd]+(s.wd===twd?' <span style="color:#e0695c">●hoje</span>':"")+'</td><td>'+s.h+'–'+(s.h+1)+'h</td>'+(wxOn?'<td title="'+esc(ws?ws.title:"sem previsão")+'">'+(ws?ws.icon:"–")+'</td>':"")+'<td style="color:#4caf7d"><b>'+BRL(s.v)+'/h</b></td><td>'+s.n+(s.n<PREV_MIN_N?' <span class="conf baixa">pouca amostra</span>':"")+'</td><td class="l">'+bar(s.v,mx,wxOn?80:120,"#4caf7d")+'</td></tr>'; });
   html+='</tbody></table></div><div class="sub">Valores por hora limitados ao percentil 95 (anti-outlier). Primeiro vêm os horários com '+PREV_MIN_N+' ou mais corridas; os com menos aparecem depois, marcados como "pouca amostra" — ainda são sorte.</div></div>';
   html+='<div class="card"><h3>Melhores horários por dia</h3><div class="sub">Top 5 de cada dia · valores em R$/h · '+(wxOn?"ícone = clima previsto para o próximo dia igual":"barra = força em relação ao melhor do dia")+' · <span style="color:var(--yellow)">⚠ n&lt;3</span> = poucas amostras, menos confiável.</div><div class="daycols daytbl">';
   var rankPos=["1º","2º","3º","4º","5º"];
@@ -7634,6 +7645,7 @@ function catCard(){
       +'<td style="white-space:nowrap"><button class="btn sm rowdel" data-cdel="'+esc(c.id)+'">Excluir</button></td></tr>';
   });
   h+='</tbody></table></div>';
+  DB.expense_categories.filter(function(c){ return catNomeGenerico(c.name); }).forEach(function(c){ var _u=categoriaUso(c.id); h+='<div class="tip" style="color:var(--yellow)">⚠️ "'+esc(c.name)+'" é genérica e esconde para onde o dinheiro foi ('+(_u.total>0?"usada em "+_u.total+" lançamento(s)":"sem uso")+'). Mude esses lançamentos para uma categoria específica (ou crie uma, ex.: Pedágio) e depois exclua "'+esc(c.name)+'".</div>'; });
   h+='<div class="sub">O grupo define onde cada categoria entra no DRE (variável, fixa ou ignorada).</div><div class="btnrow"><button class="btn sm accent" id="catMapReset">↩ Voltar ao padrão</button></div>';
   h+='<div class="toolbar"><input id="cName" placeholder="Nome (ex: Pedágio)" maxlength="40" style="flex:2;min-width:120px;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px"><input id="cIcon" placeholder="Ícone (ex: 🅿️)" maxlength="4" style="flex:1;min-width:70px;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px"><input type="color" id="cColor" value="#5a9fd4" style="background:var(--input);border:1px solid var(--border);border-radius:8px;padding:2px;width:52px;height:38px;cursor:pointer"><button class="btn sm green" id="cAdd">Adicionar</button></div>';
   h+='<div class="sub">ex.: ícone 🅿️ · até 4 caracteres · nome com até 40 caracteres</div>';
@@ -7652,6 +7664,7 @@ function wireCatCard(){
     if(!n){ customAlert("Digite o nome da categoria.","Categorias de despesa"); show("plataformas"); return; }
     n=n.slice(0,40);
     if(DB.expense_categories.some(function(x){return x.id!==c.id&&normName(x.name)===normName(n);})){ customAlert("Já existe uma categoria com esse nome.","Categorias de despesa"); show("plataformas"); return; }
+    if(catNomeGenerico(n)){ customAlert(CAT_GENERICA_MSG,"Categorias de despesa"); show("plataformas"); return; }
     c.name=n; unremoveCatName(n);
     if(!save()){ c.name=old; show("plataformas"); return; }
     show("plataformas");
@@ -7691,6 +7704,7 @@ function wireCatCard(){
     if(!n){ customAlert("Digite o nome da categoria.","Categorias de despesa"); return; }
     n=n.slice(0,40);
     if(DB.expense_categories.some(function(x){return normName(x.name)===normName(n);})){ customAlert("Já existe uma categoria com esse nome.","Categorias de despesa"); return; }
+    if(catNomeGenerico(n)){ customAlert(CAT_GENERICA_MSG,"Categorias de despesa"); return; }
     DB.expense_categories.push({id:uid(),name:n,icon:ic?String(ic).slice(0,4):"💼",color:validColor(document.getElementById("cColor").value,"#5a9fd4")});
     unremoveCatName(n);
     if(!save()){ DB.expense_categories.pop(); var _m2=document.getElementById("cMsg"); if(_m2) _m2.textContent=SAVE_FAIL_MSG; return; }
@@ -11108,7 +11122,7 @@ function rRelcat(){
   _ord.forEach(function(r){
     var part=(Math.abs(C.total)>0.004)?(r.total/C.total*100):0;
     var open=(relcatOpen===r.key);
-    linhas+='<tr class="relcat-row'+(open?" open":"")+'" data-cat="'+esc(r.key)+'"><td class="l">'+(open?"▼ ":"▶ ")+esc(r.nome)+(r.ignorado?' <span class="mtag">ignorado no DRE</span>':"")+'</td><td style="white-space:nowrap"><b>'+((r.total<0)?("− "+BRL(-r.total)):BRL(r.total))+'</b></td><td>'+part.toFixed(1).replace(".",",")+'%</td></tr>';
+    linhas+='<tr class="relcat-row'+(open?" open":"")+'" data-cat="'+esc(r.key)+'"><td class="l">'+(open?"▼ ":"▶ ")+esc(r.nome)+(r.ignorado?' <span class="mtag">ignorado no DRE</span>':"")+((r.key==="__semcat"&&Math.abs(r.total)>0.004)?' <span class="mtag" style="color:var(--yellow)">⚠ edite e escolha a categoria</span>':"")+'</td><td style="white-space:nowrap"><b>'+((r.total<0)?("− "+BRL(-r.total)):BRL(r.total))+'</b></td><td>'+part.toFixed(1).replace(".",",")+'%</td></tr>';
   });
   html+='<div class="relcat-main"><div class="card relcat-list-card"><h3>Por categoria ('+esc(R.label)+' · '+isoToBR(R.ini)+' a '+isoToBR(R.fim)+')<button type="button" class="infoBtn" data-tip="Toque numa categoria para abrir os lançamentos; o detalhe rola por dentro à direita." aria-label="Sobre este bloco">i</button></h3>'
     +'<div class="relcat-list" id="relcatList" role="region" aria-label="Totais por categoria"><table class="tbl"><thead><tr><th style="text-align:left">Categoria</th><th>Total</th><th>Partic.</th></tr></thead><tbody>'+linhas+'</tbody></table></div>'
@@ -11509,7 +11523,7 @@ function rTitulos(){
   var ativas=(DB.contas||[]).filter(function(c){ return c.ativa; }).sort(finSortNome);
   var centrosA=(DB.centros||[]).filter(function(c){ return c.ativo; }).sort(finSortNome);
   var cats=(DB.expense_categories||[]).slice().sort(function(a,b){ var x=String(a.name||""),y=String(b.name||""); return x<y?-1:(x>y?1:0); });
-  var defCat=""; for(i=0;i<cats.length;i++){ if(/outros/i.test(cats[i].name||"")){ defCat=cats[i].id; break; } } if(!defCat&&cats.length) defCat=cats[0].id;
+  var defCat=""; /* nada pré-escolhido: categoria tem de ser escolhida (antes caía em "Outros") */
   var edCat=editing?(editing.categoria||""):defCat;
   var edCen=editing?((editing.rateio&&editing.rateio[0]&&editing.rateio[0].centro)||""):"";
   try{
@@ -11518,7 +11532,7 @@ function rTitulos(){
   }catch(e){rmLogErr(e)}
   var nowD=new Date();
   var mesAtual=String(nowD.getMonth()+1).padStart(2,"0")+"/"+nowD.getFullYear();
-  var catOpts=cats.map(function(c){ return '<option value="'+esc(c.id)+'"'+(edCat===c.id?" selected":"")+'>'+esc((c.icon?c.icon+" ":"")+c.name)+'</option>'; }).join("");
+  var catOpts='<option value=""'+(edCat?"":" selected")+'>— escolher —</option>'+cats.map(function(c){ return '<option value="'+esc(c.id)+'"'+(edCat===c.id?" selected":"")+'>'+esc((c.icon?c.icon+" ":"")+c.name)+'</option>'; }).join("");
   if(editing&&edCat&&!cats.some(function(c){ return c.id===edCat; })){ catOpts='<option value="'+esc(edCat)+'" selected>'+esc(titCatNome(edCat))+'</option>'+catOpts; }
   var cenOpts=centrosA.map(function(c){ return '<option value="'+esc(c.id)+'"'+(edCen===c.id?" selected":"")+'>'+esc(c.nome)+'</option>'; }).join("");
   if(editing&&edCen&&!centrosA.some(function(c){ return c.id===edCen; })){ cenOpts='<option value="'+esc(edCen)+'" selected>'+esc(centroNome(edCen))+' (inativo)</option>'+cenOpts; }
@@ -11549,7 +11563,7 @@ function rTitulos(){
       +(_lkEd?'<div class="tip" id="titOrigAviso" style="grid-column:1/-1;color:var(--yellow)">🔒 Este título veio da Despesa do Uber (🚗). Valor, competência e descrição só mudam na tela de Despesas do Uber — aqui dá para ajustar vencimento, categoria e centro de custo.</div>':"")+(_lkRec?'<div class="tip" style="grid-column:1/-1;color:var(--yellow)">🔋 Este título veio de Recarga na rua. Valor, competência e descrição só mudam na tela de Recarga — aqui dá para ajustar vencimento, categoria e centro de custo.</div>':"")+(_lkCorr?'<div class="tip" style="grid-column:1/-1;color:var(--yellow)">🏁 Este título veio de uma Corrida. Valor, competência e descrição só mudam na tela de Nova corrida/Histórico — aqui dá para ajustar vencimento, categoria e centro de custo.</div>':"")
       +'<label class="f">Descrição *<input id="titDesc" maxlength="80" placeholder="ex: Conta de luz" value="'+esc(editing?editing.descricao:"")+'"'+((_lkEd||_lkRec||_lkCorr)?" disabled":"")+'>'+((_lkEd||_lkRec||_lkCorr)?'<span class="tip">🔒 vem da origem — edite na tela de origem.</span>':"")+'</label>'
       +'<div class="tit-short"><label class="f">Valor (R$) *<input id="titValor" inputmode="decimal" placeholder="ex: 100,00" value="'+esc(editing?String(Number(editing.valor)).replace(".",","):"")+'"'+((_lkEd||_lkRec||_lkCorr)?" disabled":"")+'>'+((_lkEd||_lkRec||_lkCorr)?'<span class="tip">🔒 vem da origem — edite na tela de origem.</span>':"")+'</label>'
-      +'<label class="f">Categoria<select id="titCat">'+catOpts+'</select><span class="tip">independe do centro de custo.</span></label></div>'
+      +'<label class="f">Categoria *<select id="titCat">'+catOpts+'</select><span class="tip">independe do centro de custo.</span></label></div>'
       +(((_lkEd||_lkRec||_lkCorr))?"":'<label class="f" style="grid-column:1/-1"><input type="checkbox" id="titLuzChk" style="width:auto"'+(titLuzOn?" checked":"") +'> \u26A1 Esta \u00E9 a conta de luz da casa</label>')
       +(((_lkEd||_lkRec||_lkCorr))?"":'<div id="titLuzBox" style="grid-column:1/-1"'+(titLuzOn?"":" hidden")+ '><div class="sub">Conta de luz — medição <button type="button" class="hbtn" id="hLuzBtn" title="Ajuda: conta de luz" aria-label="Ajuda: conta de luz" aria-expanded="false">?</button></div><div class="hhelp" id="hLuzBox" hidden></div><div class="shortgrid"><label class="f">kWh total da conta *<input id="titLuzKwh" inputmode="decimal" placeholder="ex: 287" value="'+esc(titLuzKwhTxt)+'"><span class="tip">kWh total impresso na conta.</span></label><label class="f">Leitura inicial * (DD/MM/AAAA)<input id="titLuzDe" placeholder="ex: 19/07/2026" value="'+esc(titLuzDeTxt)+'"><span class="tip">in\u00EDcio do per\u00EDodo de leitura.</span></label><label class="f">Leitura final * (DD/MM/AAAA)<input id="titLuzAte" placeholder="ex: 20/08/2026" value="'+esc(titLuzAteTxt)+'"><span class="tip">fim do per\u00EDodo de leitura.</span></label></div><div class="tip">Os tr\u00EAs n\u00FAmeros est\u00E3o impressos na conta: valor total, kWh total e per\u00EDodo de leitura. A tarifa \u00E9 calculada (valor \u00F7 kWh) e o rateio sai da medi\u00E7\u00E3o das recargas em casa no per\u00EDodo \u2014 sem estimativa.</div><div class="tip" id="titLuzPrev"></div></div>')
       +'<div class="f" style="grid-column:1/-1" id="titCenWrap"'+(titRateioMulti?" hidden":"")+'><label class="f" style="margin:0">Centro de custo *<select id="titCen"><option value="">— escolher —</option>'+cenOpts+'</select><span class="tip">caso de 100% (o normal). Para dividir, use Ratear.</span></label><div class="btnrow" style="margin:8px 0 0"><button type="button" class="btn sm accent" id="titRatearBtn">Ratear</button></div></div>'
@@ -11848,6 +11862,8 @@ function rTitulos(){
     if(_luzOn&&((_lkEd||_lkRec||_lkCorr))){ err("Conta de luz n\u00E3o vale para t\u00EDtulo de origem (Despesa/Recarga/Corrida)."); return; }
     if(_lkSv){ desc=editing.descricao; val=editing.valor; comp=editing.competencia; }
     if(!desc){ err("Digite a descrição do título."); return; }
+    var _ehRec=editing?editing.tipo==="receber":_novoRec;
+    if(!_ehRec&&!cat){ err("Escolha a categoria. Sem categoria o gasto fica escondido nos relatórios."); return; }
     if(!(val>0)){ err("Valor precisa ser maior que zero."); return; }
     var _rt=null;
     var _luzKwhRaw=NaN, _luzDeRaw=null, _luzAteRaw=null;
@@ -15926,8 +15942,9 @@ function resResumoHTML(){
   var cores=resCoresClasses();
   RES_DON={itens:itens,cores:cores,res:D?D.reserva.valor:0,sel:-1};
   h+='<div class="card res-don"><h3>Distribuição'+(R.temAlvo?' atual × alvo':'')+'<button type="button" class="infoBtn" data-tip="Quanto cada classe pesa na carteira (sem a reserva de emergência). O alvo vem de Planejamento › Metas e alvos." aria-label="Sobre a distribuição">i</button></h3>'
+    +(R.temAlvo?'<div class="don-chave"><span><svg width="22" height="12" aria-hidden="true"><path d="M2 11 A9 9 0 0 1 20 11" fill="none" stroke="currentColor" stroke-width="5"/></svg> anel grosso, de dentro: <b>como está hoje</b></span><span><svg width="22" height="12" aria-hidden="true"><path d="M2 11 A9 9 0 0 1 20 11" fill="none" stroke="currentColor" stroke-width="1.5"/></svg> anel fino, de fora: <b>o alvo</b> (Planejamento › Metas e alvos)</span></div>':'')
     +'<div class="don-wrap"><canvas id="resDonCv" width="180" height="180" aria-label="Distribuição por classe"></canvas><div class="don-leg">'
-    +itens.map(function(i,ix){ return '<div class="don-it" data-di="'+ix+'" role="button" tabindex="0" aria-pressed="false"><i style="background:'+cores[i.k]+'"></i><span>'+esc(i.nome)+'</span><b>'+esc(brDec(i.pct,1))+'%</b>'+(i.alvo!=null?'<small>alvo '+esc(brDec(i.alvo,0))+'%</small>':'')+'</div>'; }).join("")
+    +itens.map(function(i,ix){ return '<div class="don-it" data-di="'+ix+'" role="button" tabindex="0" aria-pressed="false"><i style="background:'+cores[i.k]+'"></i><span>'+esc(i.nome)+'</span><b>'+esc(brDec(i.pct,1))+'%</b>'+(i.alvo!=null?'<small>alvo '+esc(brDec(i.alvo,0))+'%'+(function(){ var d=i.pct-i.alvo; return Math.abs(d)<0.5?' · no alvo':(' · '+esc(brDec(Math.abs(d),1))+(d<0?' pontos abaixo':' pontos acima')); })()+'</small>':'')+'</div>'; }).join("")
     +(RES_DON.res>0.004?'<div class="sub">🧯 Reserva de emergência: '+esc(BRL(RES_DON.res))+' (fora)</div>':'')
     +(!R.temAlvo?'<div class="sub">Defina os pesos em Planejamento › Metas e alvos para comparar.</div>':'')
     +'<div class="sub">Toque numa fatia ou numa linha para ver o detalhe.</div>'
@@ -15973,7 +15990,7 @@ function resDesenharDon(){
   RES_DON.itens.forEach(function(i,ix){ if(!(i.valor>0)) return; var a=i.valor/tot*Math.PI*2; RES_DON.arcos.push({ix:ix,a0:a0,a1:a0+a}); ctx.strokeStyle=RES_DON.cores[i.k]; ctx.globalAlpha=(sel>=0&&sel!==ix)?0.35:1; ctx.lineWidth=(sel===ix)?36:28; var _g=(_nFat>1&&a>0.06)?0.016:0; ctx.beginPath(); ctx.arc(cx,cy,64,a0+_g,a0+a-_g); ctx.stroke(); ctx.globalAlpha=1; a0+=a; });
   /* anel fino de fora = alvo */
   var temAlvo=RES_DON.itens.some(function(i){ return i.alvo!=null; });
-  if(temAlvo){ a0=-Math.PI/2; RES_DON.itens.forEach(function(i){ if(!(i.alvo>0)) return; var a=i.alvo/100*Math.PI*2; ctx.strokeStyle=RES_DON.cores[i.k]; ctx.globalAlpha=0.55; ctx.lineWidth=6; ctx.beginPath(); ctx.arc(cx,cy,86,a0+0.02,a0+a-0.02); ctx.stroke(); ctx.globalAlpha=1; a0+=a; }); }
+  if(temAlvo){ a0=-Math.PI/2; RES_DON.itens.forEach(function(i,ix){ if(!(i.alvo>0)) return; var a=i.alvo/100*Math.PI*2; ctx.strokeStyle=RES_DON.cores[i.k]; ctx.globalAlpha=(sel>=0&&sel!==ix)?0.2:(sel===ix?1:0.55); ctx.lineWidth=(sel===ix)?8:6; ctx.beginPath(); ctx.arc(cx,cy,86,a0+0.02,a0+a-0.02); ctx.stroke(); ctx.globalAlpha=1; a0+=a; }); }
   ctx.textAlign="center";
   var it=sel>=0?RES_DON.itens[sel]:null;
   if(it){ ctx.fillStyle=T.txt; ctx.font="bold 13px sans-serif"; ctx.fillText(it.nome,cx,cy-10); ctx.font="bold 12px sans-serif"; ctx.fillText(brDec(it.pct,1)+"%"+(it.alvo!=null?" · alvo "+brDec(it.alvo,0)+"%":""),cx,cy+6); ctx.font="11px sans-serif"; ctx.fillStyle=T.mut; ctx.fillText(BRL(it.valor),cx,cy+21); }
