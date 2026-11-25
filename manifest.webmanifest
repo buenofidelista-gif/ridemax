@@ -16,6 +16,9 @@
     { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Nova corrida rápida", "short_name": "+ Corrida", "url": "./ridemax.html?rapida=1", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+    { "name": "Iniciar corrida (cronômetro)", "short_name": "Iniciar corrida", "description": "Começa a cronometrar a corrida e a contar os km pelo GPS", "url": "./ridemax.html?app=1&atalho=corrida", "icons": [{ "src": "atalho-corrida.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Iniciar ou encerrar turno", "short_name": "Turno", "description": "Abre o turno pedindo só o odômetro (ou encerra o turno aberto)", "url": "./ridemax.html?app=1&atalho=turno", "icons": [{ "src": "atalho-turno.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Nova corrida rápida", "short_name": "+ Corrida", "description": "Lança uma corrida já feita, só com plataforma e valor", "url": "./ridemax.html?app=1&rapida=1", "icons": [{ "src": "atalho-rapida.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Lançar despesa", "short_name": "Despesa", "description": "Abre o formulário de despesa", "url": "./ridemax.html?app=1&atalho=despesa", "icons": [{ "src": "atalho-despesa.png", "sizes": "192x192", "type": "image/png" }] }
   ]
 }
