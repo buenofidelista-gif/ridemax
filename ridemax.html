@@ -1874,8 +1874,8 @@ table.dm-tbl tr.dm-pct td.dm-l{padding-left:18px}
 #titNovoTipoSeg{margin-bottom:4px}
 /* rosca atual × alvo: chave dos dois anéis */
 .don-chave{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--muted);margin:2px 0 8px}
-.don-chave span{display:inline-flex;align-items:center;gap:6px}
-.don-chave svg{color:var(--text);flex-shrink:0}
+.don-chave span{display:block}
+.don-chave svg{color:var(--text);vertical-align:-1px;margin-right:6px}
 </style>
 </head>
 <body>
@@ -15916,7 +15916,7 @@ function resMeusAtivosLigar(){
   });
 }
 /* ---------- Resumo ---------- */
-var RES_EVO=null, RES_DON=null;
+var RES_EVO=null, RES_DON=null, RES_EVO_SEL=-1, RES_EVO_G=null;
 function resResumoHTML(){
   var R=resCalc(); var REN=null; try{ REN=rendaCarteira(); }catch(e){}
   if(!R.pos.length&&!R.realizado&&!R.provTotal) return '<div class="res-main"><div class="card"><div class="empty">Ainda não há investimentos. Registre uma compra na aba <b>Carteira</b> (Nova operação).</div></div></div>';
@@ -15932,10 +15932,10 @@ function resResumoHTML(){
   var _simC=R.pos.filter(function(x){ return x.comprar&&x.comprar.v==="Sim"; }).map(function(x){ return x.codigo; });
   var sim=_simC, _comp='<div class="card res-kpi res-comprar"><div class="rk-tit">🛒 Para comprar agora</div><div class="rk-val">'+(R.temAlvo?sim.length+(sim.length===1?" ativo":" ativos"):"—")+'</div><div class="rk-sub">'+(R.temAlvo?(sim.length?esc(sim.join(", "))+' · classe abaixo do alvo':'Nenhuma classe abaixo do alvo com ativo em boa leitura.'):'Defina os pesos em Planejamento › Metas e alvos.')+'</div><div class="btnrow"><button type="button" class="btn sm accent" data-resir="0">Ver Meus ativos</button></div></div>';
   var h='<div class="res-main"><div class="res-kpis">'+pat+luc+pro+ren+'</div>'+_comp;
-  RES_EVO=resEvolucao();
+  RES_EVO=resEvolucao(); RES_EVO_SEL=-1;
   h+=resFiltrosHTML();
   h+='<div class="res-graficos"><div class="card res-evo"><h3>Evolução do patrimônio'+(window.__resCls?' · '+esc(RES_CLS[window.__resCls].nome):'')+'<button type="button" class="infoBtn" data-tip="Fim de cada mês (o mês atual vai até hoje): valor aplicado = custo das posições; ganho = valor de mercado − custo (preço do histórico de cotação daquele dia; sem histórico, pelo custo). Não inclui o dinheiro parado na corretora." aria-label="Sobre este gráfico">i</button></h3>'
-    +(RES_EVO.length?'<div class="res-leg"><span><i style="background:#2e9e64"></i>Valor aplicado</span><span><i style="background:#8fe0b4"></i>Ganho</span><span><i style="background:#e0695c"></i>Perda</span></div><canvas id="resEvoCv" class="chart" height="230" aria-label="Evolução do patrimônio"></canvas>':'<div class="empty">Sem movimento ainda.</div>')+'</div>';
+    +(RES_EVO.length?'<div class="res-leg"><span><i style="background:#2e9e64"></i>Valor aplicado</span><span><i style="background:#8fe0b4"></i>Ganho</span><span><i style="background:#e0695c"></i>Perda</span></div><canvas id="resEvoCv" class="chart" height="230" aria-label="Evolução do patrimônio"></canvas><div class="piedet res-evo-det" id="resEvoDet">Toque numa coluna para ver os valores do mês.</div>':'<div class="empty">Sem movimento ainda.</div>')+'</div>';
   /* distribuição */
   var D=R.dist, itens=[];
   RES_ORDEM.forEach(function(k){ var C=R.cls[k]; if(C.valor>0.004||C.alvo>0) itens.push({k:k,nome:C.nome,valor:C.valor,pct:C.pctAtual||0,alvo:C.alvo}); });
@@ -15972,12 +15972,32 @@ function resDesenharEvo(){
   ctx.font="11px sans-serif"; ctx.strokeStyle=T.grid; ctx.fillStyle=T.mut;
   for(var g=0;g<=4;g++){ var v=mn+(mx-mn)*g/4, y=Y(v); ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(W-R,y); ctx.stroke(); var tx=Math.abs(v)>=1000?brDec(v/1000,1)+"k":brDec(v,0); ctx.fillText(tx,4,y+4); }
   var n=E.length, bw=(W-L-R)/n, larg=Math.max(6,Math.min(34,bw*0.62)), y0=Y(0), passo=Math.ceil(n/(W<420?5:12));
+  RES_EVO_G={L:L,bw:bw,n:n};
   E.forEach(function(e,i){ var x=L+bw*i+(bw-larg)/2;
     ctx.fillStyle="#2e9e64"; ctx.fillRect(x,Y(e.custo),larg,y0-Y(e.custo));
     if(e.ganho>0.004){ ctx.fillStyle="#8fe0b4"; ctx.fillRect(x,Y(e.custo+e.ganho),larg,Y(e.custo)-Y(e.custo+e.ganho)); }
     else if(e.ganho<-0.004){ ctx.fillStyle="#e0695c"; ctx.fillRect(x,y0,larg,Y(e.ganho)-y0); }
     if((i%passo===0&&n-1-i>=passo)||i===n-1){ ctx.fillStyle=T.mut; var r=PLANO_MES[+e.key.slice(5,7)-1].slice(0,3)+"/"+e.key.slice(2,4)+(e.emCurso?"*":""); var tw=ctx.measureText(r).width; ctx.fillText(r,Math.max(L,Math.min(W-R-tw,x+larg/2-tw/2)),H-7); } });
   ctx.strokeStyle=T.mut; ctx.beginPath(); ctx.moveTo(L,y0); ctx.lineTo(W-R,y0); ctx.stroke();
+  if(RES_EVO_SEL>=0&&RES_EVO_SEL<n){ var es=E[RES_EVO_SEL], xs=L+bw*RES_EVO_SEL+(bw-larg)/2, top=Y(es.custo+Math.max(0,es.ganho)), bot=es.ganho<-0.004?Y(es.ganho):y0;
+    ctx.strokeStyle=T.txt; ctx.lineWidth=2; ctx.strokeRect(xs-2,top-2,larg+4,bot-top+4); ctx.lineWidth=1; }
+}
+/* toque (ou mouse no PC) numa coluna: mostra valor aplicado, ganho/perda e total daquele mês */
+function resEvoDetalhe(i){
+  var el=document.getElementById("resEvoDet"); if(!el||!RES_EVO) return;
+  var e=RES_EVO[i]; if(!e){ el.textContent="Toque numa coluna para ver os valores do mês."; return; }
+  var mes=PLANO_MES[+e.key.slice(5,7)-1]+"/"+e.key.slice(0,4)+(e.emCurso?" (até hoje)":"");
+  var g=e.ganho, gTxt=g>0.004?'<span style="color:var(--green)">Ganho '+BRL(g)+'</span>':(g<-0.004?'<span style="color:var(--red)">Perda '+BRL(-g)+'</span>':'Sem ganho nem perda');
+  el.innerHTML='<b>'+esc(mes)+'</b> · Valor aplicado <b>'+BRL(e.custo)+'</b> · '+gTxt+' · Total <b>'+BRL(e.custo+g)+'</b>';
+}
+function resEvoLigar(){
+  var cv=document.getElementById("resEvoCv"); if(!cv) return;
+  cv.style.cursor="pointer";
+  var idx=function(ev){ if(!RES_EVO_G) return -1; var r=cv.getBoundingClientRect(), x=(ev.clientX-r.left)*(cv.clientWidth/r.width); var i=Math.floor((x-RES_EVO_G.L)/RES_EVO_G.bw); return (i>=0&&i<RES_EVO_G.n)?i:-1; };
+  var marcar=function(i){ if(i===RES_EVO_SEL) return; RES_EVO_SEL=i; resDesenharEvo(); resEvoDetalhe(i); };
+  cv.onclick=function(ev){ marcar(idx(ev)); };
+  cv.onmousemove=function(ev){ var i=idx(ev); if(i>=0) marcar(i); };
+  if(RES_EVO_SEL>=0) resEvoDetalhe(RES_EVO_SEL);
 }
 function resDesenharDon(){
   var cv=document.getElementById("resDonCv"); if(!cv||!RES_DON) return;
@@ -16015,6 +16035,7 @@ function resDonLigar(){
 function resResumoLigar(){
   resDesenharEvo(); resDesenharDon(); try{ resFiltrosLigar(); }catch(e){ rmLogErr(e,"res-filtros"); }
   try{ resDonLigar(); }catch(e){ rmLogErr(e,"res-don"); }
+  try{ resEvoLigar(); }catch(e){ rmLogErr(e,"res-evo"); }
   document.querySelectorAll("[data-resir]").forEach(function(b){ b.onclick=function(){ window.__invTab=Number(b.dataset.resir)||0; rInvest(); }; });
 }
 window.addEventListener("resize",function(){ try{ if(document.getElementById("resEvoCv")) resDesenharEvo(); }catch(e){} });
