@@ -16871,10 +16871,12 @@ function evHoraFim(h){ var m=parseHM(h); if(m==null) return ""; var a=(m+180)%14
 
 /* ---- Início: aviso de hoje e amanhã ---- */
 function evAvisoHTML(){
-  var h=todayISO(), oc=evOcorrencias(h,isoAddDays(h,1)); if(!oc.length) return "";
+  /* próximos 7 dias (hoje + 6); sem nada, o cartão não aparece */
+  var h=todayISO(), oc=evOcorrencias(h,isoAddDays(h,6)); if(!oc.length) return "";
   var A=null; try{ A=evAprendizado(); }catch(e){ rmLogErr(e,"ev-aprend"); }
-  var li=oc.slice(0,3).map(function(o){ return '<div class="ev-av-lin"><b>'+esc(evDiaTxt(o.data))+':</b> '+esc(o.titulo)+(o.tipo!=="feriado"&&o.hora?' às '+esc(o.hora.replace(":","h")):"")+(o.local?' · '+esc(o.local):"")+'<div class="sub">'+esc(evPrevisaoTxt(o,A))+'</div></div>'; }).join("");
-  return '<div class="card ev-aviso"><h3>📅 Eventos e feriados</h3>'+li+'<div class="btnrow"><button type="button" class="btn sm accent" data-evir="1">Ver agenda</button></div></div>';
+  var MAX=5, li=oc.slice(0,MAX).map(function(o){ return '<div class="ev-av-lin"><b>'+esc(evDiaTxt(o.data))+':</b> '+esc(o.titulo)+(o.tipo!=="feriado"&&o.hora?' às '+esc(o.hora.replace(":","h")):"")+(o.local?' · '+esc(o.local):"")+'<div class="sub">'+esc(evPrevisaoTxt(o,A))+'</div></div>'; }).join("");
+  var mais=oc.length>MAX?'<div class="sub">+ '+(oc.length-MAX)+' evento(s) nesses 7 dias</div>':"";
+  return '<div class="card ev-aviso"><h3>📅 Próximos eventos · 7 dias</h3>'+li+mais+'<div class="btnrow"><button type="button" class="btn sm accent" data-evir="1">Ver agenda</button></div></div>';
 }
 document.addEventListener("click",function(ev){ var b=ev.target&&ev.target.closest?ev.target.closest("[data-evir]"):null; if(!b) return; try{ window.__evAbrir=1; show("previsao"); }catch(e){ rmLogErr(e,"ev-ir"); } });
 
