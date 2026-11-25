@@ -86,7 +86,7 @@ table.tbl,.stat .vl,.kv b,.dvv,.dtop .hh,.piedet,.piedet b,.mtag,.mrow2,.conf,.r
 .bar-bg{background:var(--border);border-radius:var(--r-sm);height:10px;flex-shrink:0;overflow:hidden;display:inline-block}
 .bar-fill{height:100%;border-radius:var(--r-sm);display:block}
 table.tbl{width:100%;border-collapse:collapse;font-size:var(--f-base)}
-table.tbl th{background:transparent;color:var(--muted);padding:var(--s2) var(--s2);text-align:right;font-size:var(--f-sm);font-weight:600;border-bottom:1px solid var(--border)}
+table.tbl th{background:var(--card);color:var(--muted);padding:var(--s2) var(--s2);text-align:right;font-size:var(--f-sm);font-weight:600;border-bottom:1px solid var(--border)}
 table.tbl th:first-child{text-align:left}
 table.tbl td{padding:var(--s2) var(--s2);border-bottom:1px solid var(--border);text-align:right}
 table.tbl td.l,table.tbl td:first-child,table.tbl th.l{text-align:left}
@@ -730,7 +730,7 @@ table.dtbl td.nn.warn{color:var(--yellow);font-weight:700}
   #viewCtn .fit-screen:has(.fit-top) .tblwrap,#viewCtn .fin-resumo .tblwrap,#viewCtn .fin-flx .tblwrap,#viewCtn .dash-screen .tblwrap .tblwrap,#viewCtn .relcat-screen .tblwrap{overflow:visible;max-height:none}
   #viewCtn:has(.fit-top,.fin-resumo,.fin-flx,.dash-screen,.relcat-screen) table.tbl{width:100%}
   #viewCtn:has(.fit-top,.fin-resumo,.fin-flx,.dash-screen,.relcat-screen) .tblwrap table{min-width:0}
-  #viewCtn:has(.fit-top,.fin-resumo,.fin-flx,.dash-screen,.relcat-screen) .tbl td,#viewCtn:has(.fit-top,.fin-resumo,.fin-flx,.dash-screen,.relcat-screen) .tbl th{white-space:normal;overflow-wrap:anywhere}
+  #viewCtn:has(.fit-top,.fin-resumo,.fin-flx,.dash-screen,.relcat-screen) .tbl td,#viewCtn:has(.fit-top,.fin-resumo,.fin-flx,.dash-screen,.relcat-screen) .tbl th{white-space:normal;overflow-wrap:break-word}
   #viewCtn .relcat-det-extra{max-height:none;overflow:visible}
    table.tbl td, table.tbl th{white-space:normal!important}
   #viewCtn .fit-screen:has(.fit-top) .fit-bottom{grid-template-columns:1fr}
@@ -738,7 +738,7 @@ table.dtbl td.nn.warn{color:var(--yellow);font-weight:700}
 /* FASE ALTURA BLOCOS (vale p/ todas as larguras): tabela nunca rola na horizontal */
 #viewCtn:has(.fit-top,.fin-resumo,.fin-flx,.dash-screen,.relcat-screen) table.tbl{width:100%}
 #viewCtn:has(.fit-top,.fin-resumo,.fin-flx,.dash-screen,.relcat-screen) .tblwrap table{min-width:0}
-#viewCtn:has(.fit-top,.fin-resumo,.fin-flx,.dash-screen,.relcat-screen) .tbl td,#viewCtn:has(.fit-top,.fin-resumo,.fin-flx,.dash-screen,.relcat-screen) .tbl th{white-space:normal;overflow-wrap:anywhere}
+#viewCtn:has(.fit-top,.fin-resumo,.fin-flx,.dash-screen,.relcat-screen) .tbl td,#viewCtn:has(.fit-top,.fin-resumo,.fin-flx,.dash-screen,.relcat-screen) .tbl th{white-space:normal;overflow-wrap:break-word}
  table.tbl td, table.tbl th{white-space:normal!important}
 .mrow2{display:flex;justify-content:space-between;align-items:center;gap:var(--s2);padding:var(--s2) 0;border-bottom:1px solid var(--border);font-size:var(--f-sm)}
 .mtag{display:inline-block;font-size:var(--f-sm);background:var(--input);border:1px solid var(--border);border-radius:var(--r-sm);padding:var(--s1) var(--s2);color:var(--muted);margin-top:var(--s1)}
@@ -6576,7 +6576,7 @@ function compCardHTML(){
     else if(a!==0){ cls="#d79a2b"; d="novo"; }
     return '<tr><td class="l">'+lbl+'</td><td>'+BRL(b)+'</td><td>'+BRL(a)+'</td><td style="color:'+cls+'"><b>'+d+'</b></td></tr>';
   };
-  return '<div class="card"><h3>Este mês × mês passado (até o mesmo dia)<button type="button" class="infoBtn" data-tip="Comparando dia 1 até '+cut+' deste mês com dia 1 até '+pastCut+' do mês passado. Verde significa melhorou: receita subiu ou custo caiu." aria-label="Sobre este bloco">i</button></h3><div class="tblwrap"><table class="tbl"><tr><th style="text-align:left">Indicador</th><th style="text-align:right">Mês passado (1–'+pastCut+')</th><th style="text-align:right">Este mês (1–'+cut+')</th><th style="text-align:right">Variação</th></tr><tbody>'
+  return '<div class="card"><h3>Este mês × mês passado (até o mesmo dia)<button type="button" class="infoBtn" data-tip="Comparando dia 1 até '+cut+' deste mês com dia 1 até '+pastCut+' do mês passado. Verde significa melhorou: receita subiu ou custo caiu." aria-label="Sobre este bloco">i</button></h3><div class="tblwrap"><table class="tbl"><tr><th style="text-align:left">Indicador</th><th style="text-align:right">Mês passado <span style="white-space:nowrap">(1–'+pastCut+')</span></th><th style="text-align:right">Este mês <span style="white-space:nowrap">(1–'+cut+')</span></th><th style="text-align:right">Variação</th></tr><tbody>'
    +row("Receita bruta",A.brutaT,B.brutaT,false)
    +row("Receita líquida",A.liquida,B.liquida,false)
    +row("Custos variáveis",A.varT,B.varT,true)
@@ -9186,11 +9186,9 @@ function rSaldos(){
   try{ document.body.classList.add("fit-lock"); }catch(e){rmLogErr(e)}
   var list=(DB.contas||[]).slice().sort(finSortNome);
   var tot=totalGeralContas();
-  var html='<div class="fit-screen sld-screen"><div class="sld-top"><div class="cards c4">'+statCard("💰",BRL(tot),"Total geral",tot<0?"#e0695c":"",list.length+" conta(s)");
-  list.forEach(function(c){
-    var s=saldoConta(c);
-    html+=statCard(c.protegida?"🔒":(c.tipo==="investimento"?"📈":(c.tipo==="banco"?"🏦":"👛")),BRL(s),c.nome+(c.ativa?"":" (inativa)"),s<0?"#e0695c":"","desde "+isoToBR(c.dataSaldoInicial)+(s<0?'<br><span style="color:#e0695c">saldo negativo — normalmente significa lançamento faltando</span>':""));
-  });
+  /* cada conta já aparece em "Saldos por conta" logo abaixo: em cima fica só o total (nada repetido) */
+  var _neg=list.filter(function(c){ return saldoConta(c)<0; }).map(function(c){ return esc(c.nome); });
+  var html='<div class="fit-screen sld-screen"><div class="sld-top"><div class="cards c4">'+statCard("💰",BRL(tot),"Total geral",tot<0?"#e0695c":"",list.length+" conta(s)"+(_neg.length?'<br><span style="color:var(--red)">saldo negativo em '+_neg.join(", ")+' — normalmente significa lançamento faltando</span>':""));
   html+='</div></div>';
   html+='<div class="card sld-list-card"><h3>Saldos por conta</h3><div class="tblwrap sld-list"><table class="tbl"><thead><tr><th>Conta</th><th class="mhide">Tipo</th><th>Desde</th><th>Inicial</th><th>Entradas</th><th>Saídas</th><th>Saldo</th></tr></thead><tbody>';
   if(!list.length) html+='<tr><td colspan="7" style="color:var(--muted)">Nenhuma conta. Crie em Contas.</td></tr>';
