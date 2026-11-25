@@ -27,7 +27,7 @@
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:0;text-align:left;font-variant-numeric:tabular-nums}
 table.tbl,.stat .vl,.kv b,.dvv,.dtop .hh,.piedet,.piedet b,.mtag,.mrow2,.conf,.rateio-foot b,.pager,#undoBarCount,.serie-prev,.daycol .dbest,.dn,.stat .lb,.stat .sb{font-variant-numeric:tabular-nums}
-#app{display:flex;min-height:100vh}
+#app{display:flex;min-height:100vh;overflow-x:clip}
 #sidebar{width:216px;background:var(--panel);flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
 .logo{text-align:center;padding:var(--s5) var(--s2) var(--s2)}
 .logo .car{font-size:var(--f-lg)}
@@ -85,7 +85,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--f-base)}
 table.tbl th{background:transparent;color:var(--muted);padding:var(--s2) var(--s2);text-align:right;font-size:var(--f-sm);font-weight:600;border-bottom:1px solid var(--border)}
 table.tbl th:first-child{text-align:left}
 table.tbl td{padding:var(--s2) var(--s2);border-bottom:1px solid var(--border);text-align:right}
-table.tbl td.l{text-align:left}
+table.tbl td.l,table.tbl td:first-child,table.tbl th.l{text-align:left}
 .btn{border:0;border-radius:var(--r);padding:var(--s3) var(--s4);font-weight:700;cursor:pointer;font-size:var(--f-md)}
 .btn.green{background:var(--accent);color:#fff}
 .btn.red{background:var(--neg-solid);color:#fff}
@@ -1859,6 +1859,13 @@ table.dm-tbl tr.dm-pct td.dm-l{padding-left:18px}
 .dm-tbl .dm-tot{background:var(--input)}
 .fin-dre-mensal .fin-dre-bar{margin-bottom:var(--s3)}
 @media (max-width:700px){ table.dm-tbl{font-size:13px} table.dm-tbl .dm-l{min-width:120px;max-width:130px} table.dm-tbl th,table.dm-tbl td{padding:6px 8px} table.dm-tbl tr.dm-pct td.dm-l{padding-left:16px} }
+
+/* Análise: rosca por plataforma e a tabela por plataforma lado a lado */
+@media (min-width:1100px){
+  #viewCtn .fit-screen:has(.fit-top) .fit-top.ana-top{grid-template-columns:minmax(320px,1fr) 2fr}
+  /* o botão "+ Corrida" fica por cima do fim da página: espaço para a última linha aparecer */
+  body:not(.fit-lock) #viewCtn,body.fit-lock #viewCtn:has(.fit-top,.fin-resumo,.fin-flx,.dash-screen,.relcat-screen,.rep-screen,.fin-dre,.prev-screen,.inv-rolar){padding-bottom:84px}
+}
 </style>
 </head>
 <body>
@@ -5895,7 +5902,7 @@ function rRec(){
     +(isF?'<p class="tip">• Registre o odômetro sempre: ele alimenta o consumo (km/L), o custo por km e os alertas de manutenção.</p><p class="tip">• Abastecimentos entram no DRE como custo variável. Não lance o mesmo gasto em Despesas — ou marque a categoria Combustível como Ignorada em Configurações › Categorias.</p>'
        :'<p class="tip">• Recargas de R$ 0 na rua entram na média "com grátis", mas não na média "pago". Recarga em casa não é grátis: fica fora das médias até a conta de luz apurar o custo.</p><p class="tip">• Quedas de odômetro são ignoradas no cálculo e sinalizadas acima.</p><p class="tip">• Marque a troca de veículo para reiniciar o segmento de eficiência.</p>')
     +'</div></div>'
-    +'<div class="card rec-side"><h3>Histórico de '+(isF?"Abastecimentos":"Recargas")+'</h3>'+(isF?"":'<div class="kv"><span>em casa, ainda sem custo apurado</span><b>'+medAbertoTxt()+'</b></div>')+'<div class="toolbar"><span>Período:</span><select id="rF"><option>7 dias</option><option selected>30 dias</option><option>90 dias</option><option>Todos</option></select><span style="flex:1"></span><button class="btn yellow sm" id="rEdit">Editar</button><button class="btn red sm" id="rDel">Excluir</button></div><div class="tblwrap rec-list"><table class="tbl"><thead><tr><th>Data</th><th>Hora</th><th>Local</th><th>Qtd</th><th>Custo</th><th>R$/un</th><th>Odôm.</th></tr></thead><tbody id="rBody"></tbody></table></div><div id="rPager"></div><div class="sub">Mostra kWh e litros quando houver. As médias acima usam o modo atual ('+qn+').</div></div></div></div>';
+    +'<div class="card rec-side"><h3>Histórico de '+(isF?"Abastecimentos":"Recargas")+'</h3>'+((isF||!(medAbertoKwh()>0.05))?"":'<div class="kv"><span>Energia de casa ainda sem custo apurado</span><b>'+medAbertoTxt()+' em aberto</b></div>')+'<div class="toolbar"><span>Período:</span><select id="rF"><option>7 dias</option><option selected>30 dias</option><option>90 dias</option><option>Todos</option></select><span style="flex:1"></span><button class="btn yellow sm" id="rEdit">Editar</button><button class="btn red sm" id="rDel">Excluir</button></div><div class="tblwrap rec-list"><table class="tbl"><thead><tr><th>Data</th><th>Hora</th><th>Local</th><th>Qtd</th><th>Custo</th><th>R$/un</th><th>Odôm.</th></tr></thead><tbody id="rBody"></tbody></table></div><div id="rPager"></div><div class="sub">Mostra kWh e litros quando houver. As médias acima usam o modo atual ('+qn+').</div></div></div></div>';
   var mg=document.getElementById("mGoCfg"); if(mg) mg.onclick=function(e){ try{e.preventDefault();}catch(_){rmLogErr(_)} try{cfgTab="manut";}catch(_2){rmLogErr(_2)} show("plataformas"); };
   function calc(){
     if(!isF&&recLocal==="casa"){ document.getElementById("rCalc").textContent="🏠 em casa: sem custo agora — kWh soma no período de medição."; return; }
@@ -6026,7 +6033,7 @@ function rRec(){
     var pages=Math.max(1,Math.ceil(rows.length/PER_PAGE));
     rPage=Math.min(Math.max(1,rPage),pages);
     var slice=rows.slice((rPage-1)*PER_PAGE,rPage*PER_PAGE);
-    var html=""; slice.forEach(function(r){ var ru=(r.unit||"kwh")==="L"?"L":"kWh"; var _rf=0; try{ _rf=isFuturo(r.date)?1:0; }catch(_e4){ _rf=0; } html+='<tr data-id="'+esc(r.id)+'" style="cursor:pointer'+(rsel===r.id?';background:var(--accent)':'')+'"><td>'+isoToBR(r.date)+(_rf?'<br><span class="conf media">⚠️ data futura — confira a data</span>':"")+'</td><td>'+esc(r.time)+'</td><td class="l">'+esc(r.location||"–")+(r.resetVehicle?" 🔁":"")+(r.local==="casa"?'<br><span class="mtag">🏠 em casa</span>':(r.local==="rua"?'<br><span class="mtag">🛣️ na rua</span>':""))+'</td><td>'+Number(r.kwh).toFixed(2)+" "+ru+'</td><td>'+BRL(r.cost)+'</td><td>'+(r.kwh>0?brDec(Number(r.cost)/Number(r.kwh),3):"–")+'</td><td>'+(r.odometer!=null?Number(r.odometer).toFixed(0)+" km":"–")+'</td></tr>'; });
+    var html=""; slice.forEach(function(r){ var ru=(r.unit||"kwh")==="L"?"L":"kWh"; var _rf=0; try{ _rf=isFuturo(r.date)?1:0; }catch(_e4){ _rf=0; } html+='<tr data-id="'+esc(r.id)+'" style="cursor:pointer'+(rsel===r.id?';background:var(--accent)':'')+'"><td>'+isoToBR(r.date)+(_rf?'<br><span class="conf media">⚠️ data futura — confira a data</span>':"")+'</td><td>'+esc(r.time)+'</td><td class="l">'+esc(r.location||"–")+(r.resetVehicle?" 🔁":"")+(r.local==="casa"?'<br><span class="mtag">🏠 em casa</span>':(r.local==="rua"?'<br><span class="mtag">🛣️ na rua</span>':""))+'</td><td>'+brDec(Number(r.kwh),2)+" "+ru+'</td><td>'+BRL(r.cost)+'</td><td>'+(r.kwh>0?brDec(Number(r.cost)/Number(r.kwh),3):"–")+'</td><td>'+(r.odometer!=null?Number(r.odometer).toLocaleString("pt-BR",{maximumFractionDigits:0})+" km":"–")+'</td></tr>'; });
     document.getElementById("rBody").innerHTML=html||'<tr><td colspan="7" style="color:var(--muted)">Nada aqui.</td></tr>';
     document.getElementById("rPager").innerHTML=pagerHTML(rPage,pages,rows.length);
     wirePager(document.getElementById("rPager"),function(d){ rPage+=d; refresh(); });
@@ -6226,7 +6233,7 @@ function drawPieItems(cv,items,sel){
   ctx.fillStyle=TH().bg;ctx.beginPath();ctx.arc(cx,cy,R*0.55,0,7);ctx.fill();
   ctx.fillStyle=TH().txt;ctx.font="bold 15px sans-serif";ctx.textAlign="center";
   if(sel>=0&&items[sel]){ var pc=items[sel].value/tot*100; ctx.fillText(pc.toFixed(1).replace(".",",")+"%",cx,cy-2); ctx.font="11px sans-serif"; ctx.fillStyle=TH().mut; ctx.fillText(items[sel].label.slice(0,18),cx,cy+14); }
-  else ctx.fillText(items.length+" itens",cx,cy+5);
+  else { var _tt=BRL(tot); ctx.font="bold "+(_tt.length>12?12:14)+"px sans-serif"; ctx.fillText(_tt,cx,cy+1); ctx.font="11px sans-serif"; ctx.fillStyle=TH().mut; ctx.fillText("total",cx,cy+16); }
   return {cx:cx,cy:cy,R:R,tot:tot,segs:segs};
 }
 function pieInteractive(cv,items,legendEl,detailEl,countNoun){
@@ -6292,15 +6299,19 @@ function kmMonthStats(ini,fim){
 function drawKmMonthly(cv,ms){
   var vals=[]; ms.forEach(function(m){ ["ganho","custo","lucro"].forEach(function(k){ if(m[k]!=null&&isFinite(m[k])) vals.push(m[k]); }); });
   if(!vals.length) return false;
-  var T=TH(), dpr=window.devicePixelRatio||1,W=cv.clientWidth||600,H=Math.max(240,Math.round(W*0.45));cv.width=W*dpr;cv.height=H*dpr;
+  var T=TH(), dpr=window.devicePixelRatio||1,W=cv.clientWidth||600,H=Math.min(320,Math.max(240,Math.round(W*0.3)));cv.width=W*dpr;cv.height=H*dpr;
   var ctx=cv.getContext("2d");ctx.scale(dpr,dpr);ctx.fillStyle=T.bg;ctx.fillRect(0,0,W,H);
   var hi=Math.max.apply(null,vals.concat([0])), lo=Math.min.apply(null,vals.concat([0]));
-  if(hi===lo){ hi+=1; lo-=1; }
-  var pad=(hi-lo)*0.12; hi+=pad; lo-=pad;
-  var padL=52,padB=30,padT=14, y=function(v){ return padT+(hi-v)/(hi-lo)*(H-padB-padT); };
+  if(hi===lo) hi=lo+1;
+  /* eixo com valores redondos e começando no 0 quando não há valor negativo */
+  var _raw=(hi-lo)/4, _mag=Math.pow(10,Math.floor(Math.log10(_raw))), step=10*_mag;
+  [1,2,2.5,5].some(function(k){ if(k*_mag>=_raw){ step=k*_mag; return true; } return false; });
+  lo=Math.floor(lo/step+1e-9)*step; hi=Math.ceil(hi/step-1e-9)*step; if(hi<=lo) hi=lo+step;
+  var nT=Math.round((hi-lo)/step);
+  var padL=52,padB=30,padT=26, y=function(v){ return padT+(hi-v)/(hi-lo)*(H-padB-padT); };
   var fmt=function(v){ return v.toFixed(2).replace(".",",").replace(/\B(?=(\d{3})+(?!\d))/g,"."); };
   ctx.font="11px sans-serif";ctx.strokeStyle=T.grid;ctx.fillStyle=T.mut;
-  for(var g=0;g<=4;g++){ var yy=padT+(H-padB-padT)*g/4, vv=hi-(hi-lo)*g/4; ctx.beginPath();ctx.moveTo(padL,yy);ctx.lineTo(W-6,yy);ctx.stroke(); ctx.fillText(fmt(vv),4,yy+3); }
+  for(var g=0;g<=nT;g++){ var vv=hi-step*g, yy=y(vv); ctx.beginPath();ctx.moveTo(padL,yy);ctx.lineTo(W-6,yy);ctx.stroke(); ctx.fillText(fmt(vv),4,yy+3); }
   var y0=y(0); ctx.strokeStyle=T.mut; ctx.beginPath();ctx.moveTo(padL,y0);ctx.lineTo(W-6,y0);ctx.stroke();
   var gw=(W-padL-10)/ms.length, bw=Math.min(22,(gw-14)/2);
   var pts=[];
@@ -6512,8 +6523,8 @@ function rAna(){
   try{ document.body.classList.add("fit-lock"); }catch(e){rmLogErr(e)}
   /* "nada repetido": ganhos diários estão no Resumo (Ganhos × despesas), despesas por categoria na tela Despesas,
      e bruta × líquido mês a mês na DRE › Mês a mês */
-  box.innerHTML='<div class="fit-screen"><div class="fit-top"><div class="card"><h3>Por plataforma — 30 dias</h3><canvas class="chart" id="a2"></canvas><div id="a2e"></div><div class="piedet" id="a2d"></div><div id="a2l"></div></div></div>'
-  +'<div class="fit-bottom"><div class="fit-col c1">'+platCardHTML()+effFeeCardHTML()+'</div><div class="fit-col c2">'+compCardHTML()+'<div class="card"><h3>Custo total por km (com o carro)<button type="button" class="infoBtn" data-tip="Custo operacional real cruzando corridas, recargas e todas as despesas. Com km de turno no período usa o km do turno sem rateio; sem turno, usa o km das corridas com rateio proporcional. O card por plataforma usa só os custos variáveis do DRE." aria-label="Sobre este bloco">i</button></h3><div class="toolbar"><span>Período:</span><select id="kmP"><option value="7">7 dias</option><option value="30">30 dias</option><option value="60">60 dias</option><option value="90">90 dias</option></select></div><div id="kmBody"></div></div></div><div class="fit-col c3"><div class="card"><h3>Custo variável por km — evolução mensal<button type="button" class="infoBtn" data-tip="Meses com km de turno usam km do turno sem rateio; demais meses usam rateio proporcional: recargas mais despesas variáveis mais manuais variáveis, vezes ganhos de corridas com km dividido pelos ganhos totais, dividido pelo km do mês. Meses sem km ficam vazios. Asterisco significa mês em curso, parcial até hoje." aria-label="Sobre este bloco">i</button></h3><canvas class="chart" id="a5"></canvas><div id="a5e"></div></div></div></div></div>';
+  box.innerHTML='<div class="fit-screen"><div class="fit-top ana-top"><div class="card"><h3>Por plataforma — 30 dias</h3><canvas class="chart" id="a2"></canvas><div id="a2e"></div><div class="piedet" id="a2d"></div><div id="a2l"></div></div><div class="fit-col">'+platCardHTML()+effFeeCardHTML()+'</div></div>'
+  +'<div class="fit-bottom"><div class="fit-col c2">'+compCardHTML()+'<div class="card"><h3>Custo total por km (com o carro)<button type="button" class="infoBtn" data-tip="Custo operacional real cruzando corridas, recargas e todas as despesas. Com km de turno no período usa o km do turno sem rateio; sem turno, usa o km das corridas com rateio proporcional. O card por plataforma usa só os custos variáveis do DRE." aria-label="Sobre este bloco">i</button></h3><div class="toolbar"><span>Período:</span><select id="kmP"><option value="7">7 dias</option><option value="30">30 dias</option><option value="60">60 dias</option><option value="90">90 dias</option></select></div><div id="kmBody"></div></div></div><div class="fit-col c3"><div class="card"><h3>Custo variável por km — evolução mensal<button type="button" class="infoBtn" data-tip="Meses com km de turno usam km do turno sem rateio; demais meses usam rateio proporcional: recargas mais despesas variáveis mais manuais variáveis, vezes ganhos de corridas com km dividido pelos ganhos totais, dividido pelo km do mês. Meses sem km ficam vazios. Asterisco significa mês em curso, parcial até hoje." aria-label="Sobre este bloco">i</button></h3><canvas class="chart" id="a5"></canvas><div id="a5e"></div></div></div></div></div>';
   renderKmPeriod();
   var kmSel=document.getElementById("kmP"); if(kmSel){ kmSel.value=String(kmPeriod); kmSel.onchange=function(){ kmPeriod=Number(kmSel.value)||30; rAna(); }; }
   var _tokA=current+"|"+(window.__finTab||0);
@@ -7074,9 +7085,9 @@ function rPrev(){
   var wxOn=!!(DB.wx.cfg.enabled&&DB.wx.cfg.key);
   var html='<div class="card prev-top10"><h3>Top 10 Melhores Horários da Semana <span class="conf '+cf[1]+'">confiança '+cf[0]+' · '+full.total+' corridas · '+_nBons+' horário(s) com '+PREV_MIN_N+'+ corridas'+(full.capped?'· '+full.capped+' outlier(s) limitado(s)':'')+'</span></h3><div class="tblwrap"><table class="tbl"><tr><th>#</th><th>Dia</th><th>Horário</th>'+(wxOn?'<th>🌦️</th>':"")+'<th>R$/hora</th><th>Amostras</th><th>Força</th></tr><tbody>';
   var rankTop=["1º","2º","3º","4º","5º","6º","7º","8º","9º","10º"], mx=top.length?top[0].v:1;
-  top.forEach(function(s,i){ var ws=wxOn?wxSlot(s.wd,s.h):null; html+='<tr><td>'+rankTop[i]+'</td><td class="l">'+DIAS[s.wd]+(s.wd===twd?' <span style="color:#e0695c">●hoje</span>':"")+'</td><td>'+s.h+'–'+(s.h+1)+'h</td>'+(wxOn?'<td title="'+esc(ws?ws.title:"sem previsão")+'">'+(ws?ws.icon:"–")+'</td>':"")+'<td style="color:#4caf7d"><b>'+BRL(s.v)+'/h</b></td><td>n='+s.n+(s.n<PREV_MIN_N?' <span class="conf baixa">pouca amostra</span>':"")+'</td><td class="l">'+bar(s.v,mx,120,"#4caf7d")+'</td></tr>'; });
+  top.forEach(function(s,i){ var ws=wxOn?wxSlot(s.wd,s.h):null; html+='<tr><td>'+rankTop[i]+'</td><td class="l">'+DIAS[s.wd]+(s.wd===twd?' <span style="color:#e0695c">●hoje</span>':"")+'</td><td>'+s.h+'–'+(s.h+1)+'h</td>'+(wxOn?'<td title="'+esc(ws?ws.title:"sem previsão")+'">'+(ws?ws.icon:"–")+'</td>':"")+'<td style="color:#4caf7d"><b>'+BRL(s.v)+'/h</b></td><td>n='+s.n+(s.n<PREV_MIN_N?' <span class="conf baixa">pouca amostra</span>':"")+'</td><td class="l">'+bar(s.v,mx,wxOn?80:120,"#4caf7d")+'</td></tr>'; });
   html+='</tbody></table></div><div class="sub">Valores por hora limitados ao percentil 95 (anti-outlier). Primeiro vêm os horários com '+PREV_MIN_N+' ou mais corridas; os com menos aparecem depois, marcados como "pouca amostra" — ainda são sorte.</div></div>';
-  html+='<div class="card"><h3>Melhores horários por dia</h3><div class="sub">Top 5 de cada dia · valores em R$/h · barra = força em relação ao melhor do dia · <span style="color:var(--yellow)">⚠ n&lt;3</span> = poucas amostras, menos confiável.</div><div class="daycols daytbl">';
+  html+='<div class="card"><h3>Melhores horários por dia</h3><div class="sub">Top 5 de cada dia · valores em R$/h · '+(wxOn?"ícone = clima previsto para o próximo dia igual":"barra = força em relação ao melhor do dia")+' · <span style="color:var(--yellow)">⚠ n&lt;3</span> = poucas amostras, menos confiável.</div><div class="daycols daytbl">';
   var rankPos=["1º","2º","3º","4º","5º"];
   for(var wd=0;wd<7;wd++){
     var isToday=(wd===twd);
@@ -7085,10 +7096,10 @@ function rPrev(){
       var arr=Object.keys(byDay[wd]).map(function(h){ var hh=Number(h); return {h:hh,v:byDay[wd][h],n:full.counts[wd+":"+hh]||0}; }).sort(function(a,b){return b.v-a.v;}).slice(0,5);
       var mc=arr[0].v;
       html+='<div class="dbest">melhor '+String(arr[0].h).padStart(2,"0")+'h</div>';
-      html+='<table class="dtbl"><thead><tr><th class="l">#</th><th class="l">Hora</th><th>R$/h</th><th></th><th>n</th></tr></thead><tbody>';
+      html+='<table class="dtbl"><thead><tr><th class="l">#</th><th class="l">Hora</th><th>R$/h</th>'+(wxOn?"":"<th></th>")+'<th>n</th></tr></thead><tbody>';
       arr.forEach(function(s,i){
         var warn=s.n<3, ws2=wxOn?wxSlot(wd,s.h):null;
-        html+='<tr><td class="pos l">'+rankPos[i]+'</td><td class="hh l"'+(ws2?' title="'+esc(ws2.title)+'"':"")+'>'+String(s.h).padStart(2,"0")+':00'+(ws2?' '+ws2.icon:"")+'</td><td class="vv">'+brDec(s.v,2)+'</td><td class="barc">'+bar(s.v,mc,24,"#4caf7d",4)+'</td><td class="nn'+(warn?" warn":"")+'">'+s.n+'</td></tr>';
+        html+='<tr><td class="pos l">'+rankPos[i]+'</td><td class="hh l"'+(ws2?' title="'+esc(ws2.title)+'"':"")+'>'+String(s.h).padStart(2,"0")+':00'+(ws2?' '+ws2.icon:"")+'</td><td class="vv">'+brDec(s.v,2)+'</td>'+(wxOn?"":'<td class="barc">'+bar(s.v,mc,24,"#4caf7d",4)+'</td>')+'<td class="nn'+(warn?" warn":"")+'">'+s.n+'</td></tr>';
       });
       html+='</tbody></table>';
     } else html+='<div class="empty">sem<br>dados</div>';
@@ -7212,7 +7223,7 @@ function wxWeekHTML(){
     var dom=null, best=-1; Object.keys(votes).forEach(function(k){ if(votes[k]>best){ best=votes[k]; dom=Number(k); } });
     var avg=temps.length?temps.reduce(function(a,b){return a+b;})/temps.length:null;
     var lbl=i===0?"Hoje":(i===1?"Amanhã":DIAS[(new Date(dt).getDay()+6)%7]);
-    h+='<div class="bar-row"><b style="width:64px">'+lbl+'</b><span style="color:var(--muted)">'+p(dt.getDate())+"/"+p(dt.getMonth()+1)+'</span><span style="font-size:15px" title="'+esc(wxDesc(dom))+'">'+wxIcon(dom)+'</span><span>'+(avg!=null?avg.toFixed(0)+"°C":"–")+'</span><span style="flex:1"></span><span style="color:'+(maxP>=60?"#5a9fd4":"var(--muted)")+'">🌧️ '+maxP+'% máx</span></div>';
+    h+='<div class="bar-row"><b style="width:64px">'+lbl+'</b><span style="color:var(--muted)">'+p(dt.getDate())+"/"+p(dt.getMonth()+1)+'</span><span style="font-size:15px" title="'+esc(wxDesc(dom))+'">'+wxIcon(dom)+'</span><span>'+(avg!=null?avg.toFixed(0)+"°C":"–")+'</span><span style="color:var(--muted)">'+esc(wxDesc(dom))+'</span><span style="color:'+(maxP>=60?"#5a9fd4":"var(--muted)")+'">· 🌧️ chuva até '+maxP+'%</span></div>';
   }
   if(!any) h+='<div class="empty">Sem dados. Clique em "Buscar Clima Agora" acima.</div>';
   return h+'</div>';
@@ -7270,12 +7281,12 @@ function rClima(){
     save();
     var m=document.getElementById("wxMsg"); m.textContent="⏳ Buscando...";
     try{ await wxRefresh(); show("clima"); }
-    catch(e){ m.textContent=wxErrMsg(e); }
+    catch(e){ m.textContent=wxErrMsg(e); m.style.color="var(--red)"; }
   };
   if(on&&DB.wx.fcAt!==todayISO()){
     (function(){
       var m=document.getElementById("wxMsg"); if(m) m.textContent="⏳ Atualizando previsão...";
-      wxRefresh().then(function(){ if(current==="clima") show("clima"); }).catch(function(e){ var m2=document.getElementById("wxMsg"); if(m2&&current==="clima") m2.textContent=wxErrMsg(e); });
+      wxRefresh().then(function(){ if(current==="clima") show("clima"); }).catch(function(e){ var m2=document.getElementById("wxMsg"); if(m2&&current==="clima") { m2.textContent=wxErrMsg(e); m2.style.color="var(--red)"; } });
     })();
   }
   (function(){
@@ -10536,7 +10547,7 @@ function concListar(contaId,de,ate){
 function concRowHTML(r){
   var lock=r.conciliado?' 🔒':"";
   var chk=r.marcavel?'<input type="checkbox" class="concTgl" data-kind="'+esc(r.kind)+'" data-k="'+esc(r.key)+'"'+(r.conciliado?" checked":"")+' title="Marcar como conciliado">':"";
-  var badge=r.kind==="baixa"?'<span class="mtag">'+(r.dir>0?"⬆ A receber":"⬇ A pagar")+"</span>":(r.kind==="transf"?'<span class="mtag">🔄 Transferência</span>':(r.kind==="ajuste"?'<span class="mtag">🛠 Ajuste</span>':(r.kind==="invMov"?'<span class="mtag">💹 Investimento</span>':(r.kind==="invProv"?'<span class="mtag">💰 Provento</span>':(r.kind==="loteDif"?'<span class="mtag">🔗 Repasse</span>':'<span class="mtag">💵 Dinheiro</span>')))));
+  var badge=r.kind==="baixa"?'<span class="mtag">'+(r.dir>0?"⬆ Recebido":"⬇ Conta paga")+"</span>":(r.kind==="transf"?'<span class="mtag">🔄 Transferência</span>':(r.kind==="ajuste"?'<span class="mtag">🛠 Ajuste</span>':(r.kind==="invMov"?'<span class="mtag">💹 Investimento</span>':(r.kind==="invProv"?'<span class="mtag">💰 Provento</span>':(r.kind==="loteDif"?'<span class="mtag">🔗 Repasse</span>':'<span class="mtag">💵 Dinheiro</span>')))));
   var val='<b style="color:'+(r.efeito<0?"#e0695c":"#4caf7d")+'">'+BRL(r.efeito)+"</b>";
   var del=r.kind==="ajuste"?' <button class="btn sm rowdel" data-concajdel="'+esc(r.key)+'">🗑</button>':"";
   return '<div class="conc-row">'+chk+'<div style="flex:1;min-width:0"><div>'+isoToBR(r.data)+' · '+esc(r.titulo)+' '+badge+lock+'</div>'+(r.sub?'<div class="conc-sub">'+esc(r.sub)+"</div>":"")+'</div><div style="white-space:nowrap">'+val+del+"</div></div>";
@@ -10781,7 +10792,7 @@ function projecaoSaldo90(){
 /* ---------- FASE 5C — TELAS (só leitura) ---------- */
 var extConta="", extDeTxt="", extAteTxt="", flxDeTxt="", flxAteTxt="";
 function extKindBadge(r){
-  if(r.kind==="baixa") return '<span class="mtag">'+(r.dir>0?"⬆ A receber":"⬇ A pagar")+"</span>";
+  if(r.kind==="baixa") return '<span class="mtag">'+(r.dir>0?"⬆ Recebido":"⬇ Conta paga")+"</span>";
   if(r.kind==="transf") return '<span class="mtag">🔄 Transferência</span>';
   if(r.kind==="loteDif") return '<span class="mtag">🔗 Repasse</span>';
   if(r.kind==="ajuste") return '<span class="mtag">🛠 Ajuste</span>';
@@ -11133,7 +11144,7 @@ function titStripAgingHTML(fa,na){ try{ var L=["A vencer","1-15d","16-30d","31-6
 function titStripRecHTML(){ try{ var _rc=recebiveisAging(),_fee=taxaADescontarTotal(),L=["0-7d","8-15d","16-30d","30d+"],h=""; h+='<div class="tit-strip-item"><span class="tit-strip-v" id="recvTotGeral">'+BRL(_rc.total)+'</span><span class="tit-strip-l">A receber '+_rc.n+'</span></div>'; for(var i=0;i<4;i++){ h+='<div class="tit-strip-item"><span class="tit-strip-v">'+BRL(_rc.faixas[i])+'</span><span class="tit-strip-l">'+L[i]+' '+_rc.qntd[i]+'</span></div>'; } if(_fee<0){ h+='<div class="tit-strip-item"><span class="tit-strip-v" id="taxaDescontarTot">'+BRL(Math.abs(_fee))+'</span><span class="tit-strip-l">Crédito favor</span></div>'; } else { h+='<div class="tit-strip-item"><span class="tit-strip-v" id="taxaDescontarTot">'+BRL(_fee)+'</span><span class="tit-strip-l">Taxa descontar</span></div>'; } return h; }catch(e){ return ""; } }
 function titStripFit(){ try{ var strip=document.getElementById("titStrip"); if(!strip) return; var rows=[document.getElementById("titStripMain"),document.getElementById("titStripRec")]; rows.forEach(function(r){ if(!r) return; for(var i=0;i<r.children.length;i++){ r.children[i].style.display=""; } }); if(window.innerWidth<1100) return; rows.forEach(function(r){ if(!r) return; var g=0; while(g++<20&&r.scrollWidth>r.clientWidth+1&&r.children.length>1){ var hid=false; for(var i=r.children.length-1;i>=1;i--){ if(r.children[i].style.display!=="none"){ r.children[i].style.display="none"; hid=true; break; } } if(!hid) break; } }); var maxH=Math.round(window.innerHeight*0.15),g2=0; while(g2++<20&&strip.scrollHeight>maxH+1){ var rec=document.getElementById("titStripRec"),main=document.getElementById("titStripMain"),done=false; if(rec){ for(var i=rec.children.length-1;i>=1;i--){ if(rec.children[i].style.display!=="none"){ rec.children[i].style.display="none"; done=true; break; } } } if(!done&&main){ for(var j=main.children.length-1;j>=1;j--){ if(main.children[j].style.display!=="none"){ main.children[j].style.display="none"; done=true; break; } } } if(!done) break; } }catch(e){rmLogErr(e)} }
 function titPanelClose(){ titNovoOpen=false; titBaixaId=null; titEditId=null; titAgingOpen=false; try{ titRateioMulti=false; titRateioLines=[]; }catch(e){rmLogErr(e)} try{ titLuzOn=false; titLuzKwhTxt=""; titLuzDeTxt=""; titLuzAteTxt=""; }catch(e){rmLogErr(e)} rTitulos(); }
-function titAgingPanelHTML(fa,na,faltaA,nAb,faltaV,nVe,nBx){ try{ var h='<div class="tit-panel-bk" id="titPanelBk"><div class="tit-panel" role="dialog" aria-modal="true"><div class="tit-panel-head"><h3>Aging</h3><button type="button" class="tit-panel-x" id="titPanelX" aria-label="Fechar">\u2715</button></div><div class="tit-panel-body">'; h+='<div class="tit-aging-sec"><h4>A pagar, por vencimento</h4>'; h+='<div class="tit-aging-row"><span>Em aberto ('+nAb+')</span><b>'+BRL(faltaA)+'</b></div>'; h+='<div class="tit-aging-row"><span>Vencidos ('+nVe+')</span><b>'+BRL(faltaV)+'</b></div>'; try{ var L=["A vencer","1 a 15 dias","16 a 30 dias","31 a 60 dias","Acima de 60 dias"]; for(var i=0;i<5;i++){ h+='<div class="tit-aging-row"><span>'+L[i]+' ('+((na&&na[i])||0)+')</span><b>'+BRL((fa&&fa[i])||0)+'</b></div>'; } }catch(e){rmLogErr(e)} h+='<div class="tit-aging-row"><span>Baixados ('+nBx+')</span><b>'+String(nBx)+'</b></div>'; h+='</div>'; var rc=null,fee=0; try{ rc=recebiveisAging(); }catch(e){ rc=null; } try{ fee=taxaADescontarTotal(); }catch(e){ fee=0; } h+='<div class="tit-aging-sec"><h4>A receber, por idade</h4>'; if(rc){ h+='<div class="tit-aging-row"><span>A receber ('+rc.n+')</span><b id="recvTotGeral">'+BRL(rc.total)+'</b></div>'; try{ var L2=["0 a 7 dias","8 a 15 dias","16 a 30 dias","Acima de 30 dias"]; for(var j=0;j<4;j++){ h+='<div class="tit-aging-row"><span>'+L2[j]+' ('+rc.qntd[j]+')</span><b>'+BRL(rc.faixas[j])+'</b></div>'; } }catch(e){rmLogErr(e)} if(fee<0){ h+='<div class="tit-aging-row"><span>Cr\u00E9dito a favor</span><b id="taxaDescontarTot">'+BRL(Math.abs(fee))+'</b></div>'; } else { h+='<div class="tit-aging-row"><span>Taxa a descontar</span><b id="taxaDescontarTot">'+BRL(fee)+'</b></div>'; } } h+='</div>'; h+='</div><div class="tit-panel-foot"><button class="btn sm accent" id="titPanelFechar">Fechar</button></div></div></div>'; return h; }catch(e){ return ""; } }
+function titAgingPanelHTML(fa,na,faltaA,nAb,faltaV,nVe,nBx){ try{ var h='<div class="tit-panel-bk" id="titPanelBk"><div class="tit-panel" role="dialog" aria-modal="true"><div class="tit-panel-head"><h3>Aging</h3><button type="button" class="tit-panel-x" id="titPanelX" aria-label="Fechar">\u2715</button></div><div class="tit-panel-body">'; h+='<div class="tit-aging-sec"><h4>'+(titTipoF==="receber"?"A receber":"A pagar")+', por vencimento</h4>'; h+='<div class="tit-aging-row"><span>Em aberto ('+nAb+')</span><b>'+BRL(faltaA)+'</b></div>'; h+='<div class="tit-aging-row"><span>Vencidos ('+nVe+')</span><b>'+BRL(faltaV)+'</b></div>'; try{ var L=["A vencer","1 a 15 dias","16 a 30 dias","31 a 60 dias","Acima de 60 dias"]; for(var i=0;i<5;i++){ h+='<div class="tit-aging-row"><span>'+L[i]+' ('+((na&&na[i])||0)+')</span><b>'+BRL((fa&&fa[i])||0)+'</b></div>'; } }catch(e){rmLogErr(e)} h+='<div class="tit-aging-row"><span>Já baixados</span><b>'+nBx+' título(s)</b></div>'; h+='</div>'; var rc=null,fee=0; try{ rc=recebiveisAging(); }catch(e){ rc=null; } try{ fee=taxaADescontarTotal(); }catch(e){ fee=0; } h+='<div class="tit-aging-sec"><h4>A receber, por idade</h4>'; if(rc){ h+='<div class="tit-aging-row"><span>A receber ('+rc.n+')</span><b id="recvTotGeral">'+BRL(rc.total)+'</b></div>'; try{ var L2=["0 a 7 dias","8 a 15 dias","16 a 30 dias","Acima de 30 dias"]; for(var j=0;j<4;j++){ h+='<div class="tit-aging-row"><span>'+L2[j]+' ('+rc.qntd[j]+')</span><b>'+BRL(rc.faixas[j])+'</b></div>'; } }catch(e){rmLogErr(e)} if(fee<0){ h+='<div class="tit-aging-row"><span>Cr\u00E9dito a favor</span><b id="taxaDescontarTot">'+BRL(Math.abs(fee))+'</b></div>'; } else { h+='<div class="tit-aging-row"><span>Taxa a descontar</span><b id="taxaDescontarTot">'+BRL(fee)+'</b></div>'; } } h+='</div>'; h+='</div><div class="tit-panel-foot"><button class="btn sm accent" id="titPanelFechar">Fechar</button></div></div></div>'; return h; }catch(e){ return ""; } }
 /* Busca por id com índice (id → posição). Confere se a posição ainda tem aquele id; se a lista mudou
    (inclusão, exclusão, troca da base), refaz o índice. Sem índice válido, cai na busca linear. */
 var TIT_IDX={lista:null,mapa:null};
@@ -13634,6 +13645,17 @@ function f4Cabecalhos(t){
   var out=[]; Array.prototype.forEach.call(lin.cells,function(c){ var n=c.colSpan||1; var tx=(c.textContent||"").replace(/\s+/g," ").trim(); for(var k=0;k<n;k++) out.push(tx); });
   return {linha:lin,nomes:out};
 }
+/* título da coluna segue a célula: coluna de texto (td.l) fica com o título à esquerda, número à direita.
+   Vale para todas as tabelas, sem precisar marcar o <th> em cada tela. */
+function tblAlinhar(){
+  var vc=document.getElementById("viewCtn"); if(!vc) return;
+  vc.querySelectorAll("table.tbl").forEach(function(t){
+    var cab=t.rows[0]; if(!cab||!cab.querySelector("th")) return;
+    var lin=null; for(var r=1;r<t.rows.length&&!lin;r++){ if(!t.rows[r].querySelector("th")&&t.rows[r].cells.length===cab.cells.length) lin=t.rows[r]; }
+    if(!lin) return;
+    for(var i=1;i<cab.cells.length;i++){ var l=lin.cells[i].classList.contains("l"); if(cab.cells[i].classList.contains("l")!==l) cab.cells[i].classList.toggle("l",l); }
+  });
+}
 function f4Tabelas(){
   if(!(typeof mbarMovel==="function"&&mbarMovel())) return;
   var vc=document.getElementById("viewCtn"); if(!vc) return;
@@ -13677,9 +13699,9 @@ function f4Manual(){
   document.querySelectorAll("#viewCtn [data-mangoto]").forEach(function(a){ a.addEventListener("click",function(){ var id=String(a.getAttribute("data-mangoto")||"").slice(1); var el=document.getElementById(id); if(el&&el.classList.contains("fechado")){ el.classList.remove("fechado"); var h=el.querySelector("h3"); if(h) h.setAttribute("aria-expanded","true"); } },true); });
 }
 try{
-  var _f4obs=new MutationObserver(function(){ try{ f4Tabelas(); f4Manual(); }catch(e){ rmLogErr(e,"f4"); } });
+  var _f4obs=new MutationObserver(function(){ try{ tblAlinhar(); f4Tabelas(); f4Manual(); }catch(e){ rmLogErr(e,"f4"); } });
   _f4obs.observe(document.getElementById("viewCtn"),{childList:true,subtree:true});
-  f4Tabelas();
+  tblAlinhar(); f4Tabelas();
 }catch(e){ rmLogErr(e,"f4-init"); }
 
 /* ---------- CELULAR — blocos recolhíveis nas telas longas ----------
