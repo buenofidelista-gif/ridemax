@@ -921,9 +921,8 @@ body[data-glass]:not([data-glass="off"]) #undoBar{background:color-mix(in srgb, 
 .mrow2{flex-wrap:wrap}
 .mrow2>div{min-width:0;overflow-wrap:anywhere}
 .conf{white-space:normal!important;overflow-wrap:anywhere;max-width:100%}
-canvas.chart{height:auto!important;min-height:240px!important;display:block;max-width:100%}
-.fit-top canvas.chart,.fit-col.c3 canvas.chart,.fin-res-mid canvas.chart,.fin-dre-wf canvas.chart{height:auto!important;min-height:240px!important}
-@media(min-width:1100px) and (max-height:950px){.fit-top canvas.chart,.fit-col.c3 canvas.chart{height:auto!important;min-height:220px!important}}
+/* altura = a que o gráfico desenhou (height:auto segue a proporção do canvas). Forçar altura mínima esticava o desenho. */
+canvas.chart{height:auto!important;display:block;max-width:100%}
 @media(min-width:1100px){
 body.fit-lock #viewCtn:has(.rep-screen){display:block;overflow-y:auto;overflow-x:hidden}
 #viewCtn .rep-screen{display:block;overflow:visible;max-height:none;height:auto}
@@ -1866,6 +1865,13 @@ table.dm-tbl tr.dm-pct td.dm-l{padding-left:18px}
   /* o botão "+ Corrida" fica por cima do fim da página: espaço para a última linha aparecer */
   body:not(.fit-lock) #viewCtn,body.fit-lock #viewCtn:has(.fit-top,.fin-resumo,.fin-flx,.dash-screen,.relcat-screen,.rep-screen,.fin-dre,.prev-screen,.inv-rolar){padding-bottom:84px}
 }
+/* Distribuição atual × alvo: linha da legenda escolhível, igual à lista da Análise por plataforma */
+.res-don .don-it{cursor:pointer;padding:4px 6px;border-radius:var(--r-sm);border:1px solid transparent;min-height:44px}
+.res-don .don-it:hover{background:var(--input)}
+.res-don .don-it.on{background:color-mix(in srgb,var(--accent) 70%,transparent);border-color:var(--accent)}
+/* Título a receber (manual): sem categoria de despesa, sem conta de luz e sem série */
+.tit-rec label.f:has(#titCat),.tit-rec label.f:has(#titLuzChk),.tit-rec #titLuzBox,.tit-rec #serieBox{display:none!important}
+#titNovoTipoSeg{margin-bottom:4px}
 </style>
 </head>
 <body>
@@ -5836,7 +5842,7 @@ function drawRecTrend(cv,unit){
   DB.recharges.forEach(function(r){ if(map[r.date]!=null&&(r.unit||"kwh")===u) map[r.date]+=Number(r.kwh); });
   var keys=Object.keys(map), tot=keys.reduce(function(s,k){return s+map[k];},0);
   if(!(tot>0)) return false;
-  var dpr=window.devicePixelRatio||1, W=cv.clientWidth||600, H=150;
+  var dpr=window.devicePixelRatio||1, W=cv.clientWidth||600, H=200;
   cv.width=W*dpr; cv.height=H*dpr;
   var ctx=cv.getContext("2d"); ctx.scale(dpr,dpr);
   ctx.fillStyle=TH().bg; ctx.fillRect(0,0,W,H);
@@ -6207,6 +6213,7 @@ function rFinHub(){
       _sub(i);
       fns[i]();
       try{ atualizaAjuda(); }catch(e){rmLogErr(e)}
+      try{ qrFabSync(); }catch(e){rmLogErr(e)}
     };
     bar.appendChild(b);
   });
@@ -7125,9 +7132,9 @@ function rPrev(){
     }
   }
   html+='</div></div></div>';
-  html+='<div class="card"><h3>Simulador de turno</h3><div class="sub">Quanto tempo rodar para bater a meta — ou quanto esperar ganhar com as horas que você tem. Base: seu R$/h médio no dia da semana.</div>'
+  html+='<div class="card prev-sim"><h3>Simulador de turno</h3><div class="sub">Quanto tempo rodar para bater a meta — ou quanto esperar ganhar com as horas que você tem. Base: seu R$/h médio no dia da semana.</div>'
   +'<div class="toolbar"><span>Dia:</span><select id="sDia">'+DIAS.map(function(d,i){return '<option value="'+esc(i)+'"'+(i===twd?" selected":"")+'>'+d+'</option>';}).join("")+'</select><span>Meta (R$):</span><input id="sMeta" inputmode="decimal" value="'+esc(DB.goals.daily||"")+'" placeholder="ex: 300" style="background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;width:110px"><span>Horas:</span><input id="sHoras" inputmode="decimal" placeholder="ex: 4" style="background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;width:80px"><button class="btn sm green" id="sGo">Calcular</button></div><div id="sOut"></div></div>';
-  html+='<div class="card"><p class="tip">ℹ️ A IA usa decaimento exponencial: corridas recentes pesam mais. '+(curUnit()==="L"?"Com motor a combustão, bons horários também economizam combustível.":"Com o elétrico, bons horários também economizam energia.")+(wxOn?" Os ícones 🌦️ mostram a previsão para o próximo dia correspondente (ex.: próxima sexta-feira).":" Ative o clima para ver a previsão por horário.")+'</p></div>';
+  html+='<div class="card prev-tip"><p class="tip">ℹ️ A IA usa decaimento exponencial: corridas recentes pesam mais. '+(curUnit()==="L"?"Com motor a combustão, bons horários também economizam combustível.":"Com o elétrico, bons horários também economizam energia.")+(wxOn?" Os ícones 🌦️ mostram a previsão para o próximo dia correspondente (ex.: próxima sexta-feira).":" Ative o clima para ver a previsão por horário.")+'</p></div>';
   viewCtn.innerHTML=html;
   try{ phLigar(); }catch(_ePl){ rmLogErr(_ePl,"ph-ligar"); }
   (function(){
@@ -7172,8 +7179,10 @@ function rPrev(){
       var c1=document.createElement("div"); c1.className="prev-col prev-c1";
       var c2=document.createElement("div"); c2.className="prev-col prev-c2";
       var c3=document.createElement("div"); c3.className="prev-col prev-c3";
-      c1.appendChild(cards[0]); c2.appendChild(cards[1]); c3.appendChild(cards[2]);
-      cards.slice(3).forEach(function(cd,i){ if(i===0) cd.classList.add("prev-sim"); else cd.classList.add("prev-tip"); c3.appendChild(cd); });
+      /* pelo conteúdo, não pela posição (um cartão novo não desarruma as colunas):
+         Top 10 + Simulador | Melhores por dia + dica | Qual app rende mais + Mapa de calor */
+      c1.appendChild(cards[0]); c2.appendChild(cards[1]);
+      cards.slice(2).forEach(function(cd){ (cd.classList.contains("prev-sim")?c1:(cd.classList.contains("prev-tip")?c2:c3)).appendChild(cd); });
       main.appendChild(c1); main.appendChild(c2); main.appendChild(c3);
       outer.appendChild(main);
       viewCtn.innerHTML=""; viewCtn.appendChild(outer);
@@ -8279,6 +8288,15 @@ function computeDRECustom(ini,fim,label,filtro,regime){
   if(!isCaixa){
     if(!_ridesUberOk) rides=[];
     rides.forEach(function(x){ var n=platName(x.platform_id), t=rideTotal(x); byPlat[n]=(byPlat[n]||0)+t; bruta+=t; tipT+=(Number(x.tip)||0); km+=Number(x.distance)||0; });
+    (DB.titulos||[]).forEach(function(t){
+      if(!titManualReceber(t)||t.status==="cancelado") return;
+      tituloBaixas(t).forEach(function(b){
+        if(!b||!validISO(b.data)||!inRange(b.data,r.ini,r.fim)) return;
+        var v=Number(b.valor)||0; if(!(v>0.004)) return;
+        var sl=Math.round(Number(dreEncSlice(v,t,b,f,ids))*100)/100; if(!(sl>0.004)) return;
+        byPlat["Outras receitas"]=Math.round(((byPlat["Outras receitas"]||0)+sl)*100)/100; bruta=Math.round((bruta+sl)*100)/100;
+      });
+    });
   } else {
     /* CAIXA — receita: corridas em DINHEIRO no mês da corrida + baixas de
        recebíveis no mês da baixa (pelo valor baixado). Recebível em aberto
@@ -8288,7 +8306,7 @@ function computeDRECustom(ini,fim,label,filtro,regime){
     (DB.titulos||[]).forEach(function(t){
       if(!t||t.tipo!=="receber"||t.status==="cancelado") return;
       var rc=null; try{ rc=corridaDoTitulo(t); }catch(e){ rc=null; }
-      var rn=rc?platName(rc.platform_id):"Recebíveis";
+      var rn=rc?platName(rc.platform_id):(titManualReceber(t)?"Outras receitas":"Recebíveis");
       var tv=Number(t.valor)||0;
       var bs=tituloBaixas(t);
       for(var _ri=0;_ri<bs.length;_ri++){
@@ -8514,7 +8532,7 @@ function shortBRL(v){
 function drawWaterfall(cv,steps,total){
   var live=steps.filter(function(s){return s.delta;});
   if(!live.length&&!total) return false;
-  var dpr=window.devicePixelRatio||1, W=cv.clientWidth||640, H=180;
+  var dpr=window.devicePixelRatio||1, W=cv.clientWidth||640, H=220;
   cv.width=W*dpr; cv.height=H*dpr;
   var ctx=cv.getContext("2d"); ctx.scale(dpr,dpr);
   ctx.fillStyle=TH().bg; ctx.fillRect(0,0,W,H);
@@ -11136,6 +11154,10 @@ function rRelcat(){
    Título NÃO mexe no saldo. Só a BAIXA (saída de caixa) mexe, via contaSaidas.
    Vencimento futuro é a natureza do título; isFuturo vale só para a DATA DA BAIXA. */
 var titEditId=null, titBaixaId=null, titFiltro="aberto", titPage=1, titTipoF="pagar", titLoteOn=false, titLoteSel={};
+/* Título novo a RECEBER (manual): dinheiro que alguém te deve, fora das corridas (origem "manual").
+   Entra na DRE só quando o dinheiro entra (na data da baixa), nos dois regimes. Sem série e sem conta de luz. */
+var titNovoTipo="pagar";
+function titManualReceber(t){ return !!(t&&t.tipo==="receber"&&t.origem!=="corrida"); }
 var titNovoOpen=false;
 var titAgingOpen=false;
 var serieTipo="nenhuma", seriePer="mensal", serieDiaTxt="", serieNTxt="12";
@@ -11520,8 +11542,10 @@ function rTitulos(){
       +'<label class="f" style="grid-column:1/-1">Observação<input id="bxObs" maxlength="300" placeholder="opcional"></label>'
       +'<div class="msg-ok" id="bxMsg"></div></div></div><div class="tit-panel-foot"><button class="btn green" id="bxSave">Salvar baixa</button><button class="btn sm accent" id="bxBack">Voltar</button></div></div></div>';
   } else if(editing||titNovoOpen){
-    titPanelHTML+='<div class="tit-panel-bk" id="titPanelBk"><div class="tit-panel" role="dialog" aria-modal="true"><div class="tit-panel-head"><h3>'+(editing?"Editar título":"Novo título a pagar")+'</h3><button type="button" class="tit-panel-x" id="titPanelX" aria-label="Fechar">✕</button></div><div class="tit-panel-body"><div class="tit-form">'
-      +'<div class="sub" style="grid-column:1/-1">Título não mexe no saldo. Só a baixa (saída de caixa) mexe na conta.</div>'
+    var _rec=editing?editing.tipo==="receber":titNovoTipo==="receber";
+    titPanelHTML+='<div class="tit-panel-bk" id="titPanelBk"><div class="tit-panel'+(_rec?" tit-rec":"")+'" role="dialog" aria-modal="true"><div class="tit-panel-head"><h3>'+(editing?"Editar título":(_rec?"Novo título a receber":"Novo título a pagar"))+'</h3><button type="button" class="tit-panel-x" id="titPanelX" aria-label="Fechar">✕</button></div><div class="tit-panel-body"><div class="tit-form">'
+      +(!editing?'<div class="seg" id="titNovoTipoSeg" role="tablist" style="grid-column:1/-1"><button type="button" data-ntt="pagar" class="'+(_rec?"":"on")+'">A pagar</button><button type="button" data-ntt="receber" class="'+(_rec?"on":"")+'">A receber</button></div>':"")
+      +'<div class="sub" style="grid-column:1/-1">'+(_rec?'Dinheiro que alguém te deve (fora das corridas). Entra na DRE e no saldo só quando o dinheiro entrar: na baixa.':'Título não mexe no saldo. Só a baixa (saída de caixa) mexe na conta.')+'</div>'
       +(_lkEd?'<div class="tip" id="titOrigAviso" style="grid-column:1/-1;color:var(--yellow)">🔒 Este título veio da Despesa do Uber (🚗). Valor, competência e descrição só mudam na tela de Despesas do Uber — aqui dá para ajustar vencimento, categoria e centro de custo.</div>':"")+(_lkRec?'<div class="tip" style="grid-column:1/-1;color:var(--yellow)">🔋 Este título veio de Recarga na rua. Valor, competência e descrição só mudam na tela de Recarga — aqui dá para ajustar vencimento, categoria e centro de custo.</div>':"")+(_lkCorr?'<div class="tip" style="grid-column:1/-1;color:var(--yellow)">🏁 Este título veio de uma Corrida. Valor, competência e descrição só mudam na tela de Nova corrida/Histórico — aqui dá para ajustar vencimento, categoria e centro de custo.</div>':"")
       +'<label class="f">Descrição *<input id="titDesc" maxlength="80" placeholder="ex: Conta de luz" value="'+esc(editing?editing.descricao:"")+'"'+((_lkEd||_lkRec||_lkCorr)?" disabled":"")+'>'+((_lkEd||_lkRec||_lkCorr)?'<span class="tip">🔒 vem da origem — edite na tela de origem.</span>':"")+'</label>'
       +'<div class="tit-short"><label class="f">Valor (R$) *<input id="titValor" inputmode="decimal" placeholder="ex: 100,00" value="'+esc(editing?String(Number(editing.valor)).replace(".",","):"")+'"'+((_lkEd||_lkRec||_lkCorr)?" disabled":"")+'>'+((_lkEd||_lkRec||_lkCorr)?'<span class="tip">🔒 vem da origem — edite na tela de origem.</span>':"")+'</label>'
@@ -11533,7 +11557,7 @@ function rTitulos(){
       +'<div class="tit-short"><label class="f">Competência * (MM/AAAA)<input id="titComp" placeholder="ex: 11/2026" value="'+esc(editing?isoToComp(editing.competencia):mesAtual)+'"'+((_lkEd||_lkRec||_lkCorr)?" disabled":"")+'>'+((_lkEd||_lkRec||_lkCorr)?'<span class="tip">🔒 vem da origem — muda ao editar a data na tela de origem.</span>':'<span class="tip">ex: '+esc(mesAtual)+' — mês de competência; pode ser passado ou futuro.</span>')+'</label>'
       +'<label class="f" id="titVencWrap">Vencimento * (DD/MM/AAAA)<input id="titVenc" placeholder="ex: 20/12/2026" value="'+esc(editing?isoToBR(editing.vencimento):"")+'"><span class="tip">ex: 20/12/2026 — pode ser futuro: é o vencimento, não o movimento.</span></label></div>'
       +(!editing?'<div style="grid-column:1/-1" id="serieBox"><div class="rateio-box"><div class="sub">🔁 Repetir — gerar série de títulos<button type="button" class="hbtn" id="hSerieBtn" title="Ajuda: séries" aria-label="Ajuda: séries" aria-expanded="false">?</button></div><div class="hhelp" id="hSerieBox" hidden></div><div class="seg" id="serieTipoSeg"><button type="button" data-st="nenhuma" class="'+(serieTipo==="nenhuma"?"on":"")+'">Único</button><button type="button" data-st="recorrente" class="'+(serieTipo==="recorrente"?"on":"")+'">Recorrente</button><button type="button" data-st="parcelado" class="'+(serieTipo==="parcelado"?"on":"")+'">Parcelado</button></div><div id="serieFields"'+(serieTipo==="nenhuma"?" hidden":"")+'><div class="serie-grid"><label class="f" id="seriePerWrap">Periodicidade<select id="seriePer"></select><span class="tip" id="seriePerTip"></span></label><label class="f">Dia do vencimento *<input id="serieDia" inputmode="numeric" placeholder="ex: 20" value="'+esc(serieDiaTxt)+'"><span class="tip">1 a 31. Dia que não existe no mês cai no último dia (31 em fevereiro → 28).</span></label><label class="f">Nº de ocorrências *<input id="serieN" inputmode="numeric" placeholder="ex: 12" value="'+esc(serieNTxt)+'"><span class="tip" id="serieNTip"></span></label></div><div class="tblwrap"><table class="tbl"><thead><tr><th>#</th><th>Vencimento</th><th>Competência</th><th>Valor</th></tr></thead><tbody id="seriePrevBody"></tbody></table></div><div class="serie-prev" id="seriePrevMsg"></div></div></div></div>':"")
-      +(!editing?'<label class="f" id="titPagoWrap" style="grid-column:1/-1"'+(serieTipo==="nenhuma"?"":" hidden")+'><input type="checkbox" id="titPago" style="width:auto"> Já pago (cria o título e a baixa no mesmo ato)</label>':"")
+      +(!editing?'<label class="f" id="titPagoWrap" style="grid-column:1/-1"'+(serieTipo==="nenhuma"?"":" hidden")+'><input type="checkbox" id="titPago" style="width:auto"> '+(_rec?"Já recebido":"Já pago")+' (cria o título e a baixa no mesmo ato)</label>':"")
       +(!editing?'<div id="titPagoBox" style="grid-column:1/-1" hidden><div class="f2"><label class="f">Conta da baixa *<select id="titConta">'+ctaOpts+'</select></label><label class="f">Data da baixa *<input id="titDataBx" value="'+esc(new Date().toLocaleDateString("pt-BR"))+'"><span class="tip">movimento de caixa: não aceita futuro.</span></label><label class="f">Juros (R$)<input id="titJuros" inputmode="decimal" value="0,00"></label><label class="f">Desconto (R$)<input id="titDesc2" inputmode="decimal" value="0,00"></label></div><label class="f">Observação da baixa<input id="titObsBx" maxlength="300" placeholder="opcional"></label></div>':"")
       +'<div class="msg-ok" id="titMsg"></div></div></div><div class="tit-panel-foot"><button class="btn green" id="titSave">'+(editing?"Salvar alterações":"Salvar título")+'</button><button class="btn sm accent" id="titCancel">Voltar</button></div></div></div>';
   }
@@ -11594,7 +11618,8 @@ function rTitulos(){
   var tc=document.getElementById("titCancel");
   if(tc){ tc.onclick=function(){ titEditId=null; titNovoOpen=false; titAgingOpen=false; titRateioMulti=false; titRateioLines=[]; titLuzOn=false; titLuzKwhTxt=""; titLuzDeTxt=""; titLuzAteTxt=""; rTitulos(); }; }
   var _tn=document.getElementById("titNovoBtn");
-  if(_tn){ _tn.onclick=function(){ titNovoOpen=true; titEditId=null; titBaixaId=null; titAgingOpen=false; titPage=1; rTitulos(); }; }
+  if(_tn){ _tn.onclick=function(){ titNovoTipo=(titTipoF==="receber")?"receber":"pagar"; titNovoOpen=true; titEditId=null; titBaixaId=null; titAgingOpen=false; titPage=1; rTitulos(); }; }
+  document.querySelectorAll("#titNovoTipoSeg [data-ntt]").forEach(function(b){ b.onclick=function(){ if(titNovoTipo===b.dataset.ntt) return; titNovoTipo=b.dataset.ntt; if(titNovoTipo==="receber"){ titLuzOn=false; serieTipo="nenhuma"; } rTitulos(); }; });
   var _tg=document.getElementById("titAgingBtn");
   if(_tg){ _tg.onclick=function(){ titAgingOpen=true; titNovoOpen=false; titBaixaId=null; titEditId=null; rTitulos(); }; }
   var _px=document.getElementById("titPanelX");
@@ -11813,6 +11838,8 @@ function rTitulos(){
     var cen=cenEl?cenEl.value:"";
     var comp=compToISO(document.getElementById("titComp").value);
     var vencEl=document.getElementById("titVenc");
+    var _novoRec=!editing&&titNovoTipo==="receber";
+    if(_novoRec){ serieTipo="nenhuma"; cat=""; }
     var serieAtiva=!editing&&(serieTipo==="recorrente"||serieTipo==="parcelado");
     var venc=serieAtiva?null:brToISO(vencEl?vencEl.value:"");
     /* FASE 2C — título da Despesa Uber: valor, descrição e competência vêm da origem (campos bloqueados). */
@@ -11941,7 +11968,7 @@ function rTitulos(){
       titEditId=null; titNovoOpen=false; titRateioMulti=false; titRateioLines=[]; titLuzOn=false; titLuzKwhTxt=""; titLuzDeTxt=""; titLuzAteTxt=""; rTitulos();
       return;
     }
-    var nt={id:uid(),tipo:"pagar",descricao:desc,competencia:comp,vencimento:venc,valor:Math.round(val*100)/100,categoria:String(cat||"").slice(0,64),rateio:_rt,origem:"",vinculo:"",serie:null,lote:"",contaLuz:null,status:"aberto",baixas:[]};
+    var nt={id:uid(),tipo:_novoRec?"receber":"pagar",descricao:desc,competencia:comp,vencimento:venc,valor:Math.round(val*100)/100,categoria:String(cat||"").slice(0,64),rateio:_rt,origem:_novoRec?"manual":"",vinculo:"",serie:null,lote:"",contaLuz:null,status:"aberto",baixas:[]};
     var jp=document.getElementById("titPago");
     if(jp&&jp.checked){
       if(ativas.length<1){ err("Cadastre ao menos uma conta ativa em Contas para dar baixa."); return; }
@@ -12087,10 +12114,25 @@ var qrPlat=null, qrMoreOpen=false, qrBusy=false;
 function qrActivePlats(){ return (DB.platforms||[]).filter(function(p){ return p&&p.active; }); }
 function qrLastRide(){ var l=DB.rides||[], best=null; for(var i=0;i<l.length;i++){ var r=l[i]; if(!best||(r.date+" "+(r.start_time||""))>=(best.date+" "+(best.start_time||""))) best=r; } return best; }
 function qrDefaultPlat(){ var ps=qrActivePlats(); if(!ps.length) return null; var lr=qrLastRide(); if(lr&&ps.some(function(p){ return p.id===lr.platform_id; })) return lr.platform_id; return ps[0].id; }
+/* O botão "+" muda conforme a tela: Investimentos → Compra; telas do grupo Financeiro → Conta (nova conta a pagar);
+   demais → Corrida. Análise e Repasses ficam no grupo Uber, então continuam com Corrida. */
+var FAB_MODOS={
+  corrida:{rot:"Corrida",aria:"Lançar corrida rápida",tit:"Lançar corrida rápida (atalho: N)"},
+  compra:{rot:"Compra",aria:"Registrar compra de ativo",tit:"Registrar compra de ativo (Nova operação)"},
+  conta:{rot:"Conta",aria:"Nova conta a pagar ou a receber",tit:"Lançar nova conta a pagar ou a receber"}
+};
+function fabModo(){
+  if(current==="investimentos") return "compra";
+  if({transferencias:1,saldos:1,contaspagar:1,relcat:1,fluxo:1}[current]) return "conta";
+  if(current==="financeiro"&&(window.__finTab===0||window.__finTab===1)) return "conta";
+  return "corrida";
+}
+function fabConta(){ titNovoTipo=(current==="contaspagar"&&titTipoF==="receber")?"receber":"pagar"; titNovoOpen=true; titEditId=null; titBaixaId=null; titAgingOpen=false; if(current==="contaspagar") rTitulos(); else show("contaspagar"); }
+function fabAcao(){ var m=fabModo(); if(m==="compra"){ fabCompra(); return; } if(m==="conta"){ fabConta(); return; } qrOpen(); }
 function qrEnsureDom(){
   if(document.getElementById("qrFab")) return;
   var fab=document.createElement("button"); fab.id="qrFab"; fab.type="button"; fab.setAttribute("aria-label","Lançar corrida rápida"); fab.title="Lançar corrida rápida (atalho: N)"; fab.innerHTML='<span aria-hidden="true">+</span> Corrida';
-  fab.onclick=function(){ if(current==="investimentos"){ try{ fabCompra(); }catch(e){ rmLogErr(e,"fab-compra"); } return; } qrOpen(); };
+  fab.onclick=function(){ try{ fabAcao(); }catch(e){ rmLogErr(e,"fab"); } };
   var bk=document.createElement("div"); bk.id="qrBk"; bk.hidden=true;
   bk.innerHTML='<div id="qrBox" role="dialog" aria-modal="true" aria-labelledby="qrTitle"></div>';
   bk.addEventListener("click",function(ev){ if(ev.target===bk) qrClose(); });
@@ -12108,9 +12150,9 @@ function qrEnsureDom(){
     }
   });
 }
-function qrFabSync(){ try{ qrEnsureDom(); var f=document.getElementById("qrFab"); var inv=(current==="investimentos");
-    if(f){ f.hidden=(current==="nova"); var rot=inv?"Compra":"Corrida"; if(f.dataset.rot!==rot){ f.dataset.rot=rot; f.innerHTML='<span aria-hidden="true">+</span> '+rot; f.setAttribute("aria-label",inv?"Registrar compra de ativo":"Lançar corrida rápida"); f.title=inv?"Registrar compra de ativo (Nova operação)":"Lançar corrida rápida (atalho: N)"; } }
-    var mb=document.querySelector("#mbar .mplus"); if(mb){ var r=mb.querySelector(".mplus-rot"); if(r) r.textContent=inv?"Compra":"Corrida"; mb.setAttribute("aria-label",inv?"Registrar compra de ativo":"Nova corrida rápida"); }
+function qrFabSync(){ try{ qrEnsureDom(); var f=document.getElementById("qrFab"); var M=FAB_MODOS[fabModo()];
+    if(f){ f.hidden=(current==="nova"); if(f.dataset.rot!==M.rot){ f.dataset.rot=M.rot; f.innerHTML='<span aria-hidden="true">+</span> '+M.rot; f.setAttribute("aria-label",M.aria); f.title=M.tit; } }
+    var mb=document.querySelector("#mbar .mplus"); if(mb){ var r=mb.querySelector(".mplus-rot"); if(r) r.textContent=M.rot; mb.setAttribute("aria-label",M.aria); }
   }catch(e){ rmLogErr(e,"qr-fab"); } }
 function qrToast(txt,ms){ try{ var t=document.getElementById("qrToast"); if(!t) return; t.textContent=txt; t.hidden=false; clearTimeout(qrToast._t); qrToast._t=setTimeout(function(){ t.hidden=true; },ms||3500); }catch(e){ rmLogErr(e); } }
 function qrMoreLabel(){ return qrMoreOpen?"▾ Menos":"▸ Km, gorjeta e horário"; }
@@ -13426,7 +13468,7 @@ function mbarIni(){
     if(k!=="menu"&&document.body.classList.contains("mais-open")){ try{ maisFechar(); }catch(e){ rmLogErr(e,"mbar-mais"); } }
     if(k==="inicio") show("dashboard");
     else if(k==="corridas") show("historico");
-    else if(k==="mais-corrida"){ try{ if(current==="investimentos"){ fabCompra(); return; } qrOpen(); }catch(e){ rmLogErr(e,"mbar-qr"); show("nova"); } }
+    else if(k==="mais-corrida"){ try{ fabAcao(); }catch(e){ rmLogErr(e,"mbar-qr"); show("nova"); } }
     else if(k==="dinheiro"){ try{ window.__finTab=0; }catch(e){} show("financeiro"); }
     else if(k==="menu"){ if(document.body.classList.contains("mais-open")) maisFechar(); else if(document.body.classList.contains("nav-open")) navFechar(); else maisAbrir(); }
   });
@@ -15882,12 +15924,13 @@ function resResumoHTML(){
   var D=R.dist, itens=[];
   RES_ORDEM.forEach(function(k){ var C=R.cls[k]; if(C.valor>0.004||C.alvo>0) itens.push({k:k,nome:C.nome,valor:C.valor,pct:C.pctAtual||0,alvo:C.alvo}); });
   var cores=resCoresClasses();
-  RES_DON={itens:itens,cores:cores,res:D?D.reserva.valor:0};
+  RES_DON={itens:itens,cores:cores,res:D?D.reserva.valor:0,sel:-1};
   h+='<div class="card res-don"><h3>Distribuição'+(R.temAlvo?' atual × alvo':'')+'<button type="button" class="infoBtn" data-tip="Quanto cada classe pesa na carteira (sem a reserva de emergência). O alvo vem de Planejamento › Metas e alvos." aria-label="Sobre a distribuição">i</button></h3>'
     +'<div class="don-wrap"><canvas id="resDonCv" width="180" height="180" aria-label="Distribuição por classe"></canvas><div class="don-leg">'
-    +itens.map(function(i){ return '<div class="don-it"><i style="background:'+cores[i.k]+'"></i><span>'+esc(i.nome)+'</span><b>'+esc(brDec(i.pct,1))+'%</b>'+(i.alvo!=null?'<small>alvo '+esc(brDec(i.alvo,0))+'%</small>':'')+'</div>'; }).join("")
+    +itens.map(function(i,ix){ return '<div class="don-it" data-di="'+ix+'" role="button" tabindex="0" aria-pressed="false"><i style="background:'+cores[i.k]+'"></i><span>'+esc(i.nome)+'</span><b>'+esc(brDec(i.pct,1))+'%</b>'+(i.alvo!=null?'<small>alvo '+esc(brDec(i.alvo,0))+'%</small>':'')+'</div>'; }).join("")
     +(RES_DON.res>0.004?'<div class="sub">🧯 Reserva de emergência: '+esc(BRL(RES_DON.res))+' (fora)</div>':'')
     +(!R.temAlvo?'<div class="sub">Defina os pesos em Planejamento › Metas e alvos para comparar.</div>':'')
+    +'<div class="sub">Toque numa fatia ou numa linha para ver o detalhe.</div>'
     +'</div></div></div></div>';
   try{ h+=resRentHTML(); }catch(_eRt){ rmLogErr(_eRt,"rentab"); }
   /* destaques */
@@ -15926,14 +15969,35 @@ function resDesenharDon(){
   var tot=RES_DON.itens.reduce(function(a,i){ return a+i.valor; },0), a0=-Math.PI/2, cx=S/2, cy=S/2;
   if(tot<=0){ ctx.strokeStyle=T.grid; ctx.lineWidth=26; ctx.beginPath(); ctx.arc(cx,cy,64,0,Math.PI*2); ctx.stroke(); return; }
   var _nFat=RES_DON.itens.filter(function(z){ return z.valor>0; }).length;
-  RES_DON.itens.forEach(function(i){ if(!(i.valor>0)) return; var a=i.valor/tot*Math.PI*2; ctx.strokeStyle=RES_DON.cores[i.k]; ctx.lineWidth=28; var _g=(_nFat>1&&a>0.06)?0.016:0; ctx.beginPath(); ctx.arc(cx,cy,64,a0+_g,a0+a-_g); ctx.stroke(); a0+=a; });
+  var sel=RES_DON.sel; RES_DON.arcos=[];
+  RES_DON.itens.forEach(function(i,ix){ if(!(i.valor>0)) return; var a=i.valor/tot*Math.PI*2; RES_DON.arcos.push({ix:ix,a0:a0,a1:a0+a}); ctx.strokeStyle=RES_DON.cores[i.k]; ctx.globalAlpha=(sel>=0&&sel!==ix)?0.35:1; ctx.lineWidth=(sel===ix)?36:28; var _g=(_nFat>1&&a>0.06)?0.016:0; ctx.beginPath(); ctx.arc(cx,cy,64,a0+_g,a0+a-_g); ctx.stroke(); ctx.globalAlpha=1; a0+=a; });
   /* anel fino de fora = alvo */
   var temAlvo=RES_DON.itens.some(function(i){ return i.alvo!=null; });
   if(temAlvo){ a0=-Math.PI/2; RES_DON.itens.forEach(function(i){ if(!(i.alvo>0)) return; var a=i.alvo/100*Math.PI*2; ctx.strokeStyle=RES_DON.cores[i.k]; ctx.globalAlpha=0.55; ctx.lineWidth=6; ctx.beginPath(); ctx.arc(cx,cy,86,a0+0.02,a0+a-0.02); ctx.stroke(); ctx.globalAlpha=1; a0+=a; }); }
-  ctx.fillStyle=T.txt; ctx.font="bold 13px sans-serif"; ctx.textAlign="center"; ctx.fillText(temAlvo?"dentro: atual":"atual",cx,cy-2); ctx.font="11px sans-serif"; ctx.fillStyle=T.mut; if(temAlvo) ctx.fillText("fora: alvo",cx,cy+14);
+  ctx.textAlign="center";
+  var it=sel>=0?RES_DON.itens[sel]:null;
+  if(it){ ctx.fillStyle=T.txt; ctx.font="bold 13px sans-serif"; ctx.fillText(it.nome,cx,cy-10); ctx.font="bold 12px sans-serif"; ctx.fillText(brDec(it.pct,1)+"%"+(it.alvo!=null?" · alvo "+brDec(it.alvo,0)+"%":""),cx,cy+6); ctx.font="11px sans-serif"; ctx.fillStyle=T.mut; ctx.fillText(BRL(it.valor),cx,cy+21); }
+  else { ctx.fillStyle=T.txt; ctx.font="bold 13px sans-serif"; ctx.fillText(temAlvo?"dentro: atual":"atual",cx,cy-2); ctx.font="11px sans-serif"; ctx.fillStyle=T.mut; if(temAlvo) ctx.fillText("fora: alvo",cx,cy+14); }
+}
+function resDonEscolher(ix){
+  if(!RES_DON) return; RES_DON.sel=(RES_DON.sel===ix)?-1:ix; resDesenharDon();
+  document.querySelectorAll(".res-don .don-it").forEach(function(el){ var on=Number(el.dataset.di)===RES_DON.sel; el.classList.toggle("on",on); el.setAttribute("aria-pressed",on?"true":"false"); });
+}
+function resDonLigar(){
+  var cv=document.getElementById("resDonCv"); if(!cv) return;
+  cv.style.cursor="pointer";
+  cv.onclick=function(ev){ var r=cv.getBoundingClientRect(), x=ev.clientX-r.left-r.width/2, y=ev.clientY-r.top-r.height/2, d=Math.sqrt(x*x+y*y)*180/r.width;
+    if(d<40||d>92||!RES_DON.arcos){ resDonEscolher(-1); return; }
+    var ang=Math.atan2(y,x); if(ang<-Math.PI/2) ang+=Math.PI*2;
+    var hit=RES_DON.arcos.filter(function(q){ return ang>=q.a0&&ang<q.a1; })[0]; resDonEscolher(hit?hit.ix:-1); };
+  document.querySelectorAll(".res-don .don-it").forEach(function(el){
+    el.onclick=function(){ resDonEscolher(Number(el.dataset.di)); };
+    el.onkeydown=function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); resDonEscolher(Number(el.dataset.di)); } };
+  });
 }
 function resResumoLigar(){
   resDesenharEvo(); resDesenharDon(); try{ resFiltrosLigar(); }catch(e){ rmLogErr(e,"res-filtros"); }
+  try{ resDonLigar(); }catch(e){ rmLogErr(e,"res-don"); }
   document.querySelectorAll("[data-resir]").forEach(function(b){ b.onclick=function(){ window.__invTab=Number(b.dataset.resir)||0; rInvest(); }; });
 }
 window.addEventListener("resize",function(){ try{ if(document.getElementById("resEvoCv")) resDesenharEvo(); }catch(e){} });
