@@ -1884,6 +1884,21 @@ table.dm-tbl tr.dm-pct td.dm-l{padding-left:18px}
 .don-chave{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--muted);margin:2px 0 8px}
 .don-chave span{display:block}
 .don-chave svg{color:var(--text);vertical-align:-1px;margin-right:6px}
+/* Eventos e feriados (Previsão e Início) */
+.ev-lista{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.ev-it{display:grid;grid-template-columns:78px 1fr auto;gap:10px;align-items:start;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--input)}
+.ev-it.hoje{border-color:var(--green)}
+.ev-it.passado{opacity:.9}
+.ev-dt b{display:block;font-size:14px}
+.ev-dt small,.ev-tx small{display:block;color:var(--muted);font-size:13px;line-height:1.35}
+.ev-tx{min-width:0}
+.ev-tx>b{display:block;font-size:14px;overflow-wrap:break-word}
+.ev-tx .ev-prev{color:var(--text);opacity:.85;margin-top:2px}
+.ev-ac .btn{min-width:44px}
+.ev-form{border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;margin:8px 0;background:var(--card)}
+.ev-aviso .ev-av-lin{padding:6px 0;border-bottom:1px solid var(--border)}
+.ev-aviso .ev-av-lin:last-of-type{border-bottom:0}
+.ev-tx a{color:var(--blue);text-decoration:underline}
 </style>
 </head>
 <body>
@@ -2539,6 +2554,7 @@ function seed(){
     invWatch:[],
     invProventos:[],
     invEventos:[],
+    eventos:null,
     titulos:[],
     lotes:[],
     series:[],
@@ -2784,6 +2800,7 @@ function sanitizeDB(d, rawBackup){
       d.lotes=_loOk;
     }
   }catch(e){
+    _fail("lotes"); /* como as outras coleções: guarda a cópia bruta e trava a gravação, em vez de apagar os lotes calado */
     try{ d.lotes=[]; }catch(_){rmLogErr(_)}
   }
   try{
@@ -3102,6 +3119,23 @@ function sanitizeDB(d, rawBackup){
   }catch(e){
     _fail("invEventos");
     try{ d.invEventos=[]; }catch(_){rmLogErr(_)}
+  }
+  /* EVENTOS E FERIADOS DA CIDADE (js/41-eventos.js). Base sem a lista: começa com os feriados de Vitória da Conquista. */
+  try{
+    if(d.eventos==null){
+      d.eventos=[["06-24","São João"],["08-15","Nossa Senhora das Vitórias (padroeira)"],["11-09","Aniversário de Vitória da Conquista"]].map(function(x,i){ return {id:"fer-cidade-"+(i+1),titulo:x[1],tipo:"feriado",data:"2026-"+x[0],hora:"",local:"",anual:1}; });
+    } else {
+      if(!Array.isArray(d.eventos)) throw new Error("eventos");
+      var _eTip={show:1,jogo:1,festa:1,formatura:1,feira:1,religioso:1,universidade:1,congresso:1,feriado:1};
+      d.eventos=d.eventos.filter(function(e){ var ok=e&&validISO(e.data)&&String(e.titulo||"").trim()&&_eTip[e.tipo]; if(!ok) noteDropped("eventos",e); return ok; }).map(function(e){
+        var o={id:String(e.id||uid()).slice(0,40),titulo:String(e.titulo).trim().slice(0,80),tipo:e.tipo,data:e.data,hora:(/^\d{2}:\d{2}$/.test(String(e.hora||""))?e.hora:""),local:String(e.local||"").trim().slice(0,60),anual:e.anual?1:0};
+        if(e.origem==="sympla"){ o.origem="sympla"; o.sid=String(e.sid||"").slice(0,20); o.link=String(e.link||"").slice(0,200); }
+        if(e.oculto) o.oculto=1; if(e.editado) o.editado=1;
+        return o; });
+    }
+  }catch(e){
+    _fail("eventos");
+    try{ d.eventos=[]; }catch(_){rmLogErr(_)}
   }
   try{ d._v=2; }catch(e){rmLogErr(e)}
   /* Concorrência entre abas: carimbo de versão. Backup antigo sem _rev
@@ -3512,10 +3546,14 @@ function loadBlockedGuard(){
   return true;
 }
 
+/* true quando o save() recusou por mês fechado e JÁ voltou a base para a versão gravada:
+   aí quem chamou não pode "desfazer" tirando o último item da lista (seria um registro verdadeiro). */
+var SAVE_RESTAUROU=false;
 function save(){
+  SAVE_RESTAUROU=false;
   if(loadBlockedGuard()) return false;
   /* mês fechado: recusa e desfaz qualquer mudança com data nele (js/30-fechamento.js) */
-  try{ if(typeof fechGuarda==="function"&&fechGuarda()) return false; }catch(_eF){ rmLogErr(_eF,"fech-guarda"); }
+  try{ if(typeof fechGuarda==="function"&&fechGuarda()){ SAVE_RESTAUROU=true; return false; } }catch(_eF){ rmLogErr(_eF,"fech-guarda"); }
   var _st;
   try{ _st=readStoredRev(); }catch(_e){ _st={rev:DB_MEM_REV,has:false}; }
   if(_st.rev!==DB_MEM_REV){
@@ -3830,7 +3868,7 @@ function restoreTrashItem(trashId){
     _bt.baixas.push(_nb);
     tituloRecalc(_bt);
     DB.trash.splice(ix,1);
-    if(!save()){ var _ri=_bt.baixas.indexOf(_nb); if(_ri>=0) _bt.baixas.splice(_ri,1); tituloRecalc(_bt); DB.trash.splice(ix,0,t); return false; }
+    if(!save()){ var _ri=_bt.baixas.indexOf(_nb); if(_ri>=0) _bt.baixas.splice(_ri,1); tituloRecalc(_bt); if(!SAVE_RESTAUROU) DB.trash.splice(ix,0,t); return false; }
     return true;
   }
   else return false;
@@ -4307,10 +4345,10 @@ function impLatest(db){
   return m;
 }
 function impNums(db){
-  return {rides:(db.rides||[]).length,titulos:(db.titulos||[]).length,baixas:impBaixasTotal(db),transf:(db.transferencias||[]).length,desp:(db.expenses||[]).length,rec:(db.recharges||[]).length,rep:(db.repasses||[]).length,lotes:(db.lotes||[]).length,turnos:(db.shifts||[]).length,manuais:(db.dre_manual||[]).length,ajustes:(db.concAjustes||[]).length,med:(db.medicoesEnergia||[]).length,series:(db.series||[]).length,contas:(db.contas||[]).length,centros:(db.centros||[]).length,plats:(db.platforms||[]).length,cats:(db.expense_categories||[]).length};
+  return {rides:(db.rides||[]).length,titulos:(db.titulos||[]).length,baixas:impBaixasTotal(db),transf:(db.transferencias||[]).length,desp:(db.expenses||[]).length,rec:(db.recharges||[]).length,rep:(db.repasses||[]).length,lotes:(db.lotes||[]).length,turnos:(db.shifts||[]).length,manuais:(db.dre_manual||[]).length,ajustes:(db.concAjustes||[]).length,inv:(db.invMovs||[]).length+(db.invProventos||[]).length+(db.invEventos||[]).length,med:(db.medicoesEnergia||[]).length,series:(db.series||[]).length,contas:(db.contas||[]).length,centros:(db.centros||[]).length,plats:(db.platforms||[]).length,cats:(db.expense_categories||[]).length};
 }
 function impTotal(n){ var t=0,k; try{ for(k in n){ t+=Number(n[k])||0; } }catch(e){rmLogErr(e)} return t; }
-function impMovLine(n){ return n.rides+" corridas \u00B7 "+n.titulos+" t\u00EDtulos ("+n.baixas+" baixas) \u00B7 "+n.transf+" transfer\u00EAncias \u00B7 "+n.desp+" despesas \u00B7 "+n.rec+" recargas \u00B7 "+n.rep+" repasses \u00B7 "+n.lotes+" lotes \u00B7 "+n.turnos+" turnos \u00B7 "+n.manuais+" manuais \u00B7 "+n.ajustes+" ajustes \u00B7 "+n.med+" medi\u00E7\u00F5es \u00B7 "+n.series+" s\u00E9ries"; }
+function impMovLine(n){ return n.rides+" corridas \u00B7 "+n.titulos+" t\u00EDtulos ("+n.baixas+" baixas) \u00B7 "+n.transf+" transfer\u00EAncias \u00B7 "+n.desp+" despesas \u00B7 "+n.rec+" recargas \u00B7 "+n.rep+" repasses \u00B7 "+n.lotes+" lotes \u00B7 "+n.turnos+" turnos \u00B7 "+n.manuais+" manuais \u00B7 "+n.ajustes+" ajustes \u00B7 "+n.med+" medi\u00E7\u00F5es \u00B7 "+n.series+" s\u00E9ries \u00B7 "+(n.inv||0)+" investimentos"; }
 function impCadLine(n){ return n.contas+" contas \u00B7 "+n.centros+" centros \u00B7 "+n.plats+" plataformas \u00B7 "+n.cats+" categorias"; }
 function impExportedLabel(iso){
   if(!iso) return "\u2014";
@@ -4333,7 +4371,7 @@ document.getElementById("impFile").addEventListener("change",function(){
       var clean=sanitizeDB(raw);
       var _impN=0, _impTxt="", _impDet="";
       try{ _impN=droppedTotal(); if(_impN>0){ _impTxt=droppedSummary(); } try{ _impDet=droppedDetail(); }catch(_e2){ _impDet=""; } }catch(_e){ _impN=0; _impTxt=""; _impDet=""; }
-      if(!clean.platforms.length&&!clean.rides.length&&!clean.shifts.length&&!clean.expenses.length&&!clean.recharges.length&&!(clean.repasses&&clean.repasses.length)&&!(clean.dre_manual&&clean.dre_manual.length)&&!(clean.contas&&clean.contas.length)&&!(clean.centros&&clean.centros.length)&&!(clean.transferencias&&clean.transferencias.length)&&!(clean.titulos&&clean.titulos.length)&&!(clean.series&&clean.series.length)&&!(clean.medicoesEnergia&&clean.medicoesEnergia.length)&&!(clean.lotes&&clean.lotes.length)&&!(clean.concAjustes&&clean.concAjustes.length)){
+      if(!clean.platforms.length&&!(clean.invMovs&&clean.invMovs.length)&&!(clean.invProventos&&clean.invProventos.length)&&!clean.rides.length&&!clean.shifts.length&&!clean.expenses.length&&!clean.recharges.length&&!(clean.repasses&&clean.repasses.length)&&!(clean.dre_manual&&clean.dre_manual.length)&&!(clean.contas&&clean.contas.length)&&!(clean.centros&&clean.centros.length)&&!(clean.transferencias&&clean.transferencias.length)&&!(clean.titulos&&clean.titulos.length)&&!(clean.series&&clean.series.length)&&!(clean.medicoesEnergia&&clean.medicoesEnergia.length)&&!(clean.lotes&&clean.lotes.length)&&!(clean.concAjustes&&clean.concAjustes.length)){
         customAlert("Arquivo sem dados v\u00E1lidos. Nada foi alterado.","Restaurar backup"); return;
       }
       var _impStored=0; try{ _impStored=readStoredRev().rev; }catch(_e){ _impStored=DB_MEM_REV; }
@@ -5071,6 +5109,7 @@ function rDash(){
   var html=""; try{ html+=dashHeroHTML(); }catch(_eH){ rmLogErr(_eH,"hero"); }
   html+=corruptBanner()+backupBanner()+bkpBannerPasta();
   try{ html+=fiscalAvisoHTML(); }catch(_eF){ rmLogErr(_eF,"fiscal-inicio"); }
+  try{ html+=evAvisoHTML(); }catch(_eEv){ rmLogErr(_eEv,"ev-inicio"); }
   html+='<div class="fit-screen dash-screen"><div class="dash-grid">';
   /* ============ BLOCO 1 — HOJE ============ */
   var contas=(DB.contas||[]).filter(function(c){ return c.ativa; }).sort(finSortNome);
@@ -5609,7 +5648,7 @@ function renderShifts(box){
       window.__shiftEditId=null; renderShifts(box); return;
     }
     DB.shifts.push({id:uid(),date:iso,start_time:st,end_time:et,odo_start:os,odo_end:oe,notes:notes});
-    if(!save()){ DB.shifts.pop(); msg.textContent=SAVE_FAIL_MSG; return; }
+    if(!save()){ if(!SAVE_RESTAUROU) DB.shifts.pop(); msg.textContent=SAVE_FAIL_MSG; return; }
     window.__shiftPage=1; renderShifts(box);
   };
   function refresh(){
@@ -6735,7 +6774,7 @@ function rRep(){
     var _baixar=!!(document.getElementById("pLote")||{}).checked;
     var _nrp={id:uid(),date:iso,platform_id:pid,start:st,end:en,amount:v,adjustments:adjs,notes:notes,dreId:null,dreAmount:null,loteId:null};
     (DB.repasses=DB.repasses||[]).push(_nrp);
-    if(!save()){ DB.repasses.pop(); msg.textContent=SAVE_FAIL_MSG; return; }
+    if(!save()){ if(!SAVE_RESTAUROU) DB.repasses.pop(); msg.textContent=SAVE_FAIL_MSG; return; }
     var _rl=null; if(_baixar){ try{ _rl=repLoteBaixar(_nrp); }catch(_eL){ rmLogErr(_eL,"rep-lote"); _rl={ok:false,msg:"Não foi possível dar a baixa: "+(_eL&&_eL.message)}; } }
     rRep();
     if(_rl){ if(_rl.ok) try{ qrToast("✓ "+_rl.msg,5000); }catch(_eT){ customAlert(_rl.msg,"Repasses"); } else customAlert("Repasse registrado, mas a baixa no Financeiro não foi feita: "+_rl.msg,"Repasses"); }
@@ -6831,7 +6870,7 @@ function rLotes(){
     var esp=Math.round((rec-tax)*100)/100;
     var nl={id:uid(),plataforma:pid,periodoDe:de,periodoAte:ate,status:"aberto",titulos:cands.map(function(t){ return t.id; }),taxas:txs,ajustes:[],baixas:[],contaId:plataformaContaId(pp),dataCredito:null,valorRecebido:null,totalReceber:rec,totalTaxa:tax,esperado:esp};
     (DB.lotes=DB.lotes||[]).push(nl);
-    if(!save()){ DB.lotes.pop(); msg.style.color="var(--red)"; msg.textContent=SAVE_FAIL_MSG; return; }
+    if(!save()){ if(!SAVE_RESTAUROU) DB.lotes.pop(); msg.style.color="var(--red)"; msg.textContent=SAVE_FAIL_MSG; return; }
     loteNovoOpen=false; loteOpenId=nl.id; rLotes();
   };
   }
@@ -7154,9 +7193,11 @@ function rPrev(){
   html+='</div></div></div>';
   html+='<div class="card prev-sim"><h3>Simulador de turno</h3><div class="sub">Quanto tempo rodar para bater a meta — ou quanto esperar ganhar com as horas que você tem. Base: seu R$/h médio no dia da semana.</div>'
   +'<div class="toolbar"><span>Dia:</span><select id="sDia">'+DIAS.map(function(d,i){return '<option value="'+esc(i)+'"'+(i===twd?" selected":"")+'>'+d+'</option>';}).join("")+'</select><span>Meta (R$):</span><input id="sMeta" inputmode="decimal" value="'+esc(DB.goals.daily||"")+'" placeholder="ex: 300" style="background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;width:110px"><span>Horas:</span><input id="sHoras" inputmode="decimal" placeholder="ex: 4" style="background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;width:80px"><button class="btn sm green" id="sGo">Calcular</button></div><div id="sOut"></div></div>';
+  try{ html+=evCardHTML(); }catch(_eEv){ rmLogErr(_eEv,"ev-card"); }
   html+='<div class="card prev-tip"><p class="tip">ℹ️ A IA usa decaimento exponencial: corridas recentes pesam mais. '+(curUnit()==="L"?"Com motor a combustão, bons horários também economizam combustível.":"Com o elétrico, bons horários também economizam energia.")+(wxOn?" Os ícones 🌦️ mostram a previsão para o próximo dia correspondente (ex.: próxima sexta-feira).":" Ative o clima para ver a previsão por horário.")+'</p></div>';
   viewCtn.innerHTML=html;
   try{ phLigar(); }catch(_ePl){ rmLogErr(_ePl,"ph-ligar"); }
+  try{ evLigar(); }catch(_eEl){ rmLogErr(_eEl,"ev-ligar"); }
   (function(){
     var sDia=document.getElementById("sDia"), sMeta=document.getElementById("sMeta"), sHoras=document.getElementById("sHoras"), sOut=document.getElementById("sOut"), sGo=document.getElementById("sGo");
     if(sGo){
@@ -7202,7 +7243,7 @@ function rPrev(){
       /* pelo conteúdo, não pela posição (um cartão novo não desarruma as colunas):
          Top 10 + Simulador | Melhores por dia + dica | Qual app rende mais + Mapa de calor */
       c1.appendChild(cards[0]); c2.appendChild(cards[1]);
-      cards.slice(2).forEach(function(cd){ (cd.classList.contains("prev-sim")?c1:(cd.classList.contains("prev-tip")?c2:c3)).appendChild(cd); });
+      cards.slice(2).forEach(function(cd){ (cd.classList.contains("prev-sim")?c1:((cd.classList.contains("prev-tip")||cd.classList.contains("prev-ev"))?c2:c3)).appendChild(cd); });
       main.appendChild(c1); main.appendChild(c2); main.appendChild(c3);
       outer.appendChild(main);
       viewCtn.innerHTML=""; viewCtn.appendChild(outer);
@@ -7705,7 +7746,7 @@ function wireCatCard(){
     if(DB.dre_map) delete DB.dre_map[c.id];
     DB.catRemoved=DB.catRemoved||[];
     if(low&&DB.catRemoved.indexOf(low)<0) DB.catRemoved.push(low);
-    if(!save()){ DB.expense_categories.splice(ix,0,c); if(hadMap!==undefined) DB.dre_map[c.id]=hadMap; if(low) DB.catRemoved=DB.catRemoved.filter(function(k){return k!==low;}); var _m=document.getElementById("cMsg"); if(_m) _m.textContent=SAVE_FAIL_MSG; return; }
+    if(!save()){ if(!SAVE_RESTAUROU) DB.expense_categories.splice(ix,0,c); if(hadMap!==undefined) DB.dre_map[c.id]=hadMap; if(low) DB.catRemoved=DB.catRemoved.filter(function(k){return k!==low;}); var _m=document.getElementById("cMsg"); if(_m) _m.textContent=SAVE_FAIL_MSG; return; }
     show("plataformas");
   }; });
   var _cAdd=document.getElementById("cAdd"); if(_cAdd) _cAdd.onclick=function(){
@@ -7716,7 +7757,7 @@ function wireCatCard(){
     if(catNomeGenerico(n)){ customAlert(CAT_GENERICA_MSG,"Categorias de despesa"); return; }
     DB.expense_categories.push({id:uid(),name:n,icon:ic?String(ic).slice(0,4):"💼",color:validColor(document.getElementById("cColor").value,"#5a9fd4")});
     unremoveCatName(n);
-    if(!save()){ DB.expense_categories.pop(); var _m2=document.getElementById("cMsg"); if(_m2) _m2.textContent=SAVE_FAIL_MSG; return; }
+    if(!save()){ if(!SAVE_RESTAUROU) DB.expense_categories.pop(); var _m2=document.getElementById("cMsg"); if(_m2) _m2.textContent=SAVE_FAIL_MSG; return; }
     show("plataformas");
   };
   document.querySelectorAll("[data-catmap]").forEach(function(s){ s.onchange=function(){ DB.dre_map[s.dataset.catmap]=s.value; save(); show("plataformas"); }; });
@@ -7789,7 +7830,7 @@ function renderCfgPlat(box){
     if(DB.platforms.some(function(p){return p.name.toLowerCase()===n.toLowerCase();})){ customAlert("Já existe uma plataforma com esse nome.","Plataformas"); return; }
     var _ccid=null; try{ _ccid=document.getElementById("pConta").value||null; }catch(e){ _ccid=null; }
     DB.platforms.push({id:uid(),name:n.slice(0,40),color:validColor(document.getElementById("pColor").value,"#5a9fd4"),active:1,contaRecebimento:_ccid});
-    if(!save()){ DB.platforms.pop(); var _pm=document.getElementById("pMsg"); if(_pm) _pm.textContent=SAVE_FAIL_MSG; return; }
+    if(!save()){ if(!SAVE_RESTAUROU) DB.platforms.pop(); var _pm=document.getElementById("pMsg"); if(_pm) _pm.textContent=SAVE_FAIL_MSG; return; }
     document.getElementById("pName").value=""; refresh();
   };
 }
@@ -8906,7 +8947,7 @@ function invMovValor(m){ try{ return Math.round(Number(m.qtd)*Number(m.preco)*10
 function invEventosDo(codigo,ate,ignoreEventoId){ var out=[]; try{ var _cod=String(codigo||"").trim().toUpperCase(); var _arr=DB.invEventos||[]; for(var i=0;i<_arr.length;i++){ var e=_arr[i]; if(!e) continue; if(ignoreEventoId&&String(e.id)===String(ignoreEventoId)) continue; if(String(e.codigo||"").trim().toUpperCase()!==_cod) continue; if(!validISO(e.data)) continue; if(!(e.tipo==="desdobramento"||e.tipo==="grupamento")) continue; var de=Number(e.de), para=Number(e.para); if(!(isFinite(de)&&isFinite(para)&&de>0&&para>0&&Math.round(de)===de&&Math.round(para)===para)) continue; if(ate&&String(e.data)>String(ate)) continue; out.push(e); } out.sort(function(a,b){ if(a.data!==b.data) return a.data<b.data?-1:1; return String(a.id||"")<String(b.id||"")?-1:1; }); }catch(_e){rmLogErr(_e)} return out; }
 function invPosQtdTotal(codigo,ate,ignoreEventoId){ var s=0; try{ var _cod=String(codigo||"").trim().toUpperCase(); var _seen={}; (DB.invMovs||[]).forEach(function(m){ if(!m) return; if(String(m.codigo||"").trim().toUpperCase()!==_cod) return; if(ate&&String(m.data)>String(ate)) return; _seen[String(m.conta)]=1; }); for(var k in _seen){ s+=invPosQtd(k,_cod,ate||null,null,ignoreEventoId||null); } }catch(e){rmLogErr(e)} return Math.round(s*100000000)/100000000; }
 function invPosQtd(contaId,codigo,ate,ignoreId,ignoreEventoId){ var s=0; try{ var _l=DB.invMovs||[]; var _cod=String(codigo||"").trim().toUpperCase(); var _movs=[]; for(var i=0;i<_l.length;i++){ var m=_l[i]; if(!m||String(m.conta)!==String(contaId)) continue; if(String(m.codigo||"").trim().toUpperCase()!==_cod) continue; if(ignoreId&&String(m.id)===String(ignoreId)) continue; if(ate&&String(m.data)>String(ate)) continue; _movs.push(m); } var _evs=invEventosDo(_cod,ate||null,ignoreEventoId||null); var _comb=[]; for(var a=0;a<_movs.length;a++){ _comb.push({data:_movs[a].data,id:String(_movs[a].id||""),kind:"mov",ref:_movs[a]}); } for(var b=0;b<_evs.length;b++){ _comb.push({data:_evs[b].data,id:String(_evs[b].id||""),kind:"ev",ref:_evs[b]}); } _comb.sort(function(x,y){ if(x.data!==y.data) return x.data<y.data?-1:1; return String(x.id)<String(y.id)?-1:1; }); for(var k=0;k<_comb.length;k++){ var c=_comb[k]; if(c.kind==="mov"){ var q=Number(c.ref.qtd)||0; if(c.ref.op==="compra") s+=q; else if(c.ref.op==="venda") s-=q; } else { var de=Number(c.ref.de), para=Number(c.ref.para); if(de>0&&para>0) s=s*para/de; } s=Math.round(s*100000000)/100000000; } }catch(e){rmLogErr(e)} return Math.round(s*100000000)/100000000; }
-function invPosicaoDe(contaId,codigo,ate,ignoreId,ignoreEventoId){ var q=0, qc=0, vc=0; try{ var _l=DB.invMovs||[]; var _cod=String(codigo||"").trim().toUpperCase(); var _movs=[]; for(var i=0;i<_l.length;i++){ var m=_l[i]; if(!m||String(m.conta)!==String(contaId)) continue; if(String(m.codigo||"").trim().toUpperCase()!==_cod) continue; if(ignoreId&&String(m.id)===String(ignoreId)) continue; if(ate&&String(m.data)>String(ate)) continue; _movs.push(m); } var _evs=invEventosDo(_cod,ate||null,ignoreEventoId||null); var _comb=[]; for(var a=0;a<_movs.length;a++){ _comb.push({data:_movs[a].data,id:String(_movs[a].id||""),kind:"mov",ref:_movs[a]}); } for(var b=0;b<_evs.length;b++){ _comb.push({data:_evs[b].data,id:String(_evs[b].id||""),kind:"ev",ref:_evs[b]}); } _comb.sort(function(x,y){ if(x.data!==y.data) return x.data<y.data?-1:1; return String(x.id)<String(y.id)?-1:1; }); for(var k=0;k<_comb.length;k++){ var c=_comb[k]; if(c.kind==="mov"){ var _q=Number(c.ref.qtd)||0, _p=Number(c.ref.preco)||0; if(c.ref.op==="compra"){ q+=_q; qc+=_q; vc=Math.round((vc+_q*_p)*100)/100; } else if(c.ref.op==="venda"){ q-=_q; } } else { var de2=Number(c.ref.de), para2=Number(c.ref.para); if(de2>0&&para2>0){ q=q*para2/de2; qc=qc*para2/de2; } } q=Math.round(q*100000000)/100000000; qc=Math.round(qc*100000000)/100000000; } }catch(e){rmLogErr(e)} q=Math.round(q*100000000)/100000000; qc=Math.round(qc*100000000)/100000000; var pm=qc>0?Math.round(vc/qc*100)/100:0; return {qtd:q,pm:pm,total:Math.round(q*pm*100)/100,compQtd:qc,compVal:Math.round(vc*100)/100}; }
+function invPosicaoDe(contaId,codigo,ate,ignoreId,ignoreEventoId){ var q=0, qc=0, vc=0, pmZerado=0; try{ var _l=DB.invMovs||[]; var _cod=String(codigo||"").trim().toUpperCase(); var _movs=[]; for(var i=0;i<_l.length;i++){ var m=_l[i]; if(!m||String(m.conta)!==String(contaId)) continue; if(String(m.codigo||"").trim().toUpperCase()!==_cod) continue; if(ignoreId&&String(m.id)===String(ignoreId)) continue; if(ate&&String(m.data)>String(ate)) continue; _movs.push(m); } var _evs=invEventosDo(_cod,ate||null,ignoreEventoId||null); var _comb=[]; for(var a=0;a<_movs.length;a++){ _comb.push({data:_movs[a].data,id:String(_movs[a].id||""),kind:"mov",ref:_movs[a]}); } for(var b=0;b<_evs.length;b++){ _comb.push({data:_evs[b].data,id:String(_evs[b].id||""),kind:"ev",ref:_evs[b]}); } _comb.sort(function(x,y){ if(x.data!==y.data) return x.data<y.data?-1:1; return String(x.id)<String(y.id)?-1:1; }); for(var k=0;k<_comb.length;k++){ var c=_comb[k]; if(c.kind==="mov"){ var _q=Number(c.ref.qtd)||0, _p=Number(c.ref.preco)||0; if(c.ref.op==="compra"){ q+=_q; qc+=_q; vc=Math.round((vc+_q*_p)*100)/100; } else if(c.ref.op==="venda"){ /* venda abate o custo na proporção vendida: o PM das que sobraram não muda e uma compra depois entra na média certa */ var _pmAntes=qc>0.00000001?vc/qc:0; if(qc>0.00000001){ var _fr=Math.min(1,_q/qc); vc=Math.round((vc-vc*_fr)*100)/100; qc=Math.max(0,qc-_q); } q-=_q; if(q<=0.00000001){ /* posição zerou: o PM informado é o do lote vendido (ganho da venda); a próxima compra recomeça do zero */ pmZerado=Math.round(_pmAntes*100)/100; vc=0; qc=0; } } } else { var de2=Number(c.ref.de), para2=Number(c.ref.para); if(de2>0&&para2>0){ q=q*para2/de2; qc=qc*para2/de2; } } q=Math.round(q*100000000)/100000000; qc=Math.round(qc*100000000)/100000000; } }catch(e){rmLogErr(e)} q=Math.round(q*100000000)/100000000; qc=Math.round(qc*100000000)/100000000; var pm=qc>0?Math.round(vc/qc*100)/100:(q<=0.00000001?pmZerado:0); if(qc>0) pmZerado=0; return {qtd:q,pm:pm,total:Math.round(q*pm*100)/100,compQtd:qc,compVal:Math.round(vc*100)/100}; }
 function invFicariaNegativo(contaId,codigo,ignoreId,extra,ignoreEventoId,extraEvento){ try{ var _l=DB.invMovs||[]; var _cod=String(codigo||"").trim().toUpperCase(); var _movs=[]; for(var i=0;i<_l.length;i++){ var m=_l[i]; if(!m||String(m.conta)!==String(contaId)) continue; if(String(m.codigo||"").trim().toUpperCase()!==_cod) continue; if(ignoreId&&String(m.id)===String(ignoreId)) continue; _movs.push(m); } if(extra){ _movs.push(extra); } var _evs=invEventosDo(_cod,null,ignoreEventoId||null); if(extraEvento){ _evs.push(extraEvento); } var _comb=[]; for(var a=0;a<_movs.length;a++){ _comb.push({data:_movs[a].data,id:String(_movs[a].id||""),kind:"mov",ref:_movs[a]}); } for(var b=0;b<_evs.length;b++){ _comb.push({data:_evs[b].data,id:String(_evs[b].id||""),kind:"ev",ref:_evs[b]}); } _comb.sort(function(x,y){ if(x.data!==y.data) return x.data<y.data?-1:1; return String(x.id)<String(y.id)?-1:1; }); var s=0; for(var j=0;j<_comb.length;j++){ var c=_comb[j]; if(c.kind==="mov"){ var q=Number(c.ref.qtd)||0; if(c.ref.op==="compra") s+=q; else s-=q; } else { var de=Number(c.ref.de), para=Number(c.ref.para); if(de>0&&para>0) s=s*para/de; } s=Math.round(s*100000000)/100000000; if(s<-0.0000001) return true; } }catch(e){rmLogErr(e)} return false; }
 function invEventoValidar(o,ignoreId){ var data=String((o&&o.data)||""), cod="", tipo=String((o&&o.tipo)||""); try{ cod=String((o&&o.codigo)||"").trim().toUpperCase().slice(0,12); }catch(e){ cod=""; } var de=Number(o&&o.de), para=Number(o&&o.para); if(!validISO(data)) return {ok:false,msg:"Data inválida. Use DD/MM/AAAA com dia real."}; if(isFuturo(data)) return {ok:false,msg:"Data no futuro não é aceita. Use uma data até hoje."}; if(!cod) return {ok:false,msg:"Digite o código do ativo (ex: PETR4)."}; if(!(tipo==="desdobramento"||tipo==="grupamento")) return {ok:false,msg:"Tipo inválido. Use desdobramento ou grupamento."}; if(!(isFinite(de)&&isFinite(para)&&de>0&&para>0&&Math.round(de)===de&&Math.round(para)===para)) return {ok:false,msg:"De e Para precisam ser inteiros maiores que zero (ex: desdobramento 1 para 2; grupamento 10 para 1)."}; if(de===para) return {ok:false,msg:"De e Para iguais não alteram nada. Desdobramento 1 para 2 multiplica por 2; grupamento 10 para 1 divide por 10."}; var tot=0; try{ tot=invPosQtdTotal(cod,data,ignoreId||null); }catch(e){ tot=0; } if(!(tot>0.0000001)) return {ok:false,msg:"Sem posição de "+cod+" em "+isoToBR(data)+": o evento exige posição maior que zero na data (das compras e vendas até essa data). Registre a compra com data até o evento antes de lançar."}; return {ok:true,evento:{data:data,codigo:cod,tipo:tipo,de:Math.round(de),para:Math.round(para)}}; }
 function invEventoAdd(o){ var v=null; try{ v=invEventoValidar(o,null); }catch(e){ return {ok:false,msg:"Validação falhou."}; } if(!v.ok) return v; var rec={id:uid(),data:v.evento.data,codigo:v.evento.codigo,tipo:v.evento.tipo,de:v.evento.de,para:v.evento.para}; (DB.invEventos=DB.invEventos||[]).push(rec); return {ok:true,id:rec.id,rec:rec}; }
@@ -9136,7 +9177,7 @@ function rTransf(){
       return;
     }
     (DB.transferencias=DB.transferencias||[]).push({id:uid(),data:iso,contaOrigem:orig,contaDestino:dest,valor:Math.round(val*100)/100,descricao:desc,conciliado:0});
-    if(!save()){ DB.transferencias.pop(); msg.style.color="var(--red)"; msg.textContent=SAVE_FAIL_MSG; return; }
+    if(!save()){ if(!SAVE_RESTAUROU) DB.transferencias.pop(); msg.style.color="var(--red)"; msg.textContent=SAVE_FAIL_MSG; return; }
     transfPage=1; rTransf();
   };
 }
@@ -10445,13 +10486,18 @@ function rInvest(){
           err("Venda de "+Number(qtd)+" "+cod+" bloqueada: posição de "+_pos+" "+cod+" na conta '"+c.nome+"' em "+isoToBR(iso)+". Venda não pode passar a quantidade em posição na data.");
           return;
         }
+        /* venda com data passada: confere a linha do tempo inteira (vendas depois dela não podem ficar sem ações) */
+        if(invFicariaNegativo(c.id,cod,null,{id:"~nova",conta:c.id,codigo:cod,op:"venda",qtd:Number(qtd),preco:Number(preco),data:iso})){
+          err("Venda de "+Number(qtd)+" "+cod+" em "+isoToBR(iso)+" bloqueada: as vendas lançadas depois dessa data já usam essas ações, e a posição ficaria negativa. Confira as vendas seguintes.");
+          return;
+        }
       }
       if(op==="venda"&&tipo==="acao"){ try{ var _avIr=invIrAvisoLimite(c.id,cod,iso,Number(qtd),Number(preco)); if(_avIr){ var _okIr=await customProceed(_avIr,"Imposto na venda","Vender mesmo assim"); if(!_okIr) return; } }catch(_eIr){ rmLogErr(_eIr,"ir-limite"); } }
       var reserva8h=0; try{ if(op==="compra"){ var _r8h=document.getElementById("invReserva"); if(_r8h&&_r8h.checked) reserva8h=1; } }catch(_e8h){ reserva8h=0; }
       /* FASE 8J — aviso de IR na venda (só aviso; não lança nada, não mexe em saldo/DRE/MEI/invMovs além da venda). */
       var _newId8j=uid();
       (DB.invMovs=DB.invMovs||[]).push({id:_newId8j,data:iso,conta:c.id,codigo:cod,tipo:tipo,op:op,qtd:Number(qtd),preco:Math.round(Number(preco)*100)/100,conciliado:0,cdiPct:cdiPct,venc:venc,reserva:reserva8h});
-      if(!save()){ DB.invMovs.pop(); msg.style.color="var(--red)"; msg.textContent=SAVE_FAIL_MSG; return; }
+      if(!save()){ if(!SAVE_RESTAUROU) DB.invMovs.pop(); msg.style.color="var(--red)"; msg.textContent=SAVE_FAIL_MSG; return; }
     invOpPanel=false;
       if(op==="venda"&&(tipo==="acao"||tipo==="fii"||tipo==="etf")){
         try{
@@ -10731,7 +10777,7 @@ function rConc(){
     if(!(await confirmIfAbsurd("expense",val))) return;
     if(!obs){ err("Observação obrigatória: sem observação, o ajuste não salva."); return; }
     (DB.concAjustes=DB.concAjustes||[]).push({id:uid(),conta:c.id,data:iso,valor:Math.round((concAjDir==="entrada"?val:-val)*100)/100,observacao:obs,conciliado:0});
-    if(!save()){ DB.concAjustes.pop(); msg.style.color="var(--red)"; msg.textContent=SAVE_FAIL_MSG; return; }
+    if(!save()){ if(!SAVE_RESTAUROU) DB.concAjustes.pop(); msg.style.color="var(--red)"; msg.textContent=SAVE_FAIL_MSG; return; }
     concListScroll=0; concAjPanel=false; rConc();
   }; }
   var _lc=document.getElementById("concList"); if(_lc&&concListScroll) _lc.scrollTop=concListScroll;
@@ -11944,6 +11990,7 @@ function rTitulos(){
         var _dbx2=brToISO(document.getElementById("titDataBx").value);
         var _ju2=parseBR(document.getElementById("titJuros").value); if(!isFinite(_ju2)||_ju2<0) _ju2=0;
         var _de22=parseBR(document.getElementById("titDesc2").value); if(!isFinite(_de22)||_de22<0) _de22=0;
+        _de22=Math.min(_de22,Math.round(((Number(_ntL.valor)||0)+_ju2)*100)/100); /* desconto nunca passa valor + juros */
         var _ob2=document.getElementById("titObsBx").value.trim().slice(0,300);
         if(!_ct2||!_ct2.ativa){ try{ if(_snapMed2!=null) DB.medicoesEnergia=JSON.parse(_snapMed2); }catch(e){rmLogErr(e)} try{ if(_snapCosts2){ for(var _c2i=0;_c2i<_snapCosts2.length;_c2i++){ for(var _c2r=0;_c2r<(DB.recharges||[]).length;_c2r++){ if(String(DB.recharges[_c2r].id)===String(_snapCosts2[_c2i][0])){ DB.recharges[_c2r].cost=_snapCosts2[_c2i][1]; break; } } } } }catch(e){rmLogErr(e)} err("Conta da baixa inv\u00E1lida. Use uma conta ativa."); return; }
         if(!_dbx2){ try{ if(_snapMed2!=null) DB.medicoesEnergia=JSON.parse(_snapMed2); }catch(e){rmLogErr(e)} try{ if(_snapCosts2){ for(var _d2i=0;_d2i<_snapCosts2.length;_d2i++){ for(var _d2r=0;_d2r<(DB.recharges||[]).length;_d2r++){ if(String(DB.recharges[_d2r].id)===String(_snapCosts2[_d2i][0])){ DB.recharges[_d2r].cost=_snapCosts2[_d2i][1]; break; } } } } }catch(e){rmLogErr(e)} err("Data da baixa inv\u00E1lida. Use DD/MM/AAAA com dia real."); return; }
@@ -11957,7 +12004,7 @@ function rTitulos(){
         tituloRecalc(_ntL);
       }
       (DB.titulos=DB.titulos||[]).push(_ntL);
-      if(!save()){ DB.titulos.pop(); try{ if(_snapMed2!=null) DB.medicoesEnergia=JSON.parse(_snapMed2); }catch(e){rmLogErr(e)} try{ if(_snapCosts2){ for(var _i2i=0;_i2i<_snapCosts2.length;_i2i++){ for(var _i2r=0;_i2r<(DB.recharges||[]).length;_i2r++){ if(String(DB.recharges[_i2r].id)===String(_snapCosts2[_i2i][0])){ DB.recharges[_i2r].cost=_snapCosts2[_i2i][1]; break; } } } } }catch(e){rmLogErr(e)} msg.style.color="var(--red)"; msg.textContent=SAVE_FAIL_MSG; return; }
+      if(!save()){ if(!SAVE_RESTAUROU) DB.titulos.pop(); try{ if(_snapMed2!=null) DB.medicoesEnergia=JSON.parse(_snapMed2); }catch(e){rmLogErr(e)} try{ if(_snapCosts2){ for(var _i2i=0;_i2i<_snapCosts2.length;_i2i++){ for(var _i2r=0;_i2r<(DB.recharges||[]).length;_i2r++){ if(String(DB.recharges[_i2r].id)===String(_snapCosts2[_i2i][0])){ DB.recharges[_i2r].cost=_snapCosts2[_i2i][1]; break; } } } } }catch(e){rmLogErr(e)} msg.style.color="var(--red)"; msg.textContent=SAVE_FAIL_MSG; return; }
       titRateioMulti=false; titRateioLines=[]; titLuzOn=false; titLuzKwhTxt=""; titLuzDeTxt=""; titLuzAteTxt=""; titPage=1; titFiltro="aberto"; titNovoOpen=false; rTitulos();
       return;
     }
@@ -12014,6 +12061,7 @@ function rTitulos(){
       var ju=parseBR(document.getElementById("titJuros").value); if(!isFinite(ju)||ju<0) ju=0;
       var de=parseBR(document.getElementById("titDesc2").value); if(!isFinite(de)||de<0) de=0;
       var ob=document.getElementById("titObsBx").value.trim().slice(0,300);
+      if(Math.round(de*100)>Math.round((val+ju)*100)){ err("Desconto não pode passar o valor + juros: a baixa ficaria negativa (pagar aumentaria o saldo). Confira o desconto."); return; }
       if(!ct||!ct.ativa){ err("Conta da baixa inválida. Use uma conta ativa."); return; }
       if(!dbx){ err("Data da baixa inválida. Use DD/MM/AAAA com dia real."); return; }
       if(isFuturo(dbx)){ err("Data da baixa no futuro não é aceita. Baixa é movimento de caixa: use uma data até hoje."); return; }
@@ -12030,7 +12078,7 @@ function rTitulos(){
       tituloRecalc(nt);
     }
     (DB.titulos=DB.titulos||[]).push(nt);
-    if(!save()){ DB.titulos.pop(); msg.style.color="var(--red)"; msg.textContent=SAVE_FAIL_MSG; return; }
+    if(!save()){ if(!SAVE_RESTAUROU) DB.titulos.pop(); msg.style.color="var(--red)"; msg.textContent=SAVE_FAIL_MSG; return; }
     titRateioMulti=false; titRateioLines=[]; titLuzOn=false; titLuzKwhTxt=""; titLuzDeTxt=""; titLuzAteTxt=""; titPage=1; titFiltro="aberto"; titNovoOpen=false; rTitulos();
   }; }
   var bs=document.getElementById("bxSave");
@@ -12052,6 +12100,7 @@ function rTitulos(){
     if(!(bv>0)){ err("Valor precisa ser maior que zero."); return; }
     if(!isFinite(ju)||ju<0){ err("Juros inválido. Use 0 ou mais."); return; }
     if(!isFinite(de)||de<0){ err("Desconto inválido. Use 0 ou mais."); return; }
+    if(Math.round(de*100)>Math.round((bv+ju)*100)){ err("Desconto não pode passar o valor + juros: a baixa ficaria negativa (pagar aumentaria o saldo). Confira o desconto."); return; }
     if(bv-falta>0.004){ err("A soma das baixas não pode passar o valor do título. Falta "+BRL(falta)+"."); return; }
     if(!(await confirmIfAbsurd("expense",Math.round((bv+ju-de)*100)/100))) return;
     if(bx<ct.dataSaldoInicial){
@@ -12436,7 +12485,7 @@ function bkpTx(store,modo,fn){
     tx.onerror=tx.onabort=function(){ db.close(); erro(tx.error); };
   }); });
 }
-function bkpMov(db){ var n=impNums(db||{}); return n.rides+n.titulos+n.transf+n.desp+n.rec+n.rep+n.turnos+n.manuais+n.lotes+n.med; }
+function bkpMov(db){ var n=impNums(db||{}); return n.rides+n.titulos+n.transf+n.desp+n.rec+n.rep+n.turnos+n.manuais+n.lotes+n.med+(n.ajustes||0)+(n.inv||0); }
 function bkpPayloadObj(){
   var payload={app:"RideMax",version:2,exportedAt:new Date().toISOString(),data:DB};
   payload=JSON.parse(JSON.stringify(payload));
@@ -13378,7 +13427,16 @@ function syncNuvemGravar(tok,id,conteudo){
 }
 
 /* ---- sincronizar ---- */
+/* marca do último envio que está na nuvem (quem e quando enviou): muda quando outro aparelho sincroniza */
+function syncMarca(n){ try{ return (n&&n.conteudo)?String(n.conteudo.enviadoEm||"")+"|"+String(n.conteudo.aparelho||""):""; }catch(e){ return ""; } }
+/* se outro aparelho sincronizou no meio, ou você gravou algo durante a sincronização, refaz a junção (até 3 vezes)
+   em vez de sobrescrever a nuvem ou o que acabou de ser lançado */
 async function syncAgora(interativo){
+  var r=null;
+  for(var t=0;t<3;t++){ r=await syncAgoraUma(interativo); if(!r||!r.refazer) return r; }
+  return {ok:false,msg:"O outro aparelho está sincronizando agora. Tente de novo em alguns segundos."};
+}
+async function syncAgoraUma(interativo){
   if(syncRodando) return {ok:false,msg:"Já está sincronizando."};
   if(DB_LOAD_BLOCKED!=null) return {ok:false,msg:"A base está bloqueada (ver aviso). Resolva antes de sincronizar."};
   if(!navigator.onLine&&!window.__syncMockUrl) return {ok:false,msg:"Sem internet agora. Os lançamentos ficam guardados e sobem na próxima sincronização."};
@@ -13388,7 +13446,7 @@ async function syncAgora(interativo){
     var nuvem=await syncNuvemLer(tok), base=await syncBaseLer();
     var st0=0; try{ st0=readStoredRev().rev; }catch(_e){ st0=DB_MEM_REV; }
     if(st0!==DB_MEM_REV) return {ok:false,msg:"Outra aba gravou dados. Recarregue o app e sincronize de novo."};
-    var local=JSON.parse(JSON.stringify(DB)), r={dados:local,est:{conflitos:0,deLa:0,daqui:0,lista:[]}};
+    var local=JSON.parse(JSON.stringify(DB)), r={dados:local,est:{conflitos:0,deLa:0,daqui:0,lista:[]}}, _revIni=DB_MEM_REV;
     if(nuvem&&nuvem.conteudo&&nuvem.conteudo.data){
       if(nuvem.conteudo.app!=="RideMax") return {ok:false,msg:"O arquivo da nuvem não é do RideMax. Nada foi alterado."};
       if(!base&&!bkpMov(local)){
@@ -13409,11 +13467,13 @@ async function syncAgora(interativo){
     var mudouAqui=!syncEq(Object.assign({},limpo,{_rev:0}),Object.assign({},local,{_rev:0}));
     if(mudouAqui){
       try{ await bkpGuardarCopia("restauracao"); }catch(_e){}
+      if(DB_MEM_REV!==_revIni) return {ok:false,refazer:true,msg:"Você lançou algo durante a sincronização."};
       var antes=DB; DB=limpo; processVehicleReset();
       if(!saveLivre()){ DB=antes; return {ok:false,msg:"Não foi possível gravar a junção neste aparelho. Nada foi enviado."}; }
     }
     var final=JSON.parse(JSON.stringify(DB)); delete final._rev; try{ if(final.wx&&final.wx.cfg) final.wx.cfg.key=""; }catch(_eK2){}
     var precisaEnviar=!(nuvem&&nuvem.conteudo&&syncEq(Object.assign({},nuvem.conteudo.data,{_rev:undefined}),Object.assign({},final,{_rev:undefined})));
+    if(precisaEnviar){ var _agora=await syncNuvemLer(tok); if(syncMarca(_agora)!==syncMarca(nuvem)) return {ok:false,refazer:true,msg:"O outro aparelho sincronizou agora."}; }
     if(precisaEnviar){ var envio=JSON.parse(JSON.stringify(final)); await syncNuvemGravar(tok,nuvem&&nuvem.id,{app:"RideMax",v:1,enviadoEm:new Date().toISOString(),aparelho:syncAparelho(),data:envio}); }
     await syncBaseGravar(syncNorm(final));
     syncUlt=new Date().toISOString();
@@ -13801,7 +13861,7 @@ function f5Blocos(){
   var sub=(v==="financeiro")?String(window.__finTab||0):"";
   var cards=Array.prototype.filter.call(vc.querySelectorAll(".card"),function(c){
     if(c.parentElement&&c.parentElement.closest(".card")) return false;
-    if(c.classList.contains("dash-hero")||c.classList.contains("bkp-alert")||c.classList.contains("warn")||c.classList.contains("fiscal-aviso")) return false;
+    if(c.classList.contains("dash-hero")||c.classList.contains("bkp-alert")||c.classList.contains("warn")||c.classList.contains("fiscal-aviso")||c.classList.contains("ev-aviso")) return false;
     if(c.classList.contains("nova-form")||c.classList.contains("rec-form")||c.classList.contains("desp-form")) return false;
     return !!c.querySelector(":scope > h3");
   });
@@ -15069,6 +15129,7 @@ async function cotPastaSincronizar(manual){
   if(COT_PASTA_ESTADO!=="ativa") return;
   var g=await cotPastaGravarLista(false); if(!g.ok&&manual) customAlert(g.msg,"Cotações");
   var r=await cotPastaLerNovo(false); cotPastaAvisar(r,manual);
+  try{ var _ev=await evPastaLer(); if(_ev&&_ev.ok&&(_ev.novos||_ev.removidos)&&current==="previsao") show("previsao"); }catch(_eEv){ rmLogErr(_eEv,"ev-pasta"); }
 }
 function cotPastaAuto(){ if(COT_PASTA_ESTADO!=="ativa") return; var agora=Date.now(); if(agora-COT_PASTA_T<15000) return; COT_PASTA_T=agora; cotPastaSincronizar(false); }
 async function cotPastaEscolher(){
@@ -15518,7 +15579,11 @@ var FECH_CAMPOS={
   repasses:["repasse","date",["date","amount","platform_id","start","end","adjustments"]],
   dre_manual:["lançamento do DRE","date",["date","amount","gid","signal","rateio"]],
   invMovs:["investimento","data",["data","conta","codigo","op","qtd","preco"]],
-  concAjustes:["ajuste de conciliação","data",["data","conta","valor"]]
+  concAjustes:["ajuste de conciliação","data",["data","conta","valor"]],
+  /* também mexem no saldo do mês: provento pago, desdobramento/grupamento (muda a quantidade) e lote de repasse creditado */
+  invProventos:["provento","dataPag",["dataPag","dataCom","conta","codigo","tipo","valorPorCota","ir"]],
+  invEventos:["desdobramento/grupamento","data",["data","codigo","tipo","de","para"]],
+  lotes:["lote de repasse","dataCredito",["dataCredito","valorRecebido","contaId","status"]]
 };
 function fechDigital(db,ate){
   if(!db||!ate) return [];
@@ -15530,6 +15595,8 @@ function fechDigital(db,ate){
   (db.titulos||[]).forEach(function(t){ if(!t) return;
     if(dentro(t.competencia)) out.push("título|"+String(t.competencia).slice(0,10)+"|"+t.id+"|"+so(t,["competencia","valor","tipo","categoria","rateio"]));
     (t.baixas||[]).forEach(function(b){ if(b&&dentro(b.data)) out.push("baixa|"+String(b.data).slice(0,10)+"|"+t.id+"/"+b.id+"|"+so(b,["data","valor","conta","juros","desconto"])); }); });
+  /* o líquido do provento vem da posição na data-com: mexer numa compra do mês aberto não pode mudar um provento de mês fechado */
+  try{ if(typeof invProvValor==="function"){ var _db0=DB; DB=db; try{ (db.invProventos||[]).forEach(function(p){ if(p&&dentro(p.dataPag)) out.push("provento (valor)|"+String(p.dataPag).slice(0,10)+"|"+p.id+"|"+Math.round((Number(invProvValor(p))||0)*100)); }); } finally { DB=_db0; } } }catch(_eP){ rmLogErr(_eP,"fech-provento"); }
   (db.contas||[]).forEach(function(c){ if(c&&dentro(c.dataSaldoInicial)) out.push("saldo inicial|"+c.dataSaldoInicial+"|"+c.id+"|"+c.saldoInicial); });
   return out.sort();
 }
@@ -15604,7 +15671,8 @@ function fechCardPintar(){
     var ok=false; try{ ok=await customConfirm("Reabrir "+fechNome(a)+"? Os lançamentos desse mês voltam a poder ser alterados. Os meses anteriores continuam fechados.","Reabrir o mês","Reabrir"); }catch(e){ ok=false; }
     if(!ok) return;
     var ant=fechYmMais(a,-1), antes=DB.settings.mesFechadoAte;
-    var temAnterior=(DB.rides||[]).some(function(x){ return x&&x.date&&x.date.slice(0,7)<=ant; })||(DB.expenses||[]).some(function(x){ return x&&x.date&&x.date.slice(0,7)<=ant; })||(DB.titulos||[]).some(function(x){ return x&&String(x.competencia||"").slice(0,7)<=ant; });
+    /* qualquer coisa protegida pelo fechamento até o mês anterior (transferência, investimento, saldo inicial…) mantém ele fechado */
+    var temAnterior=false; try{ temAnterior=fechDigital(DB,ant).length>0; }catch(_eA){ temAnterior=true; }
     DB.settings.mesFechadoAte=temAnterior?ant:null;
     if(!save()){ DB.settings.mesFechadoAte=antes; return; }
     try{ qrToast("🔓 "+fechNome(a)+" reaberto",3000); }catch(e){}
@@ -15613,6 +15681,7 @@ function fechCardPintar(){
 }
 try{ window.RM.fechAte=fechAte; window.RM.fechDigital=fechDigital; window.RM.saveLivre=saveLivre; }catch(e){ rmLogErr(e); }
 
+try{ window.RM.save=function(){ return save(); }; window.RM.saveRestaurou=function(){ return SAVE_RESTAUROU; }; }catch(e){} /* testes: gravar pelo caminho normal (com a trava do mês fechado) */
 /* ---------- ORÇAMENTO POR CATEGORIA (planejado × realizado) ----------
    Como nos sistemas financeiros: um limite por mês para cada categoria de despesa (e para a energia).
    Limites: Configurações › Categorias. Acompanhamento: tela Despesas. Aviso ao passar de 80% e de 100%.
@@ -16713,6 +16782,223 @@ try{
   a11yAjustar();
 }catch(e){ rmLogErr(e,"a11y-init"); }
 try{ window.RM.a11yAjustar=a11yAjustar; }catch(e){}
+/* ===== EVENTOS E FERIADOS (25/11/2026) =====
+   Para saber quando a demanda deve subir e — com o tempo — quanto cada tipo de evento rende DE VERDADE.
+   - Feriados nacionais: calculados aqui, sem internet (os móveis pela Páscoa). Bahia: 2 de Julho.
+   - Feriados da cidade e eventos (show, jogo, festa…): você lança em DB.eventos (vão no backup e na sincronização).
+     Vitória da Conquista já vem com São João (24/06), N. Sra. das Vitórias (15/08) e aniversário (09/11) — dá para mudar.
+   - Aprendizado: para cada evento que já passou, compara o seu R$/h RODANDO na janela do evento (1h antes até 6h depois
+     do início; feriado = o dia todo) com a mesma janela nas 8 semanas anteriores, mesmo dia da semana, sem evento.
+     Por tipo, mostra a média dessa diferença. Mesmo critério de R$/h da Previsão (ganho da corrida ÷ duração da corrida). */
+var EV_TIPOS=[["show","🎤 Show"],["jogo","⚽ Jogo"],["festa","🎉 Festa"],["formatura","🎓 Formatura"],["feira","🎪 Feira/exposição"],["religioso","⛪ Religioso"],["universidade","📚 Universidade"],["congresso","🎙️ Congresso/palestra"],["feriado","📅 Feriado"]];
+var EV_MIN_EV=3, EV_MIN_BASE=5;
+function evTipoNome(t){ for(var i=0;i<EV_TIPOS.length;i++){ if(EV_TIPOS[i][0]===t) return EV_TIPOS[i][1]; } return "📅 Evento"; }
+function evP2(n){ return String(n).padStart(2,"0"); }
+/* Páscoa (algoritmo de Meeus/Jones/Butcher) */
+function evPascoa(Y){ var a=Y%19,b=Math.floor(Y/100),c=Y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1; return Y+"-"+evP2(mes)+"-"+evP2(dia); }
+function evFeriadosNacionais(Y){
+  var p=evPascoa(Y), F=[["01-01","Confraternização Universal"],["04-21","Tiradentes"],["05-01","Dia do Trabalho"],["09-07","Independência do Brasil"],["10-12","Nossa Senhora Aparecida"],["11-02","Finados"],["11-15","Proclamação da República"],["11-20","Consciência Negra"],["12-25","Natal"],["07-02","Independência da Bahia"]]
+    .map(function(x){ return {data:Y+"-"+x[0],titulo:x[1],tipo:"feriado",nacional:1}; });
+  [[-48,"Carnaval (segunda)"],[-47,"Carnaval (terça)"],[-2,"Sexta-feira Santa"],[60,"Corpus Christi"]].forEach(function(x){ F.push({data:isoAddDays(p,x[0]),titulo:x[1],tipo:"feriado",nacional:1}); });
+  return F.sort(function(a,b){ return a.data<b.data?-1:1; });
+}
+/* ocorrências (feriados + eventos; os anuais repetem todo ano) entre ini e fim */
+function evOcorrencias(ini,fim){
+  var out=[], y0=Number(ini.slice(0,4)), y1=Number(fim.slice(0,4));
+  for(var Y=y0;Y<=y1;Y++){ evFeriadosNacionais(Y).forEach(function(f){ if(f.data>=ini&&f.data<=fim) out.push(f); }); }
+  (DB.eventos||[]).forEach(function(e){
+    if(!e||!validISO(e.data)||e.oculto) return;
+    if(e.anual){ for(var Y2=Math.max(y0,Number(e.data.slice(0,4)));Y2<=y1;Y2++){ var d=Y2+e.data.slice(4); if(validISO(d)&&d>=ini&&d<=fim) out.push(Object.assign({},e,{data:d,ref:e.id})); } }
+    else if(e.data>=ini&&e.data<=fim) out.push(Object.assign({},e,{ref:e.id}));
+  });
+  return out.sort(function(a,b){ return (a.data+(a.hora||"00:00"))<(b.data+(b.hora||"00:00"))?-1:1; });
+}
+/* janela do evento em minutos absolutos a partir de "dia 0" = data do evento */
+function evJanela(o){ var h=parseHM(o.hora||""); if(o.tipo==="feriado"||h==null) return [4*60,28*60]; return [h-60,h+360]; }
+/* R$ e minutos rodando de todas as corridas que começam na janela [a,b) do dia D (minutos a partir de 00:00 de D) */
+function evSomaJanela(D,a,b,rideMap){
+  var e=0,min=0,n=0;
+  for(var k=-1;k<=1;k++){ var dd=isoAddDays(D,k), L=rideMap[dd]; if(!L) continue;
+    L.forEach(function(x){ var t=x.abs+k*1440; if(t>=a&&t<b){ e+=x.e; min+=x.dur; n++; } }); }
+  return {e:e,min:min,n:n};
+}
+/* corridas por dia real (a corrida antes das 4h gravada no dia de trabalho aconteceu no dia seguinte) */
+var EV_MEMO={k:null,ref:null,v:null};
+function evRideMap(){
+  var mk=DB_MEM_REV+"|"+(DB.rides||[]).length;
+  if(EV_MEMO.k===mk&&EV_MEMO.ref===DB.rides&&EV_MEMO.v) return EV_MEMO.v;
+  var m={};
+  (DB.rides||[]).forEach(function(r){
+    if(!r||!validISO(r.date)) return;
+    var sm=parseHM(r.start_time), em=r.end_time?parseHM(r.end_time):null; if(sm==null||em==null) return;
+    var dur=(em-sm+1440)%1440; if(dur<3||dur>240) return;
+    var dia=sm<240?isoAddDays(r.date,1):r.date;
+    (m[dia]=m[dia]||[]).push({abs:sm,e:rideTotal(r),dur:dur});
+  });
+  EV_MEMO={k:mk,ref:DB.rides,v:m};
+  return m;
+}
+/* impacto de uma ocorrência que já passou: R$/h na janela × mesma janela nas 8 semanas anteriores (sem evento) */
+function evImpacto(o,diasComEvento){
+  var M=evRideMap(), J=evJanela(o), ev=evSomaJanela(o.data,J[0],J[1],M);
+  if(ev.n<EV_MIN_EV||!(ev.min>0)) return {sem:true,n:ev.n};
+  var b={e:0,min:0,n:0,semanas:0};
+  for(var w=1;w<=8;w++){ var d=isoAddDays(o.data,-7*w); if(diasComEvento[d]) continue; var s=evSomaJanela(d,J[0],J[1],M); if(s.n){ b.e+=s.e; b.min+=s.min; b.n+=s.n; b.semanas++; } }
+  if(b.n<EV_MIN_BASE||!(b.min>0)) return {sem:true,n:ev.n,base:b.n};
+  var rhE=ev.e/(ev.min/60), rhB=b.e/(b.min/60);
+  return {rh:rhE,rhBase:rhB,dif:(rhE/rhB-1)*100,n:ev.n,nBase:b.n,semanas:b.semanas};
+}
+/* aprendizado por tipo (últimos 12 meses) */
+function evAprendizado(){
+  var hoje=todayISO(), ini=isoAddDays(hoje,-365), oc=evOcorrencias(ini,isoAddDays(hoje,-1)), dias={};
+  oc.forEach(function(o){ dias[o.data]=1; });
+  var porTipo={}, lista=[];
+  oc.forEach(function(o){ var I=evImpacto(o,dias); lista.push({o:o,I:I}); if(I.sem) return; var t=porTipo[o.tipo]=porTipo[o.tipo]||{soma:0,n:0}; t.soma+=I.dif; t.n++; });
+  Object.keys(porTipo).forEach(function(k){ porTipo[k].media=porTipo[k].soma/porTipo[k].n; });
+  return {porTipo:porTipo,lista:lista};
+}
+function evPctTxt(x){ return (x>=0?"+":"−")+Math.abs(Math.round(x))+"%"; }
+function evHoraTxt(o){ return o.tipo==="feriado"?"o dia todo":(o.hora?o.hora.replace(":","h"):"sem hora"); }
+function evDiaTxt(d){ var h=todayISO(); if(d===h) return "Hoje"; if(d===isoAddDays(h,1)) return "Amanhã"; return DIAS[parseWeekday(d)]+" "+isoToBR(d).slice(0,5); }
+/* o que dizer sobre um evento que vem aí */
+function evPrevisaoTxt(o,A){
+  var t=A&&A.porTipo[o.tipo];
+  if(t&&t.n>=2) return (t.media>=0?"esse tipo costuma render ":"esse tipo costuma render menos: ")+evPctTxt(t.media)+" de R$/h (média de "+t.n+")";
+  if(o.tipo==="feriado") return "feriado muda o movimento · ainda sem dados seus";
+  return "mais corridas na saída ("+(o.hora?evHoraFim(o.hora):"depois do fim")+") · ainda sem dados seus";
+}
+function evHoraFim(h){ var m=parseHM(h); if(m==null) return ""; var a=(m+180)%1440, b=(m+300)%1440; return Math.floor(a/60)+"h–"+Math.floor(b/60)+"h"; }
+
+/* ---- Início: aviso de hoje e amanhã ---- */
+function evAvisoHTML(){
+  var h=todayISO(), oc=evOcorrencias(h,isoAddDays(h,1)); if(!oc.length) return "";
+  var A=null; try{ A=evAprendizado(); }catch(e){ rmLogErr(e,"ev-aprend"); }
+  var li=oc.slice(0,3).map(function(o){ return '<div class="ev-av-lin"><b>'+esc(evDiaTxt(o.data))+':</b> '+esc(o.titulo)+(o.tipo!=="feriado"&&o.hora?' às '+esc(o.hora.replace(":","h")):"")+(o.local?' · '+esc(o.local):"")+'<div class="sub">'+esc(evPrevisaoTxt(o,A))+'</div></div>'; }).join("");
+  return '<div class="card ev-aviso"><h3>📅 Eventos e feriados</h3>'+li+'<div class="btnrow"><button type="button" class="btn sm accent" data-evir="1">Ver agenda</button></div></div>';
+}
+document.addEventListener("click",function(ev){ var b=ev.target&&ev.target.closest?ev.target.closest("[data-evir]"):null; if(!b) return; try{ window.__evAbrir=1; show("previsao"); }catch(e){ rmLogErr(e,"ev-ir"); } });
+
+/* ---- Previsão: agenda, formulário e o que cada tipo rende ---- */
+var evForm=null; /* null = fechado; {} = novo; {id:…} = editando */
+function evCardHTML(){
+  var h=todayISO(), prox=evOcorrencias(h,isoAddDays(h,30)), A=null;
+  try{ A=evAprendizado(); }catch(e){ rmLogErr(e,"ev-aprend"); A={porTipo:{},lista:[]}; }
+  var html='<div class="card prev-ev" id="evCard"><h3>📅 Eventos e feriados<button type="button" class="infoBtn" data-tip="Feriados nacionais e da Bahia entram sozinhos. Shows, jogos, festas e os feriados da cidade você lança aqui. Depois que o evento passa, o app compara o seu R$/h rodando na janela do evento (1h antes até 6h depois do início; feriado = o dia todo) com a mesma janela nas 8 semanas anteriores, mesmo dia da semana. Precisa de '+EV_MIN_EV+' corridas no evento e '+EV_MIN_BASE+' nas semanas de comparação." aria-label="Sobre eventos">i</button></h3>';
+  html+='<div class="btnrow"><button type="button" class="btn sm green" id="evNovo">+ Evento</button></div>';
+  if(evForm) html+=evFormHTML();
+  html+='<div class="sub">Próximos 30 dias</div>';
+  if(!prox.length) html+='<div class="empty">Nenhum feriado ou evento nos próximos 30 dias. Viu um show, jogo ou festa marcado? Toque em "+ Evento".</div>';
+  else html+='<div class="ev-lista">'+prox.map(function(o){
+      return '<div class="ev-it'+(o.data===h?" hoje":"")+'"><div class="ev-dt"><b>'+esc(evDiaTxt(o.data))+'</b><small>'+esc(evHoraTxt(o))+'</small></div><div class="ev-tx"><b>'+esc(o.titulo)+'</b><small>'+esc(evTipoNome(o.tipo))+(o.tipo==="feriado"?(o.nacional?" nacional":" da cidade"):"")+(o.anual?" · todo ano":"")+(o.local?" · "+esc(o.local):"")+(o.origem==="sympla"?' · <a href="'+esc(o.link||"https://www.sympla.com.br")+'" target="_blank" rel="noopener">Sympla</a>':"")+'</small><small class="ev-prev">'+esc(evPrevisaoTxt(o,A))+'</small></div>'
+        +(o.ref?'<div class="ev-ac"><button type="button" class="btn sm accent" data-evedit="'+esc(o.ref)+'" aria-label="Editar '+esc(o.titulo)+'">✏️</button></div>':"")+'</div>';
+    }).join("")+'</div>';
+  /* o que cada tipo rende */
+  var tipos=Object.keys(A.porTipo).sort(function(a,b){ return A.porTipo[b].media-A.porTipo[a].media; });
+  html+='<div class="sub" style="margin-top:12px">O que cada tipo rendeu para você (últimos 12 meses)</div>';
+  if(!tipos.length) html+='<div class="empty">Ainda sem eventos com corridas suficientes para comparar. Cada evento que você lançar e em que rodar entra aqui depois que passar.</div>';
+  else html+='<div class="tblwrap"><table class="tbl" data-f4="nao"><tr><th>Tipo</th><th>R$/h × dia normal</th><th>Eventos</th></tr>'+tipos.map(function(k){ var t=A.porTipo[k]; return '<tr><td class="l">'+esc(evTipoNome(k))+'</td><td style="color:'+(t.media>=0?"var(--green)":"var(--red)")+'"><b>'+evPctTxt(t.media)+'</b></td><td>'+t.n+(t.n<3?' <span class="conf baixa">poucos</span>':"")+'</td></tr>'; }).join("")+'</table></div>';
+  /* eventos recentes com o resultado de cada um */
+  var rec=A.lista.filter(function(x){ return !x.o.nacional||!x.I.sem; }).slice(-6).reverse();
+  if(rec.length) html+='<div class="sub" style="margin-top:12px">Últimos eventos</div><div class="ev-lista">'+rec.map(function(x){ var o=x.o, I=x.I;
+      return '<div class="ev-it passado"><div class="ev-dt"><b>'+esc(isoToBR(o.data).slice(0,5))+'</b><small>'+esc(evHoraTxt(o))+'</small></div><div class="ev-tx"><b>'+esc(o.titulo)+'</b><small>'+(I.sem?(I.n?"poucas corridas para comparar ("+I.n+")":"você não rodou nesse horário"):(BRL(I.rh)+'/h × '+BRL(I.rhBase)+'/h normal · <b style="color:'+(I.dif>=0?"var(--green)":"var(--red)")+'">'+evPctTxt(I.dif)+'</b> · '+I.n+' corridas'))+'</small></div>'+(o.ref?'<div class="ev-ac"><button type="button" class="btn sm accent" data-evedit="'+esc(o.ref)+'" aria-label="Editar '+esc(o.titulo)+'">✏️</button></div>':"")+'</div>'; }).join("")+'</div>';
+  return html+'</div>';
+}
+function evFormHTML(){
+  var e=evForm&&evForm.id?(DB.eventos||[]).find(function(x){ return x.id===evForm.id; }):null;
+  var v=function(k,d){ return e&&e[k]!=null?e[k]:(d||""); };
+  return '<div class="ev-form" id="evForm"><div class="sub"><b>'+(e?"Editar evento":"Novo evento")+'</b></div>'
+    +'<label class="f">O que é *<input id="evTit" maxlength="80" placeholder="ex: Show de forró no Parque de Exposições" value="'+esc(v("titulo"))+'"></label>'
+    +'<label class="f">Tipo *<select id="evTipo">'+EV_TIPOS.map(function(t){ return '<option value="'+t[0]+'"'+(v("tipo","show")===t[0]?" selected":"")+'>'+t[1]+'</option>'; }).join("")+'</select></label>'
+    +'<div class="shortgrid"><label class="f">Data * (DD/MM/AAAA)<input id="evData" inputmode="numeric" placeholder="ex: 13/12/2026" value="'+esc(e?isoToBR(e.data):"")+'"></label>'
+    +'<label class="f">Início (HH:MM)<input id="evHora" inputmode="numeric" placeholder="ex: 21:00" value="'+esc(v("hora"))+'"></label></div>'
+    +'<label class="f">Local (opcional)<input id="evLocal" maxlength="60" placeholder="ex: Arena, UESB, Estádio Lomanto Júnior" value="'+esc(v("local"))+'"></label>'
+    +'<label class="f"><input type="checkbox" id="evAnual" style="width:auto"'+(v("anual")?" checked":"")+'> Repete todo ano nesta data (ex.: festa da cidade)</label>'
+    +'<div class="msg-ok" id="evMsg"></div>'
+    +'<div class="btnrow"><button type="button" class="btn green" id="evSalvar">Salvar evento</button><button type="button" class="btn sm accent" id="evCancelar">Voltar</button>'+(e?'<button type="button" class="btn sm rowdel" id="evExcluir">Excluir</button>':"")+'</div></div>';
+}
+function evRedesenhar(){ var c=document.getElementById("evCard"); if(!c){ show("previsao"); return; } var d=document.createElement("div"); d.innerHTML=evCardHTML(); var n=d.firstChild; c.parentNode.replaceChild(n,c); evLigar(); }
+function evLigar(){
+  var c=document.getElementById("evCard"); if(!c) return;
+  if(window.__evAbrir){ window.__evAbrir=0; setTimeout(function(){ try{ var cc=document.getElementById("evCard"); if(!cc) return; if(cc.classList.contains("f5-fechado")){ var h=cc.querySelector(":scope > h3"); if(h) h.click(); } cc.scrollIntoView({block:"start"}); }catch(e){} },150); }
+  var g=function(id){ return document.getElementById(id); };
+  if(g("evNovo")) g("evNovo").onclick=function(){ evForm={}; evRedesenhar(); try{ g("evTit").focus(); }catch(e){} };
+  c.querySelectorAll("[data-evedit]").forEach(function(b){ b.onclick=function(){ evForm={id:b.dataset.evedit}; evRedesenhar(); }; });
+  if(g("evCancelar")) g("evCancelar").onclick=function(){ evForm=null; evRedesenhar(); };
+  if(g("evExcluir")) g("evExcluir").onclick=async function(){
+    var e=(DB.eventos||[]).find(function(x){ return x.id===evForm.id; }); if(!e) return;
+    if(!(await customConfirm("Excluir \""+e.titulo+"\"?"+(e.origem==="sympla"?" Ele não volta na próxima busca do Sympla.":""),"Eventos","Excluir"))) return;
+    var i=DB.eventos.indexOf(e);
+    if(e.origem==="sympla"){ e.oculto=1; if(!save()){ if(!SAVE_RESTAUROU) delete e.oculto; return; } }
+    else { DB.eventos.splice(i,1); if(!save()){ if(!SAVE_RESTAUROU) DB.eventos.splice(i,0,e); return; } }
+    evForm=null; evRedesenhar();
+  };
+  if(g("evSalvar")) g("evSalvar").onclick=function(){
+    var msg=g("evMsg"), err=function(t){ msg.style.color="var(--red)"; msg.textContent="⚠️ "+t; };
+    var tit=g("evTit").value.trim().slice(0,80), tipo=g("evTipo").value, data=brToISO(g("evData").value), hora=g("evHora").value.trim(), local=g("evLocal").value.trim().slice(0,60), anual=g("evAnual").checked?1:0;
+    if(!tit){ err("Diga o que é (ex.: Show de forró)."); return; }
+    if(!data){ err("Data inválida. Use DD/MM/AAAA."); return; }
+    if(hora&&!/^\d{2}:\d{2}$/.test(hora)){ err("Hora inválida. Use HH:MM (ex.: 21:00) ou deixe em branco."); return; }
+    if(hora&&parseHM(hora)==null){ err("Hora inválida."); return; }
+    if(!EV_TIPOS.some(function(t){ return t[0]===tipo; })){ err("Escolha o tipo."); return; }
+    DB.eventos=DB.eventos||[];
+    var e=evForm&&evForm.id?DB.eventos.find(function(x){ return x.id===evForm.id; }):null, antes=e?JSON.stringify(e):null, novo=null;
+    if(e){ e.titulo=tit; e.tipo=tipo; e.data=data; e.hora=hora; e.local=local; e.anual=anual; if(e.origem==="sympla") e.editado=1; }
+    else { novo={id:uid(),titulo:tit,tipo:tipo,data:data,hora:hora,local:local,anual:anual}; DB.eventos.push(novo); }
+    if(!save()){ if(!SAVE_RESTAUROU){ if(novo){ var i=DB.eventos.indexOf(novo); if(i>=0) DB.eventos.splice(i,1); } else if(e&&antes){ Object.assign(e,JSON.parse(antes)); } } err(SAVE_FAIL_MSG); return; }
+    evForm=null; evRedesenhar(); try{ qrToast("📅 Evento salvo",2500); }catch(_){}
+  };
+}
+/* ---- importação do Sympla (arquivo eventos_sympla.json gravado pelo script do PC na pasta das cotações) ----
+   - junta lotes/variações do mesmo evento (mesmo dia + mesmo nome antes do " - ")
+   - adivinha o tipo pelo nome (dá para corrigir; o que você editou não é sobrescrito)
+   - evento que você escondeu não volta; evento que sumiu do Sympla e ainda não aconteceu é removido */
+function evNormNome(n){ return normName(String(n||"").split(" - ")[0].replace(/\b(1|2|3|4)[ºo°]?\s*lote\b/gi,"")).replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim(); }
+function evTipoPeloNome(n){ var t=normName(n);
+  if(/formatura|colacao/.test(t)) return "formatura";
+  if(/congresso|conferencia|jornada|simposio|seminario|palestra|curso|workshop|encontro|forum|summit|experience|treinamento/.test(t)) return "congresso";
+  if(/\bx\b| vs |versus|campeonato|baianao|futebol|jogo/.test(t)) return "jogo";
+  if(/feira|exposi|expo\b|exposicao/.test(t)) return "feira";
+  if(/culto|missa|louvor|igreja|gospel|retiro/.test(t)) return "religioso";
+  if(/uesb|ufba|ifba|calourada|universit/.test(t)) return "universidade";
+  if(/show|toca|tributo|cover|ao vivo|acustico|concerto|banda|turne|tour/.test(t)) return "show";
+  return "festa";
+}
+function evImportarSympla(J){
+  if(!J||J.fonte!=="sympla"||!Array.isArray(J.eventos)) return {ok:false,msg:"arquivo de eventos inválido"};
+  DB.eventos=DB.eventos||[];
+  var hoje=todayISO(), porSid={}, porChave={}, novos=0, atual=0;
+  DB.eventos.forEach(function(e){ if(e.origem==="sympla"){ porSid[e.sid]=e; porChave[e.data+"|"+evNormNome(e.titulo)]=e; } });
+  var vistos={};
+  J.eventos.forEach(function(x){
+    var ini=String(x.inicio||""), d=ini.slice(0,10), h=ini.slice(11,16); if(!validISO(d)||d<hoje) return;
+    var ch=d+"|"+evNormNome(x.nome), e=porSid[String(x.sid)]||porChave[ch];
+    vistos[ch]=1; if(e) vistos[e.data+"|"+evNormNome(e.titulo)]=1;
+    if(e){ if(!e.editado&&!e.oculto){ e.titulo=String(x.nome).slice(0,80); e.data=d; e.hora=h; e.local=String(x.local||"").slice(0,60); e.link=String(x.link||""); atual++; } return; }
+    var n={id:uid(),origem:"sympla",sid:String(x.sid||"").slice(0,20),titulo:String(x.nome||"").slice(0,80),tipo:evTipoPeloNome(x.nome),data:d,hora:/^\d{2}:\d{2}$/.test(h)?h:"",local:String(x.local||"").slice(0,60),link:String(x.link||"").slice(0,200),anual:0};
+    DB.eventos.push(n); porChave[ch]=n; porSid[n.sid]=n; novos++;
+  });
+  /* do Sympla, ainda por vir, não editado/escondido e que não está mais na lista: cancelado ou adiado -> sai */
+  var antes=DB.eventos.length;
+  DB.eventos=DB.eventos.filter(function(e){ return !(e.origem==="sympla"&&e.data>=hoje&&!e.editado&&!e.oculto&&!vistos[e.data+"|"+evNormNome(e.titulo)]); });
+  return {ok:true,novos:novos,atual:atual,removidos:antes-DB.eventos.length};
+}
+async function evPastaLer(){
+  if(typeof COT_PASTA==="undefined"||!COT_PASTA||COT_PASTA_ESTADO!=="ativa") return null;
+  try{
+    var fh=null; try{ fh=await COT_PASTA.getFileHandle("eventos_sympla.json"); }catch(_e){ return null; }
+    var f=await fh.getFile(), marca=f.lastModified+"|"+f.size, ult=null;
+    try{ ult=await bkpTx(BKP_ST_CFG,"readonly",function(st){ return st.get("evPastaUlt"); }); }catch(_e){}
+    if(ult===marca) return null;
+    var r=evImportarSympla(JSON.parse(await f.text()));
+    if(!r.ok) return r;
+    if(r.novos||r.atual||r.removidos){ if(!save()) return {ok:false,msg:SAVE_FAIL_MSG}; }
+    try{ await bkpTx(BKP_ST_CFG,"readwrite",function(st){ st.put(marca,"evPastaUlt"); }); }catch(_e){}
+    if(r.novos) try{ qrToast("📅 "+r.novos+" evento(s) novo(s) do Sympla",4000); }catch(_e){}
+    return r;
+  }catch(e){ rmLogErr(e,"ev-pasta"); return {ok:false,msg:String((e&&e.message)||e)}; }
+}
+try{ window.RM.evImportarSympla=evImportarSympla; window.RM.evTipoPeloNome=evTipoPeloNome; }catch(e){}
+try{ window.RM.evFeriadosNacionais=evFeriadosNacionais; window.RM.evPascoa=evPascoa; window.RM.evOcorrencias=evOcorrencias; window.RM.evAprendizado=evAprendizado; window.RM.evImpacto=evImpacto; }catch(e){}
 /* primeira tela: só depois de todos os módulos (antes, cartões que usam listas definidas mais abaixo falhavam na abertura) */
 try{ show(current||"dashboard"); }catch(e){ rmLogErr(e,"primeira-tela"); }
 
