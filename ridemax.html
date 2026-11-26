@@ -52,10 +52,9 @@ table.tbl,.stat .vl,.kv b,.dvv,.dtop .hh,.piedet,.piedet b,.mtag,.mrow2,.conf,.r
 .grptabs{padding:0 0 var(--s1)}
 .navbtn.sub{padding-left:var(--s5)}
 .atalho-tag{font-size:var(--f-sm);color:var(--muted);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 var(--s1);margin-left:var(--s2);white-space:nowrap}
-.side-foot{margin-top:auto;padding:var(--s3) var(--s4);font-size:var(--f-sm);color:var(--muted);text-align:center}
-.sidebtns{display:flex;gap:var(--s2);padding:0 var(--s4)}
-.sidebtns button{flex:1;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:var(--r-sm);padding:var(--s2) var(--s1);font-size:var(--f-sm);cursor:pointer}
-.sidebtns button:hover{background:var(--accent);color:var(--text)}
+/* Manual e Lixeira: no fim, mais discretos, separados dos grupos */
+.grphead.fim{font-weight:500;color:var(--muted);font-size:var(--f-sm)}
+.grp + .grphead.fim{border-top:1px solid var(--border);margin-top:var(--s2);padding-top:var(--s3)}
 .linkbtn{background:none;border:0;color:var(--muted);cursor:pointer;font-size:var(--f-sm);padding:var(--s2)}
 .linkbtn:hover{background:var(--accent);color:var(--text)}
 #main{flex:1;min-width:0;display:flex;flex-direction:column}
@@ -77,7 +76,7 @@ table.tbl,.stat .vl,.kv b,.dvv,.dtop .hh,.piedet,.piedet b,.mtag,.mrow2,.conf,.r
 .card h3{margin:0 0 var(--s1);font-size:var(--f-base);color:var(--text);font-weight:600}
 .card .sub{font-size:var(--f-sm);color:var(--muted);margin-bottom:var(--s2)}
 .grid2{display:grid;grid-template-columns:1fr 2fr;gap:var(--s3)}
-@media(max-width:860px){.cards.c4,.cards.c5{grid-template-columns:repeat(2,1fr)}#app{flex-direction:column}#sidebar{width:100%;height:auto;max-height:44vh;position:sticky;top:0;z-index:30}.sidebtns{flex-direction:row}}
+@media(max-width:860px){.cards.c4,.cards.c5{grid-template-columns:repeat(2,1fr)}#app{flex-direction:column}#sidebar{width:100%;height:auto;max-height:44vh;position:sticky;top:0;z-index:30}}
 @media(max-width:700px){.grid2{grid-template-columns:1fr}}
 .grid2>*,.dre-grid>*{min-width:0}
 .bar-bg{max-width:100%}
@@ -1093,9 +1092,14 @@ body.fit-lock #finBox:has(.fin-dre){display:block;overflow:visible}
 }
 
 /* ---------- APP INSTALÁVEL + CORRIDA RÁPIDA ---------- */
-#pinSideBtn{display:block;margin:0 var(--s4) var(--s2);width:calc(100% - 2*var(--s4));background:var(--input);border:1px solid var(--border);color:var(--text);border-radius:var(--r-sm);padding:var(--s2);font:inherit;font-size:var(--f-sm);cursor:pointer;min-height:40px}
-#pinSideBtn[hidden]{display:none}
-#syncSideBtn{display:block;margin:0 var(--s4) var(--s2);width:calc(100% - 2*var(--s4));background:var(--input);border:1px solid var(--border);color:var(--text);border-radius:var(--r-sm);padding:var(--s2);font:inherit;font-size:var(--f-sm);cursor:pointer}
+/* ☀ e 🔒 no topo da tela (PC), do mesmo jeito do ? ; no celular ficam em Mais */
+.top-ic{flex-shrink:0;width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:15px;line-height:1;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center}
+.top-ic:hover{background:var(--accent);color:var(--text)}
+.top-ic.on{background:var(--yellow);border-color:var(--yellow);color:#0f1116}
+.top-ic[hidden]{display:none}
+@media(max-width:860px){ .top-ic{display:none!important} }
+@media print{ .top-ic{display:none!important} }
+#syncSideBtn{display:block;margin:0 var(--s4) var(--s2);width:calc(100% - 2*var(--s4));background:var(--input);border:1px solid var(--border);color:var(--text);border-radius:var(--r-sm);padding:var(--s2);font:inherit;font-size:var(--f-sm);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #syncSideBtn[hidden]{display:none}
 #instBtn{display:block;margin:0 var(--s4) var(--s2);width:calc(100% - 2*var(--s4));background:var(--accent);border:1px solid var(--border);color:var(--text);border-radius:var(--r-sm);padding:var(--s2);font-size:var(--f-sm);font-weight:700;cursor:pointer}
 #instBtn[hidden]{display:none}
@@ -1154,8 +1158,6 @@ body.fit-lock #finBox:has(.fin-dre){display:block;overflow:visible}
   #sidebar .logo{padding:var(--s4) var(--s2) var(--s2)}
   .navbtn,.grphead{min-height:48px;display:flex;align-items:center;font-size:16px}
   .navbtn.sub{padding-left:28px}
-  .sidebtns{flex-direction:row;padding:var(--s2) var(--s4)}
-  .sidebtns button{min-height:44px;font-size:15px}
   /* conteúdo: espaço para a barra de baixo; cabeçalho fino e fixo */
   #main{padding-bottom:calc(80px + env(safe-area-inset-bottom))}
   .topbar{position:sticky;top:0;z-index:40;background:var(--bg);padding:calc(8px + env(safe-area-inset-top)) 16px 0}
@@ -1391,7 +1393,6 @@ body.pin-aberto{overflow:hidden}
 /* impressão: travado, só sai a tela do PIN (antes ela sumia e os dados saíam no papel/PDF); destravado, o PIN não aparece */
 @media print{ body:not(.pin-aberto) #pinTela{display:none!important} body.pin-aberto>*:not(#pinTela){display:none!important} }
 /* ---------- MODO SOL (alto contraste) — por cima do tema claro ---------- */
-#solSideBtn{display:block;margin:0 var(--s4) var(--s2);width:calc(100% - 2*var(--s4));background:var(--input);border:1px solid var(--border);color:var(--text);border-radius:var(--r-sm);padding:var(--s2);font:inherit;font-size:var(--f-sm);cursor:pointer;min-height:40px}
 body[data-sol="1"]{--bg:#ffffff;--panel:#ffffff;--card:#ffffff;--input:#ffffff;--accent:#0b4a8a;--text:#000000;--muted:#25292f;--border:#5b6472;--red:#a3170b;--green:#0a6a35;--yellow:#7a5200;--blue:#0b4a8a;--orange:#8a3f0a;--purple:#4b2f86;--teal:#0b5c54;--neg-solid:#a3170b}
 body[data-sol="1"]{font-weight:500}
 body[data-sol="1"] b,body[data-sol="1"] strong,body[data-sol="1"] h1,body[data-sol="1"] h2,body[data-sol="1"] h3{font-weight:800}
@@ -1910,9 +1911,6 @@ table.dm-tbl tr.dm-pct td.dm-l{padding-left:18px}
     <div class="logo"><div class="car" id="logoCar" aria-hidden="true"><img src="icon-192.png" alt="" width="44" height="44"></div><h1>RideMax</h1><small>v2.0 • web</small></div>
     <div class="side-sep"></div>
     <div id="navCtn"></div>
-    <div class="side-sep"></div>
-    <div class="sidebtns"><button id="expBtn" type="button">Fazer backup</button><button id="impBtn" type="button">Restaurar backup</button></div>
-    <div class="side-foot">salvo no navegador<br>localStorage</div>
   </aside>
   <main id="main">
     <div class="topbar"><div id="titleRow"><h2 id="pageTitle">RideMax</h2><button id="hBtn" type="button" title="Ajuda" aria-label="Ajuda" aria-expanded="false" hidden="">?</button></div><p id="pageSub"></p><div id="hBox" hidden="" data-chave="plataformas"></div><hr></div>
@@ -3616,7 +3614,6 @@ var DB=load();
 var _rmsErrAt=0;
 RMS.hooks.onConflict=function(){ /* carimbo impossível: toda gravação seguinte cai no conflito até recarregar (nunca sobrescreve a outra aba) */ DB_MEM_REV=-1; try{ DB_CONFLICT_PENDING=dbSnapshot(); }catch(e){ DB_CONFLICT_PENDING=null; } try{ showSaveConflictModal(); }catch(e){ rmLogErr(e,"idb-conflito"); } };
 RMS.hooks.onError=function(err){ rmLogErr(err,"idb-gravacao"); var t=Date.now(); if(t-_rmsErrAt<30000) return; _rmsErrAt=t; try{ customAlert("Não foi possível salvar no banco do navegador ("+String((err&&err.name)||"erro")+"). O app tenta de novo na próxima gravação. Exporte um backup agora.","Falha ao salvar"); }catch(e){} };
-try{ var _sf=document.querySelector(".side-foot"); if(_sf) _sf.innerHTML="salvo no navegador<br>"+(RMS.mode==="idb"?"IndexedDB":"localStorage"); }catch(e){ rmLogErr(e); }
 try{ if(RMS.migrated){ setTimeout(function(){ try{ customAlert("Seus dados foram para um espaço maior do navegador. Nada muda no uso nem no backup. A versão antiga ficou guardada como cópia.","Armazenamento atualizado"); }catch(e){} },900); } }catch(e){ rmLogErr(e); }
 /* AUDITORIA item 6 — arquivo aberto direto do disco (file://): o navegador pode
    dar o MESMO armazenamento a todos os .html locais. Anota qual arquivo gravou
@@ -4242,43 +4239,77 @@ var NAV_BY_ID={}; NAV.forEach(function(n){ NAV_BY_ID[n[0]]={icon:n[1],label:n[2]
    Financeiro; Analise/Repasses no Uber) via __finTab, mesmo padrao dos
    atalhos do dashboard (6A). Despesas mora no Financeiro; o Uber tem um
    atalho marcado que leva a mesma tela. */
+/* Menu lateral = lugares do app (ações como modo sol e bloquear ficam no topo da tela).
+   Abas que são, na prática, outra tela também aparecem no menu e abrem direto na aba:
+   fin = aba do Financeiro, hist = aba do Histórico, inv = aba de Investimentos, cfg = aba de Configurações. */
 var NAV_GROUPS=[
   {id:"g-dash",icon:"",label:"Início",single:"dashboard"},
   {id:"g-uber",icon:"",label:"Uber",tabs:[
-    {view:"nova"},{view:"historico"},{view:"recarga"},{view:"metas"},
-    {view:"previsao"},{view:"clima"},
-    {view:"financeiro",finTab:2,icon:"",label:"Análise"},
-    {view:"financeiro",finTab:3,icon:"",label:"Repasses"},
+    {view:"nova"},{view:"historico",hist:0,label:"Corridas"},{view:"historico",hist:1,label:"Turnos"},
+    {view:"recarga"},{view:"metas"},{view:"previsao"},{view:"clima"},
+    {view:"financeiro",fin:2,label:"Análise"},
+    {view:"financeiro",fin:3,label:"Repasses"},
     {view:"despesas"}
   ]},
   {id:"g-fin",icon:"",label:"Financeiro",tabs:[
-    {view:"financeiro",finTab:0,icon:"",label:"Resumo"},
-    {view:"transferencias"},{view:"saldos",label:"Saldos e extrato"},
+    {view:"financeiro",fin:0,label:"Resumo"},
+    {view:"transferencias"},{view:"saldos",label:"Saldos e extrato"},{view:"conciliacao"},
     {view:"contaspagar"},
-    {view:"financeiro",finTab:1,icon:"",label:"DRE"},
+    {view:"financeiro",fin:1,label:"DRE"},
     {view:"relcat"},{view:"fluxo"}
   ]},
- {id:"g-inv",icon:"",label:"Investimentos",single:"investimentos"},
- {id:"g-cfg",icon:"",label:"Configurações",single:"plataformas"},
- {id:"g-estilo",icon:"",label:"Aparência",single:"estilo"},
-  {id:"g-manual",icon:"",label:"Manual",single:"manual"},
- {id:"g-lix",icon:"",label:"Lixeira",single:"lixeira"}
+  {id:"g-inv",icon:"",label:"Investimentos",tabs:[
+    {view:"investimentos",inv:4,label:"Resumo"},{view:"investimentos",inv:0,label:"Carteira"},
+    {view:"investimentos",inv:5,label:"Movimentos"},{view:"investimentos",inv:2,label:"Proventos"},
+    {view:"investimentos",inv:1,label:"Observação"},{view:"investimentos",inv:3,label:"Planejamento"},
+    {view:"investimentos",inv:6,label:"IRPF"}
+  ]},
+  {id:"g-cfg",icon:"",label:"Configurações",tabs:[
+    {view:"plataformas",cfg:"plataformas",label:"Plataformas"},{view:"plataformas",cfg:"categorias",label:"Categorias"},
+    {view:"plataformas",cfg:"contas",label:"Contas"},{view:"plataformas",cfg:"centros",label:"Centros de custo"},
+    {view:"plataformas",cfg:"mei",label:"MEI e DAS"},{view:"plataformas",cfg:"veiculo",label:"Veículo e energia"},
+    {view:"plataformas",cfg:"seguranca",label:"Segurança e backup"},{view:"estilo",label:"Aparência"}
+  ]},
+  {id:"g-manual",icon:"",label:"Manual",single:"manual",fim:1},
+  {id:"g-lix",icon:"",label:"Lixeira",single:"lixeira",fim:1}
 ];
-function navOpenDefault(){ return {"g-uber":0,"g-fin":0}; }
-function navOpenSanitize(v){ var d=navOpenDefault(); try{ if(v&&typeof v==="object"&&!Array.isArray(v)){ ["g-uber","g-fin"].forEach(function(k){ if(v[k]===0||v[k]==="0"||v[k]===false) d[k]=0; else d[k]=1; }); } }catch(e){rmLogErr(e)} return d; }
+var NAV_GRUPOS_ABRIR=["g-uber","g-fin","g-inv","g-cfg"];
+function navOpenDefault(){ var d={}; NAV_GRUPOS_ABRIR.forEach(function(k){ d[k]=0; }); return d; }
+function navOpenSanitize(v){ var d=navOpenDefault(); try{ if(v&&typeof v==="object"&&!Array.isArray(v)){ NAV_GRUPOS_ABRIR.forEach(function(k){ if(v[k]===0||v[k]==="0"||v[k]===false||v[k]==null) d[k]=0; else d[k]=1; }); } }catch(e){rmLogErr(e)} return d; }
 /* regra: todo recolhível começa recolhido — os grupos abrem só no toque, durante o uso */
 var NAV_OPEN=navOpenDefault();
-function navOpenPersist(){ try{ if(!DB||!DB.settings) return; DB.settings.navOpen={"g-uber":NAV_OPEN["g-uber"]?1:0,"g-fin":NAV_OPEN["g-fin"]?1:0}; try{ writePreserveRev(); }catch(e){rmLogErr(e)} }catch(e){rmLogErr(e)} }
+function navOpenPersist(){ try{ if(!DB||!DB.settings) return; var o={}; NAV_GRUPOS_ABRIR.forEach(function(k){ o[k]=NAV_OPEN[k]?1:0; }); DB.settings.navOpen=o; try{ writePreserveRev(); }catch(e){rmLogErr(e)} }catch(e){rmLogErr(e)} }
 function navTabInfo(t){
   var base=NAV_BY_ID[t.view]||{icon:"•",label:t.view};
   return {icon:t.icon||base.icon, label:t.label||base.label};
+}
+/* qual aba do menu é esta: "" quando a tela não tem abas no menu */
+function navTabSub(t){ return t.fin!=null?String(t.fin):t.hist!=null?String(t.hist):t.inv!=null?String(t.inv):(t.cfg||""); }
+/* qual aba está aberta agora na tela v */
+function navSubAtual(v){
+  try{
+    if(v==="financeiro") return String(Math.min(3,Math.max(0,Number(window.__finTab)||0)));
+    if(v==="historico") return Number(window.__histTab)===1?"1":"0";
+    if(v==="investimentos") return String(typeof window.__invTab==="number"?window.__invTab:4);
+    if(v==="plataformas") return cfgGrupo(cfgTab);
+  }catch(e){ rmLogErr(e,"nav-sub"); }
+  return "";
+}
+function navIrPara(t){
+  try{
+    if(t.fin!=null) window.__finTab=t.fin;
+    if(t.hist!=null) window.__histTab=t.hist;
+    if(t.inv!=null) window.__invTab=t.inv;
+    if(t.cfg) cfgTab=t.cfg;
+  }catch(e){ rmLogErr(e,"nav-ir"); }
+  show(t.view);
 }
 function buildNav(){
   navCtn.innerHTML="";
   NAV_GROUPS.forEach(function(g){
     if(g.single){
       var s=document.createElement("button");
-      s.className="grphead single"+(g.single===current?" active":"");
+      s.className="grphead single"+(g.fim?" fim":"")+(g.single===current?" active":"");
       s.dataset.view=g.single; s.dataset.gid=g.id;
       s.setAttribute("aria-label",g.label); s.title=g.label;
       s.innerHTML=esc(g.icon)+' <span class="lbl">'+esc(g.label)+"</span>";
@@ -4300,11 +4331,11 @@ function buildNav(){
       var info=navTabInfo(t);
       var b=document.createElement("button");
       b.className="navbtn sub"; b.dataset.view=t.view; b.dataset.gid=g.id;
-      if(t.finTab!=null) b.dataset.fintab=String(t.finTab);
+      var sub=navTabSub(t); if(sub) b.dataset.sub=sub;
       if(t.atalho) b.dataset.atalho="1";
       b.setAttribute("aria-label",info.label+(t.atalho?" (atalho)":"")); b.title=info.label+(t.atalho?" (atalho)":"");
       b.innerHTML=esc(info.icon)+' <span class="lbl">'+esc(info.label)+"</span>"+(t.atalho?'<span class="atalho-tag">atalho \u2197</span>':"");
-      b.onclick=function(){ if(t.finTab!=null){ try{ window.__finTab=t.finTab; }catch(e){rmLogErr(e)} } show(t.view); };
+      b.onclick=function(){ navIrPara(t); };
       box.appendChild(b);
     });
     wrap.appendChild(box);
@@ -4312,12 +4343,12 @@ function buildNav(){
   });
 }
 function updateNavActive(v){
-  /* Saldos, Extrato e Conciliação são abas de "Saldos e extrato"; Lotes é subaba de Repasses */
-  if(v==="extrato"||v==="conciliacao") v="saldos";
-  var finCur=(v==="financeiro")?Math.min(3,Math.max(0,Number(window.__finTab)||0)):null;
+  /* Extrato é aba de "Saldos e extrato" (Conciliação tem item próprio); Lotes é subaba de Repasses */
+  if(v==="extrato") v="saldos";
+  var subCur=navSubAtual(v);
   var foundGid=null;
   navCtn.querySelectorAll(".navbtn").forEach(function(b){
-    var ok=(b.dataset.view===v)&&(b.dataset.fintab==null||(finCur!=null&&Number(b.dataset.fintab)===finCur));
+    var ok=(b.dataset.view===v)&&(b.dataset.sub==null||b.dataset.sub===subCur);
     b.classList.toggle("active",!!ok);
     if(ok&&!foundGid) foundGid=b.dataset.gid;
   });
@@ -4333,7 +4364,6 @@ function updateNavActive(v){
   });
 }
 buildNav();
-document.getElementById("expBtn").onclick=function(){ var n=exportBackup(); customAlert("Backup baixado como "+n,"Backup"); };
 function impBaixasTotal(db){ var n=0; try{ (db.titulos||[]).forEach(function(t){ n+=((t&&t.baixas)||[]).length; }); }catch(e){rmLogErr(e)} return n; }
 function impLatest(db){
   var m=null;
@@ -4364,7 +4394,8 @@ function impExportedLabel(iso){
     return p(d.getDate())+"/"+p(d.getMonth()+1)+"/"+d.getFullYear()+" "+p(d.getHours())+":"+p(d.getMinutes());
   }catch(e){ return "\u2014"; }
 }
-document.getElementById("impBtn").onclick=function(){ document.getElementById("impFile").click(); };
+/* Restaurar backup (arquivo): botão em Configurações › Segurança e backup */
+function impEscolherArquivo(){ document.getElementById("impFile").click(); }
 document.getElementById("impFile").addEventListener("change",function(){
   var f=this.files&&this.files[0]; if(!f) return;
   var rd=new FileReader();
@@ -4599,7 +4630,7 @@ try{
    elemento e guardava a posição de uma tela para a outra). Redesenhar a MESMA tela (depois de salvar) mantém a posição. */
 var SHOW_ULT=null;
 function topoDaTela(){ try{ window.scrollTo(0,0); var vc=document.getElementById("viewCtn"); if(vc) vc.scrollTop=0; }catch(e){rmLogErr(e)} }
-try{ document.addEventListener("click",function(ev){ var b=ev.target&&ev.target.closest?ev.target.closest("#finTabs button,#invTabs button,#cfgTabs button,#contaTabs button,#histTabs button"):null; if(!b) return; requestAnimationFrame(topoDaTela); }); }catch(e){}
+try{ document.addEventListener("click",function(ev){ var b=ev.target&&ev.target.closest?ev.target.closest("#finTabs button,#invTabs button,#cfgTabs button,#contaTabs button,#histTabs button,[data-resir]"):null; if(!b) return; requestAnimationFrame(function(){ topoDaTela(); try{ updateNavActive(current); }catch(e){ rmLogErr(e,"nav-aba"); } }); }); }catch(e){}
 function show(v){
   if(v==="contas"||v==="centros"){ try{ cfgTab=v; }catch(e){rmLogErr(e)} v="plataformas"; }
   var _mudou=(v!==SHOW_ULT); SHOW_ULT=v;
@@ -7506,7 +7537,7 @@ function cfgSecBackup(){
   var st=DB.settings;
   var h='';
   var lb=st.lastBackup?("último backup: "+isoToBR(st.lastBackup)):"nenhum backup feito ainda";
-  h+='<div class="sub">Backup de segurança <button type="button" class="hbtn" id="hBackupBtn" title="Ajuda: backup" aria-label="Ajuda: backup" aria-expanded="false">?</button></div><div class="hhelp" id="hBackupBox" hidden></div><div class="toolbar"><span>Lembrar a cada</span><select id="sBkpDays">'+[3,7,15,30].map(function(d){return '<option value="'+esc(d)+'"'+(st.backupDays===d?" selected":"")+'>'+d+' dias</option>';}).join("")+'</select><span style="color:var(--muted);font-size:12px">'+lb+'</span><span style="flex:1"></span><button class="btn sm accent" id="sBkpNow">Fazer backup agora</button></div>';
+  h+='<div class="sub">Backup de segurança <button type="button" class="hbtn" id="hBackupBtn" title="Ajuda: backup" aria-label="Ajuda: backup" aria-expanded="false">?</button></div><div class="hhelp" id="hBackupBox" hidden></div><div class="toolbar"><span>Lembrar a cada</span><select id="sBkpDays">'+[3,7,15,30].map(function(d){return '<option value="'+esc(d)+'"'+(st.backupDays===d?" selected":"")+'>'+d+' dias</option>';}).join("")+'</select><span style="color:var(--muted);font-size:12px">'+lb+'</span><span style="flex:1"></span><button class="btn sm accent" id="sBkpNow">Fazer backup agora</button><button class="btn sm accent" id="sBkpRestaurar" type="button">Restaurar backup (arquivo)</button></div>';
   try{ var _stx=storageText(); h+='<div class="sub">Armazenamento local</div><div class="kv"><span>Espaço usado</span><b>'+esc(_stx.txt)+'</b></div>'; if(_stx.pct>80){ h+='<div class="card warn"><h3>⚠️ Armazenamento acima de 80%</h3><div class="sub">O app já usa '+esc(_stx.txt)+'. Exporte um backup agora para não perder dados. Este aviso é só informativo e não bloqueia nada.</div><div class="btnrow"><button class="btn sm accent" id="sBkpNow2">Fazer backup agora</button></div></div>'; } }catch(_e){rmLogErr(_e)}
   try{ h+='<div class="sub">Diagnóstico</div><div class="kv"><span>Erros internos nesta sessão</span><b>'+esc(RM_ERRTOTAL)+(RM_ERRLOG.length?(" ("+esc(RM_ERRLOG.length)+" distintos)"):"")+'</b></div><div class="toolbar"><button class="btn sm accent" id="cfgErrLogBtn" type="button">Baixar log de erros</button></div>'; }catch(e){rmLogErr(e)}
   h+='<div class="sub">Programa offline</div><div class="sub">Baixa um arquivo <b>ridemax-offline.html</b> com esta mesma versão do app. Dá duplo clique nele e usa sem internet (só o Clima precisa de internet). Os lançamentos feitos no arquivo ficam separados dos lançamentos do online — use o Backup acima para levar de um para o outro.</div><div class="toolbar"><button class="btn sm accent" id="sOfflineNow">Baixar programa offline</button></div>';
@@ -7606,6 +7637,7 @@ function wireSettings(){
   var st=DB.settings;
   document.querySelectorAll("#sEnergy button").forEach(function(b){ b.onclick=function(){ st.energyMode=b.dataset.e; save(); show("plataformas"); }; });
   var _bkD=document.getElementById("sBkpDays"); if(_bkD) _bkD.onchange=function(){ st.backupDays=Number(this.value)||7; save(); };
+  var _bkR=document.getElementById("sBkpRestaurar"); if(_bkR) _bkR.onclick=impEscolherArquivo;
   var _bkN=document.getElementById("sBkpNow"); if(_bkN) _bkN.onclick=function(){ var n=exportBackup(); customAlert("Backup baixado como "+n,"Backup"); show("plataformas"); };
   try{ var _b2=document.getElementById("sBkpNow2"); if(_b2) _b2.onclick=function(){ var n=exportBackup(); customAlert("Backup baixado como "+n,"Backup"); show("plataformas"); }; }catch(_e){rmLogErr(_e)}
   try{ var _off=document.getElementById("sOfflineNow"); if(_off) _off.onclick=function(){ var n=exportOfflineApp(); if(n) customAlert("Programa offline baixado como "+n+". Dê duplo clique nele para usar sem internet.","Programa offline"); }; }catch(_e){rmLogErr(_e)}
@@ -8104,7 +8136,7 @@ function rManual(){
     {t:"Data de corte e saldo inicial",ps:["Cada conta tem uma data de corte, que é a data do saldo inicial. O saldo só conta movimento dessa data em diante.","Baixa e transferência com data anterior ao corte são bloqueadas.","Corrida em dinheiro com data anterior ao corte é permitida, porque pode ser carga histórica — mas o app avisa na hora e deixa um indicador na conta, dizendo quantos movimentos estão fora do saldo e quanto somam. Se isso aparecer sem você esperar, provavelmente a data está errada."]},
     {t:"Previsto, realizado e os 90 dias",ps:["O fluxo de caixa mostra lado a lado o que já aconteceu e o que está previsto, nunca somados.","O previsto usa o vencimento para o que é a pagar, e a data ESTIMADA do repasse para o que é a receber. Essa data sai da média dos repasses anteriores daquela plataforma; sem pelo menos dois repasses conciliados, não há estimativa e o valor aparece à parte, sem data.","A projeção de 90 dias mostra o menor saldo do período e em que dia ele cai. É o indicador mais útil do app: é ele que avisa que a conta vai faltar antes de faltar."]},
     {t:"Backup, descartes e limpeza",ps:["Foto do recibo: na despesa, toque em 📷 Foto do recibo (câmera ou galeria), até 3 por despesa. A foto é reduzida e comprimida (uns 200 KB) e fica só neste aparelho — não vai no backup nem na sincronização. Despesa com foto mostra 📎 na lista; toque para ver, enviar, baixar ou excluir. Em Configurações › Segurança e backup, Baixar fotos (ZIP) junta todas para guardar fora do aparelho.","Fazer backup baixa tudo num arquivo. Restaurar backup SUBSTITUI a base, e antes disso o app baixa sozinho um backup do estado anterior.","Backup automático (Configurações › Segurança e backup): no celular, Enviar backup abre o compartilhar — mande para o Google Drive ou para você mesmo no WhatsApp/e-mail. No computador (Chrome/Edge), escolha uma pasta de backup, de preferência sincronizada com Drive ou OneDrive, e o app grava o arquivo do dia sozinho a cada lançamento, guardando os 30 últimos. Se o navegador pedir permissão de novo, um toque em Reativar resolve.","Cópias diárias: o app também guarda sozinho, neste aparelho, uma cópia por dia (7 dias + 4 semanas), com Restaurar e Baixar. Serve para desfazer um erro; não substitui o backup, porque some junto se o celular sumir ou o navegador for limpo. Restaurar guarda antes o estado atual como Antes da última restauração.","Se o arquivo tiver registro inválido, ele é descartado e RELATADO, com indicação do que foi. Se um título perder uma baixa inválida e voltar a ficar em aberto, isso aparece em destaque — não é perda silenciosa.","A limpeza da base apaga o movimento e preserva os cadastros. Ela pede backup, data de corte e confirmação digitada. Atenção: as séries são cadastro e NÃO são apagadas.","Os dados ficam no banco do navegador (IndexedDB), com espaço de centenas de MB. Cada navegador, aparelho e endereço tem a sua base: o arquivo aberto do disco e o site publicado são bases diferentes, ligadas só pelo backup. Limpar os dados do site ou desinstalar o app apaga a base daquele aparelho.","Configurações › Segurança e backup mostra o espaço usado e o Diagnóstico: a contagem de erros internos da sessão e o botão para baixar o log. O esperado é zero.","Se a base salva estiver danificada, o app guarda uma cópia antes de abrir uma nova; sem espaço para a cópia, ele bloqueia a gravação até você baixar os dados brutos. Nada é apagado às cegas."]},
-    {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu (no celular, em Mais), ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","No celular, a barra de baixo tem Início, Corridas (histórico), o + verde do meio (corrida rápida), Dinheiro (resumo financeiro) e Mais, que abre o menu completo; o voltar do celular fecha o menu. O botão de sincronizar fica no topo, ao lado do título.","No celular, o Início abre com o painel do dia: ganho do dia de trabalho, barra da meta diária, R$ por hora, por corrida, km, turno aberto e os últimos 7 dias. O Histórico mostra as corridas em cartões agrupados por dia, com o total de cada dia; toque numa corrida para Editar ou Excluir. O aviso de backup tem um × que adia até amanhã.","Busca: no Histórico de corridas e na lista de despesas, o campo Buscar procura em todo o histórico (ignora o período) — valor (27,50 ou 27), data (21/11, novembro, sexta), plataforma ou categoria, observação, horário, km, dinheiro, gorjeta. Várias palavras combinam (uber sexta); acento e maiúscula não importam.","Previsão da meta no painel do dia: com 30 min de trabalho, o app calcula o seu ritmo de hoje — com turno aberto, ganho do turno ÷ horas trabalhadas (sem pausas); sem turno, ganho do dia ÷ tempo trabalhado desde a 1ª corrida (esperas de até 1 h contam; paradas maiores, não) — e diz a que horas a meta deve ser batida. Também compara o horário de agora com a sua média (mapa de calor da Previsão) e aponta o melhor horário que ainda vem hoje, só quando há 3 ou mais corridas naquele horário. O quadrinho /h em corrida conta só o tempo dentro das corridas, por isso é maior que o ritmo do dia.","Formulários no celular: Nova corrida, Recarga e Despesa mostram primeiro o essencial — plataforma ou categoria em botões, valor grande — e guardam o resto em Mais detalhes. Na Nova corrida o início já vem com a hora atual e o preço do passageiro só aparece com Pago em dinheiro. O botão Salvar fica preso embaixo da tela.","Tabelas no celular: as que não cabem na tela (Contas a pagar, Lotes, Saldos, Manutenção, Categorias, Top 10 da Previsão) viram cartões, com a primeira coluna como título e as outras como rótulo e valor; os botões de cada linha continuam no cartão. Neste manual, toque no título de uma seção para abrir ou fechar.","Telas longas no celular (Início, Financeiro, Recarga, Previsão): os 2 primeiros blocos vêm abertos e os outros recolhidos; toque no título do bloco para abrir ou fechar — o app lembra a sua escolha neste aparelho.","O + verde (no computador, o botão + Corrida no canto de baixo ou a tecla N) lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Corrida com cronômetro: no Início toque em Iniciar corrida (ou, na corrida rápida, Iniciar com cronômetro). Uma faixa mostra o tempo e os km; toque em Encerrar e a corrida rápida abre com início, fim e km preenchidos — só falta o valor. Os km vêm do GPS, mas o celular só entrega a posição com o RideMax na tela: se você usar o app da Uber/99 na frente, o trecho perdido entra em linha reta e o km aparece como estimado. Se o app fechar no meio, a corrida continua de onde estava.","Turno com um toque: no Início, Iniciar turno pede só o odômetro (vem sugerido o último conhecido) e a hora. Com o turno aberto, Encerrar turno mostra o resumo — duração, corridas e ganho — e pede o odômetro final. Só pode haver um turno aberto por vez.","Pausa no turno: para algo pessoal, toque em Pausar (pede o odômetro) e depois em Retomar (pede de novo). O tempo da pausa sai das horas e do R$/hora; os km rodados na pausa saem do km do turno; e no custo por km da Análise sai também a parte da energia proporcional a esses km. O DRE continua com a despesa inteira. Se começar uma corrida com o turno pausado, o app pergunta se quer retomar.","Modo sol: para ler com o celular no suporte em dia claro, o menu Mais tem ◐ Modo sol, que liga um tema de alto contraste — fundo branco, texto preto, bordas escuras. Em Aparência dá para deixar Ligado, Desligado ou Automático de dia (6h às 18h). Vale só para este aparelho e não muda o tema escolhido.","Tela ligada: durante a corrida com cronômetro a tela não bloqueia sozinha (enquanto o RideMax estiver na tela). O botão ☀ no topo deixa a tela ligada sempre que o app estiver aberto — fica amarelo quando está ativo. Gasta mais bateria; vale com o celular no carregador.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Segurança e backup, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
+    {t:"No celular e corrida rápida",ps:["Publicado em https, o RideMax pode ser instalado como aplicativo: botão Instalar app no topo do menu (no celular, em Mais), ou no Chrome ⋮ › Instalar app; no iPhone, Compartilhar › Adicionar à Tela de Início. Instalado, abre em tela cheia e funciona sem internet (só o Clima precisa de rede).","No celular, a barra de baixo tem Início, Corridas (histórico), o + verde do meio (corrida rápida), Dinheiro (resumo financeiro) e Mais, que abre o menu completo; o voltar do celular fecha o menu. O botão de sincronizar fica no topo, ao lado do título.","No celular, o Início abre com o painel do dia: ganho do dia de trabalho, barra da meta diária, R$ por hora, por corrida, km, turno aberto e os últimos 7 dias. O Histórico mostra as corridas em cartões agrupados por dia, com o total de cada dia; toque numa corrida para Editar ou Excluir. O aviso de backup tem um × que adia até amanhã.","Busca: no Histórico de corridas e na lista de despesas, o campo Buscar procura em todo o histórico (ignora o período) — valor (27,50 ou 27), data (21/11, novembro, sexta), plataforma ou categoria, observação, horário, km, dinheiro, gorjeta. Várias palavras combinam (uber sexta); acento e maiúscula não importam.","Previsão da meta no painel do dia: com 30 min de trabalho, o app calcula o seu ritmo de hoje — com turno aberto, ganho do turno ÷ horas trabalhadas (sem pausas); sem turno, ganho do dia ÷ tempo trabalhado desde a 1ª corrida (esperas de até 1 h contam; paradas maiores, não) — e diz a que horas a meta deve ser batida. Também compara o horário de agora com a sua média (mapa de calor da Previsão) e aponta o melhor horário que ainda vem hoje, só quando há 3 ou mais corridas naquele horário. O quadrinho /h em corrida conta só o tempo dentro das corridas, por isso é maior que o ritmo do dia.","Formulários no celular: Nova corrida, Recarga e Despesa mostram primeiro o essencial — plataforma ou categoria em botões, valor grande — e guardam o resto em Mais detalhes. Na Nova corrida o início já vem com a hora atual e o preço do passageiro só aparece com Pago em dinheiro. O botão Salvar fica preso embaixo da tela.","Tabelas no celular: as que não cabem na tela (Contas a pagar, Lotes, Saldos, Manutenção, Categorias, Top 10 da Previsão) viram cartões, com a primeira coluna como título e as outras como rótulo e valor; os botões de cada linha continuam no cartão. Neste manual, toque no título de uma seção para abrir ou fechar.","Telas longas no celular (Início, Financeiro, Recarga, Previsão): os 2 primeiros blocos vêm abertos e os outros recolhidos; toque no título do bloco para abrir ou fechar — o app lembra a sua escolha neste aparelho.","O + verde (no computador, o botão + Corrida no canto de baixo ou a tecla N) lança uma corrida só com valor e plataforma. A plataforma vem marcada com a da última corrida; a data é o dia de trabalho e o início, a hora atual.","Corrida com cronômetro: no Início toque em Iniciar corrida (ou, na corrida rápida, Iniciar com cronômetro). Uma faixa mostra o tempo e os km; toque em Encerrar e a corrida rápida abre com início, fim e km preenchidos — só falta o valor. Os km vêm do GPS, mas o celular só entrega a posição com o RideMax na tela: se você usar o app da Uber/99 na frente, o trecho perdido entra em linha reta e o km aparece como estimado. Se o app fechar no meio, a corrida continua de onde estava.","Turno com um toque: no Início, Iniciar turno pede só o odômetro (vem sugerido o último conhecido) e a hora. Com o turno aberto, Encerrar turno mostra o resumo — duração, corridas e ganho — e pede o odômetro final. Só pode haver um turno aberto por vez.","Pausa no turno: para algo pessoal, toque em Pausar (pede o odômetro) e depois em Retomar (pede de novo). O tempo da pausa sai das horas e do R$/hora; os km rodados na pausa saem do km do turno; e no custo por km da Análise sai também a parte da energia proporcional a esses km. O DRE continua com a despesa inteira. Se começar uma corrida com o turno pausado, o app pergunta se quer retomar.","Modo sol: para ler com o celular no suporte em dia claro, o menu Mais tem ◐ Modo sol (no computador, o ☀ no topo da tela), que liga um tema de alto contraste — fundo branco, texto preto, bordas escuras. Em Aparência dá para deixar Ligado, Desligado ou Automático de dia (6h às 18h). Vale só para este aparelho e não muda o tema escolhido.","Tela ligada: durante a corrida com cronômetro a tela não bloqueia sozinha (enquanto o RideMax estiver na tela). O botão ☀ no topo deixa a tela ligada sempre que o app estiver aberto — fica amarelo quando está ativo. Gasta mais bateria; vale com o celular no carregador.","Pago em dinheiro pede o preço pago pelo passageiro, como na Nova corrida. Repetir preenche com a última corrida; Salvar e outra deixa a janela aberta para a próxima.","A corrida rápida grava exatamente como a Nova corrida: mesmas validações, recebível para corrida no cartão, nada para corrida em dinheiro. Sem o horário de fim, a corrida não entra no R$/h em corrida; complete pelo Histórico se quiser.","Lembretes: em Configurações › Segurança e backup, Ativar lembretes faz o celular avisar de conta a pagar na véspera e no vencimento, manutenção a 500 km ou menos e backup atrasado — cada aviso uma vez. Com o app fechado, isso só funciona no Chrome do Android com o app instalado, e é o Chrome que decide a hora (em geral uma vez por dia). No iPhone e no computador, os avisos ficam no Dashboard."]},
     {t:"Bloqueio por PIN",ps:["No menu (Mais, no celular), toque em 🔒 Bloqueio por PIN — ou Configurações › Segurança e backup e backup — e em Criar PIN (4 a 6 números; repetidos e sequências são recusados). O app passa a pedir o PIN ao abrir e ao voltar depois do tempo escolhido fora do app — na hora, 1, 5 ou 15 minutos. Onde o aparelho permitir, dá para ativar a digital ou o rosto; o PIN continua valendo.","O PIN vale só para este aparelho: não vai para o backup nem para a sincronização, e não fica guardado em texto. Cinco erros seguidos geram uma espera, que dobra a cada nova série. Esqueceu o PIN? Não há como recuperar: limpe os dados do app neste aparelho e restaure pela sincronização ou por um backup.","É uma trava de tela, contra quem pega o celular desbloqueado — não é criptografia dos dados."]},
     {t:"Celular e computador juntos",ps:["Configurações › Segurança e backup › Sincronizar. Os dois aparelhos usam a mesma conta Google; os dados ficam numa pasta privada do app no seu Drive. A primeira configuração (ID do cliente) está no manual, seção 7.6.","Toque em Sincronizar (no topo do menu) ao começar e ao terminar o dia. A junção é por lançamento: o que foi incluído, editado ou apagado em cada aparelho é respeitado. Se o mesmo campo foi editado nos dois, fica a versão do aparelho que sincronizou por último.","Aparelho novo, sem lançamentos, recebe tudo da nuvem. Se os dois já têm lançamentos e nunca sincronizaram, o app pergunta o que fazer. Antes de aplicar a junção, o app guarda uma cópia em Antes da última restauração."]},
     {t:"Comprovante de renda",ps:["Para alugar imóvel, financiar ou pedir crédito: Financeiro › DRE › Comprovante de renda (PDF), ou Configurações › MEI e DAS. Escolha 3, 6 ou 12 meses; o mês atual entra só se você marcar, e sai como parcial.","O PDF traz, mês a mês, corridas, receita bruta, despesas do trabalho e rendimento líquido, mais o total por plataforma e as médias mensais (calculadas só sobre os meses com movimento). Os números são os do DRE por competência, no centro de custo do trabalho.","É uma declaração sua, assinada por você: o próprio PDF diz isso e indica os extratos das plataformas como prova. Lançamentos faltando = renda menor no papel, então confira antes de entregar. Nome, CPF, CNPJ e cidade ficam guardados para a próxima vez."]},
@@ -12381,8 +12413,8 @@ function lembretesCalc(){
   }catch(e){ rmLogErr(e,"lemb-man"); }
   try{
     var st=DB.settings, dias=st.backupDays||7;
-    if(st.lastBackup&&validISO(st.lastBackup)){ var due=somaDiasISO(st.lastBackup,dias); itens.push({id:"bkp:"+due,quando:due,ate:somaDiasISO(due,60),titulo:"Faça um backup",texto:"Último backup em "+isoToBR(st.lastBackup)+". Abra o app e toque em Enviar backup (ou Fazer backup, no menu)."}); }
-    else if((DB.rides||[]).length||(DB.titulos||[]).length){ itens.push({id:"bkp:nunca",quando:hoje,ate:somaDiasISO(hoje,60),titulo:"Faça seu primeiro backup",texto:"Seus dados vivem só neste aparelho. Abra o app e toque em Enviar backup (ou Fazer backup, no menu)."}); }
+    if(st.lastBackup&&validISO(st.lastBackup)){ var due=somaDiasISO(st.lastBackup,dias); itens.push({id:"bkp:"+due,quando:due,ate:somaDiasISO(due,60),titulo:"Faça um backup",texto:"Último backup em "+isoToBR(st.lastBackup)+". Abra o app e toque em Enviar backup (ou Fazer backup, em Configurações › Segurança e backup)."}); }
+    else if((DB.rides||[]).length||(DB.titulos||[]).length){ itens.push({id:"bkp:nunca",quando:hoje,ate:somaDiasISO(hoje,60),titulo:"Faça seu primeiro backup",texto:"Seus dados vivem só neste aparelho. Abra o app e toque em Enviar backup (ou Fazer backup, em Configurações › Segurança e backup)."}); }
   }catch(e){ rmLogErr(e,"lemb-bkp"); }
   try{ invDarfPendentes().forEach(function(d){ if(d.venc>lim) return; itens.push({id:"darf:"+d.mes,quando:somaDiasISO(d.venc,-7),ate:d.venc,titulo:"DARF de "+d.rot+": "+BRL(d.total),texto:"Imposto estimado das vendas de investimentos de "+d.rot+" vence "+isoToBR(d.venc)+" (código 6015). Confira com quem faz seu imposto."}); }); }catch(e){ rmLogErr(e,"lemb-darf"); }
   try{ fiscalLembretes(hoje,lim).forEach(function(i){ itens.push(i); }); }catch(e){ rmLogErr(e,"lemb-fiscal"); }
@@ -12557,7 +12589,7 @@ async function bkpRestaurar(k){
   var ok=await customConfirm(msg,"Restaurar cópia","Restaurar");
   if(!ok) return;
   var r=await bkpGuardarCopia("restauracao");
-  if(r!=="ok"&&r!=="vazia"){ customAlert("Não consegui guardar o estado atual antes de restaurar, então nada foi alterado. Faça um backup (Fazer backup, no menu) e tente de novo.","Restaurar cópia"); return; }
+  if(r!=="ok"&&r!=="vazia"){ customAlert("Não consegui guardar o estado atual antes de restaurar, então nada foi alterado. Faça um backup (Configurações › Segurança e backup › Fazer backup agora) e tente de novo.","Restaurar cópia"); return; }
   var old=DB;
   DB=clean; processVehicleReset();
   if(!saveLivre()){ DB=old; show("plataformas"); return; }
@@ -12584,7 +12616,7 @@ function bkpEnviar(){
   /* .txt: o compartilhar do Chrome Android não aceita .json; o Importar lê os dois. */
   var f=new File([txt],nome,{type:"text/plain"});
   if(!bkpPodeEnviar()||!navigator.canShare({files:[f]})){ downloadFile(nome.replace(/\.txt$/,".json"),txt); bkpMarcarFeito(); customAlert("Este navegador não tem o compartilhar de arquivo, então o backup foi baixado.","Enviar backup"); show(currentViewSafe()); return; }
-  navigator.share({files:[f],title:"Backup RideMax",text:"Backup do RideMax de "+isoToBR(todayISO())+". Para restaurar: Restaurar backup, no menu do app."}).then(function(){
+  navigator.share({files:[f],title:"Backup RideMax",text:"Backup do RideMax de "+isoToBR(todayISO())+". Para restaurar: Configurações › Segurança e backup › Restaurar backup (arquivo)."}).then(function(){
     bkpMarcarFeito(); customAlert("Backup enviado. Guarde onde não dependa deste celular (Google Drive, e-mail ou WhatsApp para você mesmo).","Enviar backup"); show(currentViewSafe());
   }).catch(function(e){ if(e&&e.name==="AbortError") return; rmLogErr(e,"bkp-share"); customAlert("O envio não foi concluído: "+String((e&&e.message)||e),"Enviar backup"); });
 }
@@ -13512,7 +13544,10 @@ function syncPintar(){
   try{ var b=document.getElementById("syncSideBtn"), c=syncCfg();
     if(!b){ var host=document.querySelector("#sidebar .logo"); if(!host||!host.parentNode) return; b=document.createElement("button"); b.id="syncSideBtn"; b.type="button"; var ib=document.getElementById("instBtn"); host.parentNode.insertBefore(b,(ib&&ib.parentNode===host.parentNode)?ib.nextSibling:host.nextSibling); b.onclick=syncClique; }
     b.hidden=!(c.clientId||window.__syncMockUrl);
-    b.textContent=syncRodando?"⏳ Sincronizando…":("🔄 Sincronizar"+(syncUlt?" · "+syncQuando(syncUlt):""));
+    /* uma linha só: hoje mostra a hora; outro dia, a data (o texto completo fica na dica) */
+    var _q=syncUlt?syncQuando(syncUlt):"", _c=_q.indexOf("hoje às ")===0?_q.slice(8):_q.split(" às ")[0];
+    b.textContent=syncRodando?"⏳ Sincronizando…":("🔄 Sincronizar"+(_c?" · "+_c:""));
+    b.title=syncUlt?"Última sincronização: "+_q:"Sincronizar agora";
     b.disabled=!!syncRodando;
     try{ if(typeof mbarSync==="function") mbarSync(); }catch(_eM){}
   }catch(e){ rmLogErr(e,"sync-btn"); }
@@ -14321,7 +14356,7 @@ function pinEsqueci(){
   /* mostra dentro da tela do PIN: uma janela comum ficaria atrás do bloqueio */
   var i=document.getElementById("pinInfo"); if(!i) return;
   if(!i.hidden){ i.hidden=true; return; }
-  i.textContent="O PIN não pode ser recuperado: ele não fica guardado em lugar nenhum. Se você usa a sincronização com o Google Drive ou tem um backup, dá para limpar este aparelho e recuperar os dados de lá — o que não foi sincronizado nem está no backup se perde. Para limpar, no Chrome: ⋮ › Configurações › Configurações do site › endereço do RideMax › Limpar dados. Depois abra o app e configure a sincronização ou use Restaurar backup (no menu).";
+  i.textContent="O PIN não pode ser recuperado: ele não fica guardado em lugar nenhum. Se você usa a sincronização com o Google Drive ou tem um backup, dá para limpar este aparelho e recuperar os dados de lá — o que não foi sincronizado nem está no backup se perde. Para limpar, no Chrome: ⋮ › Configurações › Configurações do site › endereço do RideMax › Limpar dados. Depois abra o app e configure a sincronização ou use Restaurar backup (Configurações › Segurança e backup).";
   i.hidden=false;
 }
 /* ---- digital / rosto (WebAuthn, autenticador do aparelho) ---- */
@@ -14382,16 +14417,15 @@ try{
 }catch(e){ rmLogErr(e,"pin-init"); }
 try{ window.RM.pinCfg=pinCfg; window.RM.pinTravar=pinTravar; window.RM.pinTravado=function(){ return pinTravado; }; }catch(e){ rmLogErr(e); }
 
-/* botão no topo do menu (gaveta "Mais" no celular): acha o PIN sem caçar a aba */
+/* 🔒 no topo da tela (PC), ao lado do ? e do ☀ — só aparece com PIN criado. No celular fica em Mais. */
 function pinSidePintar(){
   try{
-    var b=document.getElementById("pinSideBtn");
-    if(!b){ var host=document.querySelector("#sidebar .logo"); if(!host||!host.parentNode) return; b=document.createElement("button"); b.id="pinSideBtn"; b.type="button";
-      var ref=document.getElementById("syncSideBtn")||document.getElementById("instBtn"); if(ref&&ref.parentNode===host.parentNode) host.parentNode.insertBefore(b,ref.nextSibling); else host.parentNode.insertBefore(b,host.nextSibling);
-      b.onclick=function(){ if(pinCfg()){ pinTravar(); } else { cfgTab="seguranca"; show("plataformas"); } }; }
-    b.hidden=!pinSuporte();
-    b.textContent=pinCfg()?"🔒 Bloquear agora":"🔒 Bloqueio por PIN";
-  }catch(e){ rmLogErr(e,"pin-side"); }
+    var b=document.getElementById("pinTopBtn");
+    if(!b){ var tr=document.getElementById("titleRow"); if(!tr) return; b=document.createElement("button"); b.id="pinTopBtn"; b.type="button"; b.className="top-ic";
+      b.textContent="🔒"; b.title="Bloquear agora"; b.setAttribute("aria-label","Bloquear agora");
+      tr.appendChild(b); b.onclick=function(){ if(pinCfg()) pinTravar(); }; }
+    b.hidden=!(pinSuporte()&&pinCfg());
+  }catch(e){ rmLogErr(e,"pin-top"); }
 }
 try{ pinSidePintar(); }catch(e){ rmLogErr(e,"pin-side-init"); }
 
@@ -14482,18 +14516,20 @@ function solAplicar(){
 function solDefinir(m){ try{ localStorage.setItem(SOL_KEY,m); }catch(e){} solAplicar(); try{ if(current==="estilo") show("estilo"); }catch(e){} }
 function solPintarBtn(){
   try{
-    var b=document.getElementById("solSideBtn");
-    if(!b){ var host=document.querySelector("#sidebar .logo"); if(!host||!host.parentNode) return; b=document.createElement("button"); b.id="solSideBtn"; b.type="button";
-      var ref=document.getElementById("pinSideBtn")||document.getElementById("syncSideBtn")||document.getElementById("instBtn"); if(ref&&ref.parentNode===host.parentNode) host.parentNode.insertBefore(b,ref.nextSibling); else host.parentNode.insertBefore(b,host.nextSibling);
+    /* ☀ no topo da tela (PC), ao lado do ?; no celular fica em Mais */
+    var b=document.getElementById("solTopBtn");
+    if(!b){ var tr=document.getElementById("titleRow"); if(!tr) return; b=document.createElement("button"); b.id="solTopBtn"; b.type="button"; b.className="top-ic"; b.textContent="☀";
+      var pb=document.getElementById("pinTopBtn"); if(pb&&pb.parentNode===tr) tr.insertBefore(b,pb); else tr.appendChild(b);
       b.onclick=function(){ var m=solModo(); solDefinir(solAtivo()?"off":"on"); try{ qrToast(solAtivo()?"◐ Modo sol ligado (alto contraste)":"Modo sol desligado"+(m==="auto"?" — o automático foi desligado; religue em Aparência":""),3000); }catch(e){} }; }
     var m=solModo(), on=solAtivo();
-    b.textContent="◐ Modo sol: "+(m==="auto"?("automático ("+(on?"ligado agora":"desligado agora")+")"):(on?"ligado":"desligado"));
+    var t="Modo sol: "+(m==="auto"?("automático ("+(on?"ligado agora":"desligado agora")+")"):(on?"ligado":"desligado"));
+    b.title=t; b.setAttribute("aria-label",t); b.classList.toggle("on",on);
     b.setAttribute("aria-pressed",on?"true":"false");
   }catch(e){ rmLogErr(e,"sol-btn"); }
 }
 function solCardHTML(){
   var m=solModo();
-  return '<div class="card" id="solCard"><h3>◐ Modo sol — alto contraste</h3><div class="sub">Para ler com o celular no suporte em dia claro: fundo branco puro, texto preto, bordas escuras e cores mais fortes. Vale só para este aparelho e fica por cima do tema abaixo. Atalho: menu Mais › ◐ Modo sol.</div><div class="seg" id="solSeg" role="radiogroup" aria-label="Modo sol">'
+  return '<div class="card" id="solCard"><h3>◐ Modo sol — alto contraste</h3><div class="sub">Para ler com o celular no suporte em dia claro: fundo branco puro, texto preto, bordas escuras e cores mais fortes. Vale só para este aparelho e fica por cima do tema abaixo. Atalho: no celular, menu Mais › ◐ Modo sol; no computador, o ☀ no topo da tela.</div><div class="seg" id="solSeg" role="radiogroup" aria-label="Modo sol">'
     +[["off","Desligado"],["on","Ligado"],["auto","Automático de dia ("+SOL_INI+"h–"+SOL_FIM+"h)"]].map(function(o){ return '<button type="button" role="radio" aria-checked="'+(m===o[0])+'" data-sol="'+o[0]+'" class="'+(m===o[0]?"on":"")+'">'+o[1]+'</button>'; }).join("")+'</div></div>';
 }
 try{
@@ -15392,10 +15428,13 @@ var MAIS_ITENS=[
   {g:"Dinheiro",id:"repasses",ic:"💸",l:"Repasses",v:"financeiro",fin:3},
   {g:"Dinheiro",id:"contaspagar",ic:"📥",l:"A pagar e receber",v:"contaspagar"},
   {g:"Dinheiro",id:"saldos",ic:"🏦",l:"Saldos e extrato",v:"saldos"},
+  {g:"Dinheiro",id:"conciliacao",ic:"✅",l:"Conciliação",v:"conciliacao"},
   {g:"Dinheiro",id:"transferencias",ic:"🔄",l:"Transferir",v:"transferencias"},
   {g:"Dinheiro",id:"fluxo",ic:"🌊",l:"Fluxo de caixa",v:"fluxo"},
   {g:"Dinheiro",id:"relcat",ic:"🗂️",l:"Por categoria",v:"relcat"},
-  {g:"Investir",id:"investimentos",ic:"💼",l:"Investimentos",v:"investimentos"},
+  {g:"Investir",id:"investimentos",ic:"💼",l:"Investimentos",v:"investimentos",inv:4},
+  {g:"Investir",id:"carteira",ic:"📂",l:"Carteira",v:"investimentos",inv:0},
+  {g:"Investir",id:"proventos",ic:"💰",l:"Proventos",v:"investimentos",inv:2},
   {g:"Ajustes",id:"config",ic:"⚙️",l:"Configurações",v:"plataformas",cfg:"plataformas"},
   {g:"Ajustes",id:"estilo",ic:"🎨",l:"Aparência",v:"estilo"},
   {g:"Ajustes",id:"pin",ic:"🔒",l:"PIN",acao:"pin"},
@@ -15409,9 +15448,9 @@ var MAIS_REC="rm_mais_recentes";
 function maisRecentes(){ try{ var a=JSON.parse(localStorage.getItem(MAIS_REC)||"[]"); return Array.isArray(a)?a.filter(function(id){ return MAIS_ITENS.some(function(x){ return x.id===id&&!x.acao; }); }).slice(0,4):[]; }catch(e){ return []; } }
 function maisGravaRecente(id){ try{ var a=maisRecentes().filter(function(x){ return x!==id; }); a.unshift(id); localStorage.setItem(MAIS_REC,JSON.stringify(a.slice(0,4))); }catch(e){} }
 function maisAtual(){ /* qual atalho corresponde à tela aberta */
-  var v=current, fin=Number(window.__finTab)||0, hist=Number(window.__histTab)||0;
-  if(v==="extrato"||v==="conciliacao") v="saldos"; if(v==="financeiro"&&fin===4) fin=3;
-  for(var i=0;i<MAIS_ITENS.length;i++){ var x=MAIS_ITENS[i]; if(x.acao||x.v!==v) continue; if(x.fin!=null&&x.fin!==fin) continue; if(x.hist!=null&&x.hist!==hist) continue; if(x.cfg&&typeof cfgTab!=="undefined"&&((x.cfg==="backup")!==(cfgTab==="backup"))) continue; return x.id; }
+  var v=current, fin=Number(window.__finTab)||0, hist=Number(window.__histTab)||0, inv=(typeof window.__invTab==="number")?window.__invTab:4;
+  if(v==="extrato") v="saldos"; if(v==="financeiro"&&fin===4) fin=3;
+  for(var i=0;i<MAIS_ITENS.length;i++){ var x=MAIS_ITENS[i]; if(x.acao||x.v!==v) continue; if(x.fin!=null&&x.fin!==fin) continue; if(x.hist!=null&&x.hist!==hist) continue; if(x.inv!=null&&x.inv!==inv) continue; if(x.cfg&&typeof cfgTab!=="undefined"&&((x.cfg==="backup")!==(cfgTab==="backup"))) continue; return x.id; }
   return null;
 }
 function maisItemHTML(x,atual){
@@ -15454,6 +15493,7 @@ function maisIr(id){
   maisGravaRecente(x.id);
   if(x.fin!=null) window.__finTab=x.fin;
   if(x.hist!=null) window.__histTab=x.hist;
+  if(x.inv!=null) window.__invTab=x.inv;
   if(x.cfg){ try{ cfgTab=x.cfg; }catch(e){} }
   show(x.v);
   try{ window.scrollTo(0,0); }catch(e){}
