@@ -1195,7 +1195,9 @@ body.fit-lock #finBox:has(.fin-dre){display:block;overflow:visible}
 @media(max-width:560px){ .cards:has(.kv),.cards:has(.krow){grid-template-columns:1fr!important} }
 /* ---------- CELULAR — FASE 2: painel do dia, aviso compacto, histórico em cartões ---------- */
 .dash-hero,#hCards{display:none}
-@media(max-width:860px){
+/* painel do dia (meta, ▶ Iniciar corrida, turno): celular e também tablet (tela de toque), para quem
+   trabalha com o tablet no carro; no PC com mouse o Início segue o painel de mesa */
+@media(max-width:860px),(pointer:coarse){
   .dash-hero{display:block;padding:16px 16px 14px;margin-bottom:12px;background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 55%,var(--card)),var(--card) 70%);border:1px solid var(--border)}
   .dh-top{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:14px}
   .dh-lbl{font-weight:700;color:var(--text);text-transform:none}
@@ -1218,6 +1220,9 @@ body.fit-lock #finBox:has(.fin-dre){display:block;overflow:visible}
   .dh-turno .chev{margin-left:auto;color:var(--muted);font-size:20px}
   .dh-sem{font-size:14px;color:var(--muted);margin-top:10px}
   .dh-sem b{color:var(--text)}
+  .dh-turno .tx{flex:1;min-width:0}
+}
+@media(max-width:860px){
   /* aviso de backup compacto */
   .bkp-alert{padding:10px 12px!important;margin-bottom:12px}
   .bkp-alert h3{font-size:15px!important;margin:0 32px 6px 0!important}
