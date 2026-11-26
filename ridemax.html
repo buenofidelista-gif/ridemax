@@ -1948,7 +1948,15 @@ table.dm-tbl tr.dm-pct td.dm-l{padding-left:18px}
   #viewCtn .card .cards{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))!important}
   #viewCtn .card .cards>.stat{min-width:0}
   #viewCtn .card .cards>.stat .vl{font-size:19px;overflow-wrap:anywhere}
-}</style>
+}
+/* TÍTULO DE COLUNA PARADO NO TOPO SEM NADA APARECENDO EM CIMA:
+   o título (thead) gruda abaixo do padding do topo da área que rola; as linhas subiam e apareciam
+   nessa faixa, por cima do título. O espaço do topo passa a ser um bloco que rola junto. */
+#viewCtn{padding-top:0!important}
+#viewCtn::before{content:"";display:block;flex:none;height:var(--s4)}
+body[data-density="compact"] #viewCtn::before{height:var(--s2)}
+/* tabelinhas dos dias (Previsão): são curtas, título não precisa grudar */
+#viewCtn .prev-col table.dtbl th{position:static}</style>
 </head>
 <body>
 <div id="app">
@@ -2238,6 +2246,7 @@ var NAV = [
   ["relcat","","Por categoria"],
  ["estilo","","Aparência"],
  ["previsao","","Previsão IA"],
+ ["eventos","","Eventos e feriados"],
  ["clima","","Clima"],
  ["plataformas","","Configurações"],
   ["lixeira","","Lixeira"],
@@ -4291,7 +4300,7 @@ var NAV_GROUPS=[
   {id:"g-dash",icon:"",label:"Início",single:"dashboard"},
   {id:"g-uber",icon:"",label:"Uber",tabs:[
     {view:"nova"},{view:"historico",hist:0,label:"Corridas"},{view:"historico",hist:1,label:"Turnos"},
-    {view:"recarga"},{view:"metas"},{view:"previsao"},{view:"clima"},
+    {view:"recarga"},{view:"metas"},{view:"previsao"},{view:"eventos"},{view:"clima"},
     {view:"financeiro",fin:2,label:"Análise"},
     {view:"financeiro",fin:3,label:"Repasses"},
     {view:"despesas"}
@@ -4558,6 +4567,7 @@ investimentos:"As contas de tipo investimento, com os aportes e os resgates. O a
    backup:"Fazer backup baixa um arquivo com tudo. Restaurar backup SUBSTITUI a base atual — antes de substituir, o app baixa sozinho um backup do estado anterior. Registros inválidos do arquivo são descartados e relatados, com a indicação de quais foram, para você poder relançar.",
     limpeza:"Apaga todo o movimento e preserva os cadastros. Serve para zerar os dados de teste antes do primeiro dia de trabalho real. Pede backup, data de corte e confirmação digitada, nessa ordem. Atenção: as séries de recorrente e parcelado são cadastro e NÃO são apagadas — as de teste precisam ser excluídas à mão.",
   previsao:"O cartão Qual app rende mais compara as plataformas em cada dia e faixa do dia (madrugada, manhã, tarde, noite) pelo R$ por hora rodando, e diz quem vence, empate ou pouca amostra; toque numa célula para ver os valores. Ranqueia os horários por R$ por hora usando só o histórico do próprio app: data, horário, ganhos e gorjetas. Dá mais peso ao que é recente. No Top 10, primeiro vêm os horários com 3 ou mais corridas; os com menos aparecem depois, marcados como pouca amostra. Corrida de madrugada (antes das 4h) conta no dia em que aconteceu. Funciona offline, sem chave e sem internet. Ela NÃO prevê demanda, não sabe de evento na cidade e não consulta nada de fora: ela recombina o que você já ganhou.",
+  eventos:"A agenda dos próximos 30 dias: feriados nacionais e da Bahia entram sozinhos; os eventos do Sympla entram pelo Atualizar cotações (ou pelo atalho 7, no PC); shows, jogos e festas que não estão lá você lança em + Evento. Cada evento mostra o local, o bairro e o botão Mapa. Depois que o evento passa, o app compara o seu R$ por hora rodando na janela do evento com a mesma janela nas 8 semanas anteriores e mostra quanto cada tipo rendeu para você. O Início avisa dos eventos dos próximos 7 dias.",
   clima:"Busca opcional da previsão do tempo, desligada por padrão. Exige chave própria do OpenWeatherMap, internet e a sua cidade. A chave fica só neste navegador e não entra no backup. O clima não altera ganho, meta nem previsão de horários: só mostra a previsão e o quanto ela é confiável. Sem chave ou sem internet, o app funciona igual."
 };
 function ajudaChaveAtual(){
@@ -4590,6 +4600,7 @@ function ajudaChaveAtual(){
     if(current==="lixeira") return "lixeira";
     if(current==="limpeza") return "limpeza";
     if(current==="previsao") return "previsao";
+    if(current==="eventos") return "eventos";
     if(current==="clima") return "clima";
   }catch(e){rmLogErr(e)}
   return null;
@@ -4693,6 +4704,7 @@ function show(v){
   try{ updateNavActive(v); }catch(e){rmLogErr(e)}
   var titles={dashboard:["Início",""],nova:["Nova corrida","Registre uma corrida individualmente"],historico:["Histórico de corridas","Consulte e gerencie todas as corridas registradas"],metas:["Metas de ganhos","Defina objetivos e acompanhe o progresso"],despesas:["Controle de despesas","Registre gastos para calcular o lucro real"],recarga:["Recarga elétrica","Energia, custos e eficiência do veículo elétrico"],financeiro:["Painel financeiro","Resumo, DRE, Análise, Repasses e Lotes"],contas:["Contas","Contas, saldos iniciais e saldos calculados"],centros:["Centros de custo","Cadastre centros por finalidade"],transferencias:["Transferência","Mova valores entre contas"],contaspagar:["Contas a pagar","Títulos, baixas e aging por vencimento"],saldos:["Saldos","Saldo calculado de cada conta e total geral"],investimentos:["Investimentos","Carteira, proventos e acompanhamento — dinheiro em conta + valor dos ativos"],conciliacao:["Conciliação","Confira o extrato item a item — sem ajuste automático"],extrato:["Extrato","Saldo anterior, movimentos com saldo corrido e saldo final, por conta"],fluxo:["Fluxo de caixa","Previsto × realizado por período + projeção de 90 dias"],relcat:["Lançamentos por categoria","Rateio por categoria e centro de custo — só leitura"],estilo:["Aparência","Tema, cores e densidade"],previsao:["Previsão inteligente","Horários recomendados pelo seu histórico"],clima:["Clima","Previsão 7 dias · confiabilidade · localização"],plataformas:["Configurações","Plataformas, categorias, contas, centros e preferências"],lixeira:["Lixeira","Itens excluídos ficam aqui por 30 dias"],limpeza:["Limpeza da base","Rotina destrutiva: apaga o movimento e zera os saldos iniciais"]};
   titles.manual=["Manual","Como o app pensa — leitura"];
+  titles.eventos=["Eventos e feriados","Shows, jogos, festas e feriados da região — e quanto cada tipo rende para você"];
   // MANUAL (parte 3): tela só leitura; sem "?" no topo (ajudaChaveAtual retorna null).
   pageTitle.textContent=titles[v][0]; pageSub.textContent=titles[v][1];
   try{
@@ -4700,7 +4712,7 @@ function show(v){
     var rlbl=document.querySelector('.navbtn[data-view="recarga"] .lbl'); if(rlbl) rlbl.textContent=(cu==="L"?"Abastecer":"Recarga elétrica");
   }catch(e){rmLogErr(e)}
   if(v==="recarga"&&DB.settings&&DB.settings.energyMode==="combustao"){ pageTitle.textContent="Abastecer"; pageSub.textContent="Combustível, custos e consumo do veículo"; }
-  ({dashboard:rDash,nova:rNova,historico:rHist,metas:rMetas,despesas:rDesp,recarga:rRec,financeiro:rFinHub,contas:rContas,centros:rCentros,transferencias:rTransf,contaspagar:rTitulos,saldos:rSaldos,investimentos:rInvest,conciliacao:rConc,extrato:rExtrato,fluxo:rFluxo,relcat:rRelcat,estilo:rStyle,previsao:rPrev,clima:rClima,plataformas:rPlat,lixeira:rTrash,limpeza:rLimpeza,manual:rManual}[v])();
+  ({dashboard:rDash,nova:rNova,historico:rHist,metas:rMetas,despesas:rDesp,recarga:rRec,financeiro:rFinHub,contas:rContas,centros:rCentros,transferencias:rTransf,contaspagar:rTitulos,saldos:rSaldos,investimentos:rInvest,conciliacao:rConc,extrato:rExtrato,fluxo:rFluxo,relcat:rRelcat,estilo:rStyle,previsao:rPrev,eventos:rEventos,clima:rClima,plataformas:rPlat,lixeira:rTrash,limpeza:rLimpeza,manual:rManual}[v])();
   try{ if(typeof contaHubBar==="function") contaHubBar(v); }catch(e){rmLogErr(e,"conta-hub"); }
   try{ if(v==="despesas"&&typeof orcCardPintar==="function") orcCardPintar(); }catch(e){rmLogErr(e,"orc-card"); }
   try{ atualizaAjuda(); }catch(e){rmLogErr(e)}
@@ -7280,11 +7292,9 @@ function rPrev(){
   html+='</div></div></div>';
   html+='<div class="card prev-sim"><h3>Simulador de turno</h3><div class="sub">Quanto tempo rodar para bater a meta — ou quanto esperar ganhar com as horas que você tem. Base: seu R$/h médio no dia da semana.</div>'
   +'<div class="toolbar"><span>Dia:</span><select id="sDia">'+DIAS.map(function(d,i){return '<option value="'+esc(i)+'"'+(i===twd?" selected":"")+'>'+d+'</option>';}).join("")+'</select><span>Meta (R$):</span><input id="sMeta" inputmode="decimal" value="'+esc(DB.goals.daily||"")+'" placeholder="ex: 300" style="background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;width:110px"><span>Horas:</span><input id="sHoras" inputmode="decimal" placeholder="ex: 4" style="background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;width:80px"><button class="btn sm green" id="sGo">Calcular</button></div><div id="sOut"></div></div>';
-  try{ html+=evCardHTML(); }catch(_eEv){ rmLogErr(_eEv,"ev-card"); }
   html+='<div class="card prev-tip"><p class="tip">ℹ️ A IA usa decaimento exponencial: corridas recentes pesam mais. '+(curUnit()==="L"?"Com motor a combustão, bons horários também economizam combustível.":"Com o elétrico, bons horários também economizam energia.")+(wxOn?" Os ícones 🌦️ mostram a previsão para o próximo dia correspondente (ex.: próxima sexta-feira).":" Ative o clima para ver a previsão por horário.")+'</p></div>';
   viewCtn.innerHTML=html;
   try{ phLigar(); }catch(_ePl){ rmLogErr(_ePl,"ph-ligar"); }
-  try{ evLigar(); }catch(_eEl){ rmLogErr(_eEl,"ev-ligar"); }
   (function(){
     var sDia=document.getElementById("sDia"), sMeta=document.getElementById("sMeta"), sHoras=document.getElementById("sHoras"), sOut=document.getElementById("sOut"), sGo=document.getElementById("sGo");
     if(sGo){
@@ -15219,7 +15229,7 @@ async function cotPastaSincronizar(manual){
   if(COT_PASTA_ESTADO!=="ativa") return;
   var g=await cotPastaGravarLista(false); if(!g.ok&&manual) customAlert(g.msg,"Cotações");
   var r=await cotPastaLerNovo(false); cotPastaAvisar(r,manual);
-  try{ var _ev=await evPastaLer(); if(_ev&&_ev.ok&&(_ev.novos||_ev.removidos)&&current==="previsao") show("previsao"); }catch(_eEv){ rmLogErr(_eEv,"ev-pasta"); }
+  try{ var _ev=await evPastaLer(); if(_ev&&_ev.ok&&(_ev.novos||_ev.removidos)&&current==="eventos") show("eventos"); }catch(_eEv){ rmLogErr(_eEv,"ev-pasta"); }
 }
 function cotPastaAuto(){ if(COT_PASTA_ESTADO!=="ativa") return; var agora=Date.now(); if(agora-COT_PASTA_T<15000) return; COT_PASTA_T=agora; cotPastaSincronizar(false); }
 async function cotPastaEscolher(){
@@ -15466,6 +15476,7 @@ var MAIS_ITENS=[
   {g:"Dia a dia",id:"recarga",ic:"⚡",l:"Recarga",v:"recarga"},
   {g:"Dia a dia",id:"metas",ic:"🎯",l:"Metas",v:"metas"},
   {g:"Dia a dia",id:"previsao",ic:"🔮",l:"Previsão",v:"previsao"},
+  {g:"Dia a dia",id:"eventos",ic:"📅",l:"Eventos",v:"eventos"},
   {g:"Dia a dia",id:"clima",ic:"🌦️",l:"Clima",v:"clima"},
   {g:"Dinheiro",id:"resumo",ic:"📊",l:"Resumo",v:"financeiro",fin:0},
   {g:"Dinheiro",id:"dre",ic:"📈",l:"DRE",v:"financeiro",fin:1},
@@ -16860,11 +16871,29 @@ var A11Y_SIMB={"🗑":"Excluir","🗑️":"Excluir","✏️":"Editar","✎":"Edi
 function a11ySimbolos(raiz){
   [].forEach.call(raiz.querySelectorAll("button"),function(b){ if(b.getAttribute("aria-label")||b.getAttribute("title")) return; var n=A11Y_SIMB[a11yTxt(b)]; if(n) b.setAttribute("aria-label",n); });
 }
+/* Título que gruda no topo ao rolar (título de coluna, de formulário, barra de filtros):
+   o navegador gruda o elemento ABAIXO da margem interna (padding) da área que rola, e o conteúdo que sobe
+   aparecia nessa faixa, por cima do título. Aqui cada um passa a grudar na borda de cima da área
+   (top = −padding), seja qual for o tamanho da tela. Só mexe em quem gruda em top:0. */
+function stickyTopo(){
+  var vc=document.getElementById("viewCtn"); if(!vc) return;
+  var cands=vc.querySelectorAll("h3,.toolbar,.conc-sec,.conc-top,tr:first-child>th:first-child");
+  for(var i=0;i<cands.length;i++){
+    var e=cands[i], s=getComputedStyle(e); if(s.position!=="sticky") continue;
+    if(!e.dataset.stkTop&&s.top!=="0px") continue;
+    var p=e.parentElement; for(;p&&p!==document.body;p=p.parentElement){ if(getComputedStyle(p).overflowY!=="visible") break; }
+    var pad=(p&&p!==document.body)?(parseFloat(getComputedStyle(p).paddingTop)||0):0;
+    var alvo=(e.tagName==="TH")?e.parentElement.children:[e];
+    for(var j=0;j<alvo.length;j++){ var x=alvo[j]; if(pad>0){ if(x.dataset.stkTop!==String(pad)){ x.style.top=(-pad)+"px"; x.dataset.stkTop=String(pad); } } else if(x.dataset.stkTop){ x.style.top=""; delete x.dataset.stkTop; } }
+  }
+}
 var A11Y_PEND=false;
 function a11yAjustar(){
   A11Y_PEND=false;
   try{ var r=document.body; a11yRotulos(r); a11yClicaveis(r); a11ySimbolos(r); a11ySeg(r); a11yDialogos(); a11yGraficos(r); }catch(e){ rmLogErr(e,"a11y"); }
+  try{ stickyTopo(); }catch(e){ rmLogErr(e,"sticky-topo"); }
 }
+try{ window.addEventListener("resize",function(){ if(A11Y_PEND) return; A11Y_PEND=true; requestAnimationFrame(a11yAjustar); }); }catch(e){}
 try{
   new MutationObserver(function(){ if(A11Y_PEND) return; A11Y_PEND=true; requestAnimationFrame(a11yAjustar); })
     .observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class"]});
@@ -16982,14 +17011,16 @@ function evAvisoHTML(){
   var mais=oc.length>MAX?'<div class="sub">+ '+(oc.length-MAX)+' evento(s) nesses 7 dias</div>':"";
   return '<div class="card ev-aviso"><h3>📅 Próximos eventos · 7 dias</h3>'+li+mais+'<div class="btnrow"><button type="button" class="btn sm accent" data-evir="1">Ver agenda</button></div></div>';
 }
-document.addEventListener("click",function(ev){ var b=ev.target&&ev.target.closest?ev.target.closest("[data-evir]"):null; if(!b) return; try{ window.__evAbrir=1; show("previsao"); }catch(e){ rmLogErr(e,"ev-ir"); } });
+document.addEventListener("click",function(ev){ var b=ev.target&&ev.target.closest?ev.target.closest("[data-evir]"):null; if(!b) return; try{ show("eventos"); }catch(e){ rmLogErr(e,"ev-ir"); } });
+/* tela própria (menu Uber › Eventos e feriados) */
+function rEventos(){ viewCtn.innerHTML='<div class="ev-tela">'+evCardHTML()+'</div>'; evLigar(); }
 
 /* ---- Previsão: agenda, formulário e o que cada tipo rende ---- */
 var evForm=null; /* null = fechado; {} = novo; {id:…} = editando */
 function evCardHTML(){
   var h=todayISO(), prox=evOcorrencias(h,isoAddDays(h,30)), A=null;
   try{ A=evAprendizado(); }catch(e){ rmLogErr(e,"ev-aprend"); A={porTipo:{},lista:[]}; }
-  var html='<div class="card prev-ev" id="evCard"><h3>📅 Eventos e feriados<button type="button" class="infoBtn" data-tip="Feriados nacionais e da Bahia entram sozinhos. Shows, jogos, festas e os feriados da cidade você lança aqui. Depois que o evento passa, o app compara o seu R$/h rodando na janela do evento (1h antes até 6h depois do início; feriado = o dia todo) com a mesma janela nas 8 semanas anteriores, mesmo dia da semana. Precisa de '+EV_MIN_EV+' corridas no evento e '+EV_MIN_BASE+' nas semanas de comparação." aria-label="Sobre eventos">i</button></h3>';
+  var html='<div class="card prev-ev" id="evCard"><h3>📅 Agenda<button type="button" class="infoBtn" data-tip="Feriados nacionais e da Bahia entram sozinhos. Shows, jogos, festas e os feriados da cidade você lança aqui. Depois que o evento passa, o app compara o seu R$/h rodando na janela do evento (1h antes até 6h depois do início; feriado = o dia todo) com a mesma janela nas 8 semanas anteriores, mesmo dia da semana. Precisa de '+EV_MIN_EV+' corridas no evento e '+EV_MIN_BASE+' nas semanas de comparação." aria-label="Sobre eventos">i</button></h3>';
   html+='<div class="btnrow"><button type="button" class="btn sm green" id="evNovo">+ Evento</button></div>';
   if(evForm) html+=evFormHTML();
   html+='<div class="sub">Próximos 30 dias</div>';
@@ -17023,7 +17054,7 @@ function evFormHTML(){
     +'<div class="msg-ok" id="evMsg"></div>'
     +'<div class="btnrow"><button type="button" class="btn green" id="evSalvar">Salvar evento</button><button type="button" class="btn sm accent" id="evCancelar">Voltar</button>'+(e?'<button type="button" class="btn sm rowdel" id="evExcluir">Excluir</button>':"")+'</div></div>';
 }
-function evRedesenhar(){ var c=document.getElementById("evCard"); if(!c){ show("previsao"); return; } var d=document.createElement("div"); d.innerHTML=evCardHTML(); var n=d.firstChild; c.parentNode.replaceChild(n,c); evLigar(); }
+function evRedesenhar(){ var c=document.getElementById("evCard"); if(!c){ show("eventos"); return; } var d=document.createElement("div"); d.innerHTML=evCardHTML(); var n=d.firstChild; c.parentNode.replaceChild(n,c); evLigar(); }
 function evLigar(){
   var c=document.getElementById("evCard"); if(!c) return;
   if(window.__evAbrir){ window.__evAbrir=0; setTimeout(function(){ try{ var cc=document.getElementById("evCard"); if(!cc) return; if(cc.classList.contains("f5-fechado")){ var h=cc.querySelector(":scope > h3"); if(h) h.click(); } cc.scrollIntoView({block:"start"}); }catch(e){} },150); }
