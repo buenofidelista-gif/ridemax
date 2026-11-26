@@ -1956,7 +1956,15 @@ table.dm-tbl tr.dm-pct td.dm-l{padding-left:18px}
 #viewCtn::before{content:"";display:block;flex:none;height:var(--s4)}
 body[data-density="compact"] #viewCtn::before{height:var(--s2)}
 /* tabelinhas dos dias (Previsão): são curtas, título não precisa grudar */
-#viewCtn .prev-col table.dtbl th{position:static}</style>
+#viewCtn .prev-col table.dtbl th{position:static}
+/* Título que gruda no topo (marcado pelo app: stk-th = título de coluna, stk-cap = título de formulário):
+   - faixa da cor do cartão acima dele: cobre o que sobra em zoom fracionado (90%, 110%…)
+   - tabela com bordas separadas: com "collapse" a linha de baixo do título não gruda e sobra uma fresta
+   - título de coluna com altura de verdade (não uma tira fina de 15 px) e linha de baixo desenhada nele */
+#viewCtn table.tbl{border-collapse:separate;border-spacing:0}
+#viewCtn th.stk-th{background:var(--card)!important;box-shadow:0 -8px 0 0 var(--card),inset 0 -1px 0 var(--border);padding-top:6px!important;padding-bottom:6px!important}
+#viewCtn .stk-cap{box-shadow:0 -8px 0 0 var(--card)}
+body[data-sol="1"] #viewCtn th.stk-th{background:#fff!important;box-shadow:0 -8px 0 0 #fff,inset 0 -1px 0 var(--border)}</style>
 </head>
 <body>
 <div id="app">
@@ -4685,6 +4693,10 @@ try{
 /* Trocar de tela (ou de aba) abre no topo. A rolagem no PC acontece dentro de #viewCtn (que é sempre o mesmo
    elemento e guardava a posição de uma tela para a outra). Redesenhar a MESMA tela (depois de salvar) mantém a posição. */
 var SHOW_ULT=null;
+/* App de tela única: quem decide a rolagem é o app, não o navegador. Sem isto, fechar a gaveta "Mais"
+   (que usa o "voltar" do histórico) fazia o navegador devolver a rolagem da tela anterior — e a tela nova
+   abria lá embaixo. Técnica padrão de SPA: history.scrollRestoration = "manual". */
+try{ if("scrollRestoration" in history) history.scrollRestoration="manual"; }catch(e){}
 function topoDaTela(){ try{ window.scrollTo(0,0); var vc=document.getElementById("viewCtn"); if(vc) vc.scrollTop=0; }catch(e){rmLogErr(e)} }
 try{ document.addEventListener("click",function(ev){ var b=ev.target&&ev.target.closest?ev.target.closest("#finTabs button,#invTabs button,#cfgTabs button,#contaTabs button,#histTabs button,[data-resir]"):null; if(!b) return; requestAnimationFrame(function(){ topoDaTela(); try{ updateNavActive(current); }catch(e){ rmLogErr(e,"nav-aba"); } }); }); }catch(e){}
 function show(v){
@@ -4717,7 +4729,7 @@ function show(v){
   try{ if(v==="despesas"&&typeof orcCardPintar==="function") orcCardPintar(); }catch(e){rmLogErr(e,"orc-card"); }
   try{ atualizaAjuda(); }catch(e){rmLogErr(e)}
   window.scrollTo(0,0);
-  if(_mudou){ try{ var _vc=document.getElementById("viewCtn"); if(_vc) _vc.scrollTop=0; }catch(e){rmLogErr(e)} }
+  if(_mudou){ try{ topoDaTela(); }catch(e){rmLogErr(e)} }
 }
 function statCard(ic,val,lb,color,sub){ return '<div class="stat"><div class="vl" style="color:'+(color||"var(--text)")+'">'+val+'</div><div class="lb">'+esc(lb)+'</div>'+(sub?'<div class="sb">'+sub+'</div>':"")+'</div>'; }
 function bar(v,max,width,color,h){ var pct=max>0?Math.min(1,v/max):0; return '<span class="bar-bg" style="width:'+(width||130)+'px;height:'+(h||10)+'px"><span class="bar-fill" style="width:'+Math.max(4,Math.round((width||130)*pct))+'px;background:'+validColor(color,"#4caf7d")+'"></span></span>'; }
@@ -13675,7 +13687,9 @@ function mbarIni(){
   var bk=document.createElement("div"); bk.id="navBk"; bk.hidden=true; bk.addEventListener("click",function(){ navFechar(); }); _host.appendChild(bk);
   var tr=document.getElementById("titleRow");
   if(tr&&!document.getElementById("mSyncBtn")){ var s=document.createElement("button"); s.id="mSyncBtn"; s.type="button"; s.hidden=true; s.setAttribute("aria-label","Sincronizar"); s.innerHTML=MBAR_SVG.sync; s.onclick=function(){ try{ syncClique(); }catch(e){ rmLogErr(e,"msync"); } }; tr.appendChild(s); }
-  window.addEventListener("popstate",function(){ if(document.body.classList.contains("nav-open")) navFechar(true); if(document.body.classList.contains("mais-open")) maisFechar(true); });
+  window.addEventListener("popstate",function(){ if(document.body.classList.contains("nav-open")) navFechar(true); if(document.body.classList.contains("mais-open")) maisFechar(true);
+    /* veio de um toque na gaveta Mais: mesmo que o navegador tente devolver a rolagem antiga, fica no topo */
+    if(window.__maisIrEm&&Date.now()-window.__maisIrEm<2000){ window.__maisIrEm=0; try{ topoDaTela(); requestAnimationFrame(topoDaTela); setTimeout(topoDaTela,120); }catch(e){} } });
   document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&document.body.classList.contains("nav-open")) navFechar(); if(e.key==="Escape"&&document.body.classList.contains("mais-open")) maisFechar(); });
   mbarSync();
 }
@@ -15543,6 +15557,7 @@ function maisFechar(doVoltar){
 function maisIr(id){
   var x=MAIS_ITENS.filter(function(i){ return i.id===id; })[0]; if(!x) return;
   if(x.acao==="sol"){ try{ var m=solModo(); solDefinir(solAtivo()?"off":"on"); qrToast(solAtivo()?"◐ Modo sol ligado (alto contraste)":"Modo sol desligado"+(m==="auto"?" — o automático foi desligado; religue em Aparência":""),3000); }catch(e){} var el=document.getElementById("maisSheet"); if(el) el.innerHTML=maisHTML(); return; }
+  window.__maisIrEm=Date.now(); /* o "voltar" que fecha a gaveta chega depois: a tela nova fica no topo */
   maisFechar();
   if(x.acao==="pin"){ try{ if(pinCfg()) pinTravar(); else { cfgTab="seguranca"; show("plataformas"); } }catch(e){ rmLogErr(e,"mais-pin"); } return; }
   if(x.acao==="instalar"){ var ib=document.getElementById("instBtn"); if(ib) ib.click(); return; }
@@ -16883,7 +16898,14 @@ function stickyTopo(){
     if(!e.dataset.stkTop&&s.top!=="0px") continue;
     var p=e.parentElement; for(;p&&p!==document.body;p=p.parentElement){ if(getComputedStyle(p).overflowY!=="visible") break; }
     var pad=(p&&p!==document.body)?(parseFloat(getComputedStyle(p).paddingTop)||0):0;
+    /* título de coluna com menos células que as linhas (coluna de botões sem título): completa com
+       células vazias, senão nesse canto a lista aparece ao lado do título grudado */
+    if(e.tagName==="TH"){ try{ var tb=e.closest("table"), r0=tb&&tb.tBodies[0]&&tb.tBodies[0].rows[0]; if(r0&&r0!==e.parentElement){ var nc=0,nh=0,k; for(k=0;k<r0.cells.length;k++) nc+=r0.cells[k].colSpan||1; for(k=0;k<e.parentElement.cells.length;k++) nh+=e.parentElement.cells[k].colSpan||1; while(nh<nc&&nc-nh<6){ var nt=document.createElement("th"); nt.setAttribute("aria-hidden","true"); nt.dataset.stkFill="1"; e.parentElement.appendChild(nt); nh++; } } }catch(_eF){} }
     var alvo=(e.tagName==="TH")?e.parentElement.children:[e];
+    /* marca quem gruda: ganha uma faixa da cor do cartão logo acima (cobre a sobra de arredondamento
+       do navegador em zoom 90%/110% etc.) — só se ele rola dentro de uma área própria, não na página */
+    var cap=(p&&p!==document.body&&p.id!=="viewCtn")||e.tagName==="TH";
+    for(var j0=0;j0<alvo.length;j0++){ alvo[j0].classList.toggle(e.tagName==="TH"?"stk-th":"stk-cap",!!cap); }
     for(var j=0;j<alvo.length;j++){ var x=alvo[j]; if(pad>0){ if(x.dataset.stkTop!==String(pad)){ x.style.top=(-pad)+"px"; x.dataset.stkTop=String(pad); } } else if(x.dataset.stkTop){ x.style.top=""; delete x.dataset.stkTop; } }
   }
 }
