@@ -35,6 +35,7 @@ table.tbl,.stat .vl,.kv b,.dvv,.dtop .hh,.piedet,.piedet b,.mtag,.mrow2,.conf,.r
 #sidebar{width:216px;background:var(--panel);flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
 .logo{text-align:center;padding:var(--s5) var(--s2) var(--s2)}
 .logo .car{font-size:var(--f-lg)}
+.logo .car img{display:block;margin:0 auto;width:44px;height:44px;border-radius:10px}
 .logo h1{font-size:var(--f-md);margin:var(--s2) 0 var(--s1)}
 .logo small{color:var(--muted);font-size:var(--f-sm)}
 .side-sep{height:1px;background:var(--border);margin:var(--s2) var(--s4)}
@@ -1904,7 +1905,7 @@ table.dm-tbl tr.dm-pct td.dm-l{padding-left:18px}
 <body>
 <div id="app">
   <aside id="sidebar">
-    <div class="logo"><div class="car" id="logoCar" aria-hidden="true">🚗⚡</div><h1>RideMax</h1><small>v2.0 • web</small></div>
+    <div class="logo"><div class="car" id="logoCar" aria-hidden="true"><img src="icon-192.png" alt="" width="44" height="44"></div><h1>RideMax</h1><small>v2.0 • web</small></div>
     <div class="side-sep"></div>
     <div id="navCtn"></div>
     <div class="side-sep"></div>
@@ -4590,8 +4591,14 @@ try{
     }
   })();
 }catch(e){rmLogErr(e)}
+/* Trocar de tela (ou de aba) abre no topo. A rolagem no PC acontece dentro de #viewCtn (que é sempre o mesmo
+   elemento e guardava a posição de uma tela para a outra). Redesenhar a MESMA tela (depois de salvar) mantém a posição. */
+var SHOW_ULT=null;
+function topoDaTela(){ try{ window.scrollTo(0,0); var vc=document.getElementById("viewCtn"); if(vc) vc.scrollTop=0; }catch(e){rmLogErr(e)} }
+try{ document.addEventListener("click",function(ev){ var b=ev.target&&ev.target.closest?ev.target.closest("#finTabs button,#invTabs button,#cfgTabs button,#contaTabs button,#histTabs button"):null; if(!b) return; requestAnimationFrame(topoDaTela); }); }catch(e){}
 function show(v){
   if(v==="contas"||v==="centros"){ try{ cfgTab=v; }catch(e){rmLogErr(e)} v="plataformas"; }
+  var _mudou=(v!==SHOW_ULT); SHOW_ULT=v;
   current=v;
   try{ if(typeof qrFabSync==="function") qrFabSync(); }catch(e){rmLogErr(e)}
   try{ if(typeof navFechar==="function") navFechar(); if(typeof mbarSync==="function") mbarSync(); }catch(e){rmLogErr(e)}
@@ -4610,7 +4617,6 @@ function show(v){
   pageTitle.textContent=titles[v][0]; pageSub.textContent=titles[v][1];
   try{
     var cu=(DB.settings&&DB.settings.energyMode==="combustao")?"L":"kwh";
-    document.getElementById("logoCar").textContent=(cu==="L"?"🚗⛽":"🚗⚡");
     var rlbl=document.querySelector('.navbtn[data-view="recarga"] .lbl'); if(rlbl) rlbl.textContent=(cu==="L"?"Abastecer":"Recarga elétrica");
   }catch(e){rmLogErr(e)}
   if(v==="recarga"&&DB.settings&&DB.settings.energyMode==="combustao"){ pageTitle.textContent="Abastecer"; pageSub.textContent="Combustível, custos e consumo do veículo"; }
@@ -4619,6 +4625,7 @@ function show(v){
   try{ if(v==="despesas"&&typeof orcCardPintar==="function") orcCardPintar(); }catch(e){rmLogErr(e,"orc-card"); }
   try{ atualizaAjuda(); }catch(e){rmLogErr(e)}
   window.scrollTo(0,0);
+  if(_mudou){ try{ var _vc=document.getElementById("viewCtn"); if(_vc) _vc.scrollTop=0; }catch(e){rmLogErr(e)} }
 }
 function statCard(ic,val,lb,color,sub){ return '<div class="stat"><div class="vl" style="color:'+(color||"var(--text)")+'">'+val+'</div><div class="lb">'+esc(lb)+'</div>'+(sub?'<div class="sb">'+sub+'</div>':"")+'</div>'; }
 function bar(v,max,width,color,h){ var pct=max>0?Math.min(1,v/max):0; return '<span class="bar-bg" style="width:'+(width||130)+'px;height:'+(h||10)+'px"><span class="bar-fill" style="width:'+Math.max(4,Math.round((width||130)*pct))+'px;background:'+validColor(color,"#4caf7d")+'"></span></span>'; }
