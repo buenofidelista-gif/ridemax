@@ -2072,6 +2072,12 @@ body:has(.tit-panel-bk) #qrFab{display:none!important}
 @media(min-width:1100px){
   #viewCtn .fin-res-mid{grid-template-columns:repeat(auto-fit,minmax(360px,1fr))!important;align-items:stretch!important}
 }
+/* Turnos: o formulário mora no painel lateral; sem o limite de altura antigo (22%) que espremia os campos */
+.tit-panel .hist-form{max-height:none!important;overflow:visible!important;flex:none!important}
+/* Melhores horários por dia: todos os dias da linha com a mesma altura (o dia "sem dados" não fica baixinho) */
+#viewCtn .daycols.daytbl{align-items:stretch!important}
+#viewCtn .daycols.daytbl .daycol{align-self:stretch!important;display:flex;flex-direction:column}
+#viewCtn .daycols.daytbl .daycol>.empty{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:var(--s3) 0}
 </style>
 </head>
 <body>
@@ -4477,6 +4483,7 @@ var NAV_GROUPS=[
     {view:"plataformas",cfg:"plataformas",label:"Plataformas"},{view:"plataformas",cfg:"categorias",label:"Categorias"},
     {view:"plataformas",cfg:"contas",label:"Contas"},{view:"plataformas",cfg:"centros",label:"Centros de custo"},
     {view:"plataformas",cfg:"mei",label:"MEI e DAS"},{view:"plataformas",cfg:"veiculo",label:"Veículo e energia"},
+    {view:"plataformas",cfg:"clima",label:"Clima e localização"},
     {view:"plataformas",cfg:"seguranca",label:"Segurança e backup"},{view:"estilo",label:"Aparência"}
   ]},
   {id:"g-manual",icon:"",label:"Manual",single:"manual",fim:1},
@@ -5875,20 +5882,30 @@ function renderShifts(box){
   var ed=edId?DB.shifts.find(function(s){return s.id===edId;}):null;
   if(edId&&!ed){ window.__shiftEditId=null; ed=null; }
   var brN=function(v){ return (v==null?"":String(Number(v)).replace(".",",")); };
-  box.innerHTML='<div class="card formgrid f2 hist-form"><h3 id="shFTitle">'+(ed?"\u270F\uFE0F Editar turno":"\u2795 Novo turno")+'</h3>'
+  /* formulário num painel lateral (como o Novo lote): abre pelo botão Novo turno ou Editar; a lista fica com a tela toda */
+  var _shAberto=!!(ed||window.__shiftFormAberto);
+  var _shForm='<div class="card formgrid f2 hist-form">'
     +'<label class="f">Data * (DD/MM/AAAA)<input id="shFDate" value="'+esc(ed?isoToBR(ed.date):new Date().toLocaleDateString("pt-BR"))+'"></label>'
     +'<label class="f">In\u00EDcio * (HH:MM)<input id="shFStart" value="'+esc(ed?ed.start_time:nowHM())+'"></label>'
     +'<label class="f">Fim (HH:MM)<input id="shFEnd" placeholder="vazio = aberto" value="'+esc(ed?(ed.end_time||""):"")+'"></label>'
     +'<label class="f">Od\u00F4metro inicial (km)<input id="shFOdoS" inputmode="decimal" placeholder="opcional" value="'+esc(ed?brN(ed.odo_start):"")+'"></label>'
     +'<label class="f">Od\u00F4metro final (km)<input id="shFOdoE" inputmode="decimal" placeholder="opcional" value="'+esc(ed?brN(ed.odo_end):"")+'"></label>'
     +'<label class="f">Observa\u00E7\u00E3o<input id="shFNotes" value="'+esc(ed?(ed.notes||""):"")+'"></label>'
-    +(ed&&Array.isArray(ed.pausas)&&ed.pausas.length?turnoPausasEditHTML(ed):"")+'<div class="msg-ok" id="shFMsg"></div><div class="btnrow"><button class="btn green" id="shFSave">'+(ed?"\uD83D\uDCBE Salvar altera\u00E7\u00F5es":"\u2705 Salvar turno")+'</button><button class="btn sm accent" id="shFCancel"'+(ed?"":" hidden")+'>Cancelar</button></div></div>'
-    +'<div class="toolbar hist-bar"><span>Per\u00EDodo:</span><select id="shFilt"><option>7 dias</option><option>30 dias</option><option>90 dias</option><option>Todos</option></select><span id="shTot" style="color:var(--muted)"></span><span style="flex:1"></span><button class="btn accent sm" id="shRes">📋 Resumo</button><button class="btn yellow sm" id="shEdit">\u270F\uFE0F Editar</button><button class="btn sm hist-del" id="shDel">Excluir</button></div>'
+    +(ed&&Array.isArray(ed.pausas)&&ed.pausas.length?turnoPausasEditHTML(ed):"")+'<div class="msg-ok" id="shFMsg"></div><div class="btnrow"><button class="btn green" id="shFSave">'+(ed?"\uD83D\uDCBE Salvar altera\u00E7\u00F5es":"\u2705 Salvar turno")+'</button><button class="btn sm accent" id="shFCancel"'+(ed?"":" hidden")+'>Cancelar</button></div></div>';
+  box.innerHTML=(_shAberto?'<div class="tit-panel-bk" id="shPanelBk"><div class="tit-panel" role="dialog" aria-modal="true" aria-labelledby="shFTitle"><div class="tit-panel-head"><h3 id="shFTitle">'+(ed?"\u270F\uFE0F Editar turno":"\u2795 Novo turno")+'</h3><button type="button" class="tit-panel-x" id="shFX" aria-label="Fechar">\u2715</button></div><div class="tit-panel-body">'+_shForm+'</div></div></div>':"")
+    +'<div class="toolbar hist-bar"><span>Per\u00EDodo:</span><select id="shFilt"><option>7 dias</option><option>30 dias</option><option>90 dias</option><option>Todos</option></select><span id="shTot" style="color:var(--muted)"></span><span style="flex:1"></span><button class="btn green sm" id="shNovo">\u2795 Novo turno</button><button class="btn accent sm" id="shRes">📋 Resumo</button><button class="btn yellow sm" id="shEdit">\u270F\uFE0F Editar</button><button class="btn sm hist-del" id="shDel">Excluir</button></div>'
     +'<div class="card hist-list-card"><div class="tblwrap"><table class="tbl"><thead><tr><th>Data</th><th>In\u00EDcio</th><th>Fim</th><th>Dura\u00E7\u00E3o</th><th>Km total</th><th>Km pass.</th><th>Aprov.</th><th>Corridas</th><th>Ganho</th><th>R$/h</th></tr></thead><tbody id="shBody"></tbody></table></div><div id="shPager"></div><div class="sub" id="shNote"></div></div>';
   var sel=document.getElementById("shFilt"); sel.value=window.__shiftFilter;
   var selected=null;
   var _brToN=function(raw){ raw=String(raw||"").trim(); if(!raw) return null; var v=parseBR(raw); return v; };
-  document.getElementById("shFCancel").onclick=function(){ window.__shiftEditId=null; renderShifts(box); };
+  var _shFechar=function(){ window.__shiftEditId=null; window.__shiftFormAberto=0; renderShifts(box); };
+  document.getElementById("shNovo").onclick=function(){ window.__shiftEditId=null; window.__shiftFormAberto=1; renderShifts(box); try{ document.getElementById("shFDate").focus(); }catch(e){} };
+  if(_shAberto){
+  document.getElementById("shFCancel").hidden=false;
+  document.getElementById("shFCancel").onclick=_shFechar;
+  document.getElementById("shFX").onclick=_shFechar;
+  document.getElementById("shPanelBk").addEventListener("click",function(ev){ if(ev.target.id==="shPanelBk") _shFechar(); });
+  document.getElementById("shPanelBk").addEventListener("keydown",function(ev){ if(ev.key==="Escape") _shFechar(); });
   document.getElementById("shFSave").onclick=async function(){
     var iso=brToISO(document.getElementById("shFDate").value);
     var st=document.getElementById("shFStart").value.trim();
@@ -5924,12 +5941,13 @@ function renderShifts(box){
     if(ed){
       ed.date=iso; ed.start_time=st; ed.end_time=et; ed.odo_start=os; ed.odo_end=oe; ed.notes=notes;
       if(!save()){ msg.textContent=SAVE_FAIL_MSG; return; }
-      window.__shiftEditId=null; renderShifts(box); return;
+      window.__shiftEditId=null; window.__shiftFormAberto=0; renderShifts(box); return;
     }
     DB.shifts.push({id:uid(),date:iso,start_time:st,end_time:et,odo_start:os,odo_end:oe,notes:notes});
     if(!save()){ if(!SAVE_RESTAUROU) DB.shifts.pop(); msg.textContent=SAVE_FAIL_MSG; return; }
-    window.__shiftPage=1; renderShifts(box);
+    window.__shiftPage=1; window.__shiftFormAberto=0; renderShifts(box);
   };
+  }
   function refresh(){
     window.__shiftFilter=sel.value;
     var days={"7 dias":7,"30 dias":30,"90 dias":90,"Todos":99999}[window.__shiftFilter]||30;
@@ -5978,7 +5996,7 @@ function renderShifts(box){
   document.getElementById("shEdit").onclick=function(){
     if(!selected){ customAlert("Selecione um turno clicando na linha.","Turnos"); return; }
     window.__shiftEditId=selected; renderShifts(box);
-    try{ document.getElementById("shFTitle").scrollIntoView(); }catch(e){rmLogErr(e)}
+    try{ document.getElementById("shFDate").focus(); }catch(e){rmLogErr(e)}
   };
   document.getElementById("shDel").onclick=async function(){
     if(!selected){ customAlert("Selecione um turno clicando na linha.","Turnos"); return; }
@@ -7600,10 +7618,9 @@ function wxErrMsg(e){
   if(m.indexOf("owm")===0) return "⚠️ OpenWeatherMap devolveu erro "+m.slice(3)+".";
   return "⚠️ Falha na busca ("+m+").";
 }
-function rClima(){
-  try{ document.body.classList.add("fit-lock"); }catch(e){rmLogErr(e)}
-  var cfg=DB.wx.cfg, on=!!(cfg.enabled&&cfg.key);
-  var html='<div class="card formgrid"><h3>Localização e chave</h3>'
+function wxCfgCardHTML(){
+  var cfg=DB.wx.cfg;
+  return '<div class="card formgrid" id="wxCfgCard"><h3>Clima: localização e chave</h3>'
     +'<div class="sub">O clima é opcional e fica <b>desligado por padrão</b> — o app continua 100% offline. Para ativar, crie a conta gratuita em openweathermap.org → API keys e cole a chave abaixo. A chave fica só neste navegador, só é enviada ao openweathermap.org ao buscar e <b>não entra no backup</b> (se restaurar, digite-a de novo uma vez).</div>'
     +'<label class="f"><input type="checkbox" id="wxOn"'+(cfg.enabled?" checked":"")+' style="width:auto"> Ativar clima (OpenWeatherMap)</label>'
     +'<label class="f">Cidade<input id="wxCity" value="'+esc(cfg.city)+'"></label>'
@@ -7611,7 +7628,33 @@ function rClima(){
     +'<label class="f">Longitude<input id="wxLon" inputmode="decimal" value="'+esc(cfg.lon)+'"></label>'
     +'<label class="f">Chave API (OpenWeatherMap)<input id="wxKey" type="password" autocomplete="off" value="'+esc(cfg.key)+'" placeholder="cole sua chave aqui"></label>'
     +'<div class="tip">💡 Use o Google Maps para achar lat/long da sua cidade (ex.: Vitória da Conquista = −14.8619, −40.8442).</div>'
-    +'<div class="msg-ok" id="wxMsg"></div><div class="btnrow"><button class="btn green sm" id="wxSave">Salvar</button><button class="btn sm accent" id="wxGo">Buscar Clima Agora</button></div></div>';
+    +'<div class="msg-ok" id="wxMsg"></div><div class="btnrow"><button class="btn green sm" id="wxSave">Salvar</button><button class="btn sm accent" id="wxGo">Buscar clima agora</button></div></div>';
+}
+function wxLerForm(cfg){
+  cfg.enabled=document.getElementById("wxOn").checked?1:0;
+  cfg.city=document.getElementById("wxCity").value.trim().slice(0,80)||"Vitória da Conquista, BA";
+  cfg.lat=document.getElementById("wxLat").value.trim().slice(0,16)||"-14.8619";
+  cfg.lon=document.getElementById("wxLon").value.trim().slice(0,16)||"-40.8442";
+  cfg.key=document.getElementById("wxKey").value.trim().slice(0,80);
+}
+function wxCfgLigar(){
+  var cfg=DB.wx.cfg;
+  document.getElementById("wxSave").onclick=function(){ wxLerForm(cfg); save(); var m=document.getElementById("wxMsg"); m.style.color=""; m.textContent="Salvo."; };
+  document.getElementById("wxGo").onclick=async function(){
+    wxLerForm(cfg); save();
+    var m=document.getElementById("wxMsg"); m.style.color=""; m.textContent="⏳ Buscando...";
+    try{ await wxRefresh(); m.textContent="Previsão atualizada. Veja em Uber › Clima."; }
+    catch(e){ m.textContent=wxErrMsg(e); m.style.color="var(--red)"; }
+  };
+}
+function rClima(){
+  try{ document.body.classList.add("fit-lock"); }catch(e){rmLogErr(e)}
+  var cfg=DB.wx.cfg, on=!!(cfg.enabled&&cfg.key);
+  /* configuração (ativar, cidade, chave) mora em Configurações › Clima e localização */
+  var html='<div class="card"><h3>Previsão do tempo</h3>'
+    +(on?'<div class="sub">'+esc(cfg.city)+(DB.wx.fcAt?' · atualizada em '+esc(isoToBR(DB.wx.fcAt)):'')+'</div><div class="msg-ok" id="wxMsg"></div><div class="btnrow"><button class="btn sm accent" id="wxGo">Buscar clima agora</button><button class="btn sm" id="wxCfgIr">Configurar</button></div>'
+        :'<div class="sub">O clima está desligado. Para ligar, informe a cidade e a chave gratuita da OpenWeatherMap.</div><div class="msg-ok" id="wxMsg"></div><div class="btnrow"><button class="btn sm green" id="wxCfgIr">Ativar em Configurações</button></div>')
+    +'</div>';
   if(on){
     html+=wxRelHTML();
     var t=new Date(), p=function(n){return String(n).padStart(2,"0");};
@@ -7620,28 +7663,14 @@ function rClima(){
     html+='<div class="cols"><div>'+wxDayCard(d0,"📅 Hoje — "+isoToBR(d0))+'</div><div>'+wxDayCard(d1,"📅 Amanhã — "+isoToBR(d1))+'</div></div>';
     html+=wxWeekHTML();
   } else {
-    html+='<div class="card"><div class="empty">🌦️ Clima desativado.<br>Ative acima para ver previsão, confiabilidade e ícones na Previsão IA.</div></div>';
+    html+='<div class="card"><div class="empty">🌦️ Clima desativado.<br>Ative em Configurações › Clima e localização para ver previsão, confiabilidade e ícones na Previsão IA.</div></div>';
   }
   html+='<div class="card"><p class="tip">ℹ️ Previsão de 5 dias em blocos de 3h, interpolada por hora. A confiabilidade compara a previsão feita antes × o tempo observado nas horas em que o clima foi buscado (dado "real" só existe da hora atual de cada busca). Histórico reiniciado nesta versão. Dados: OpenWeatherMap.</p></div>';
   viewCtn.innerHTML=html;
-  document.getElementById("wxSave").onclick=function(){
-    cfg.enabled=document.getElementById("wxOn").checked?1:0;
-    cfg.city=document.getElementById("wxCity").value.trim().slice(0,80)||"Vitória da Conquista, BA";
-    cfg.lat=document.getElementById("wxLat").value.trim().slice(0,16)||"-14.8619";
-    cfg.lon=document.getElementById("wxLon").value.trim().slice(0,16)||"-40.8442";
-    cfg.key=document.getElementById("wxKey").value.trim().slice(0,80);
-    save();
-    document.getElementById("wxMsg").textContent="Salvo.";
-    show("clima");
-  };
-  document.getElementById("wxGo").onclick=async function(){
-    cfg.enabled=document.getElementById("wxOn").checked?1:0;
-    cfg.city=document.getElementById("wxCity").value.trim().slice(0,80)||cfg.city;
-    cfg.lat=document.getElementById("wxLat").value.trim().slice(0,16)||cfg.lat;
-    cfg.lon=document.getElementById("wxLon").value.trim().slice(0,16)||cfg.lon;
-    cfg.key=document.getElementById("wxKey").value.trim().slice(0,80);
-    save();
-    var m=document.getElementById("wxMsg"); m.textContent="⏳ Buscando...";
+  document.getElementById("wxCfgIr").onclick=function(){ navIrPara({view:"plataformas",cfg:"clima"}); };
+  var _go=document.getElementById("wxGo");
+  if(_go) _go.onclick=async function(){
+    var m=document.getElementById("wxMsg"); m.style.color=""; m.textContent="⏳ Buscando...";
     try{ await wxRefresh(); show("clima"); }
     catch(e){ m.textContent=wxErrMsg(e); m.style.color="var(--red)"; }
   };
@@ -8062,7 +8091,7 @@ function wireCatCard(){
   };
 }
 var cfgTab="plataformas";
-var CFG_TABS=[["plataformas","Plataformas"],["categorias","Categorias"],["contas","Contas"],["centros","Centros de custo"],["mei","MEI e DAS"],["veiculo","Veículo e energia"],["seguranca","Segurança e backup"]];
+var CFG_TABS=[["plataformas","Plataformas"],["categorias","Categorias"],["contas","Contas"],["centros","Centros de custo"],["mei","MEI e DAS"],["veiculo","Veículo e energia"],["clima","Clima e localização"],["seguranca","Segurança e backup"]];
 /* abas antigas viraram partes de uma aba maior: quem abre "backup", "manut" etc. cai na aba certa e rola até o cartão */
 var CFG_GRUPO={veiculos:"veiculo",manut:"veiculo",energia:"veiculo",backup:"seguranca"};
 var CFG_CARTAO={veiculos:"cfgCardVeiculos",manut:"cfgCardManut",energia:"cfgCardEnergia",backup:"cfgCardBackup"};
@@ -8083,6 +8112,7 @@ function renderCfg(){
   try{ window.__cfgBox=null; }catch(e){rmLogErr(e)}
   if(cfgTab==="contas"){ try{ window.__cfgBox=box; }catch(e){rmLogErr(e)} rContas(); return; }
   if(cfgTab==="centros"){ try{ window.__cfgBox=box; }catch(e){rmLogErr(e)} rCentros(); return; }
+  if(cfgTab==="clima"){ box.innerHTML=wxCfgCardHTML(); wxCfgLigar(); return; }
   if(cfgTab==="categorias"){ box.innerHTML=catCard()+orcCfgHTML()+'<div class="card"><h3>Encargos do Contas a pagar</h3>'+cfgEncargosHTML()+'</div>'; wireCatCard(); wireSettings(); try{ orcCfgLigar(); }catch(e){ rmLogErr(e,"orc-cfg"); } return; }
   if(cfgTab==="mei"){ box.innerHTML='<div class="card"><h3>MEI e DAS</h3>'+cfgSecMeiDas()+'</div><div class="card"><h3>Comprovante de renda</h3><div class="sub">PDF com a receita mês a mês (3, 6 ou 12 meses), para aluguel, financiamento ou crédito.</div><div class="toolbar"><button type="button" class="btn sm green" id="crBtn2">Gerar comprovante de renda (PDF)</button></div></div><div class="card"><h3>Imposto de renda (IRPF)</h3><div class="sub">Relatório de apoio para a declaração: corridas mês a mês com a parte tributável, bens em 31/12, proventos e vendas. Não calcula o imposto nem substitui o contador.</div><div class="toolbar"><button type="button" class="btn sm green" id="irBtn2">Gerar relatório para o IRPF (PDF)</button></div></div>'; wireSettings(); return; }
   var _g=cfgGrupo(cfgTab);
@@ -11480,7 +11510,7 @@ function rRelcat(){
   _ord.forEach(function(r){
     var part=(Math.abs(C.total)>0.004)?(r.total/C.total*100):0;
     var open=(relcatOpen===r.key);
-    linhas+='<tr class="relcat-row'+(open?" open":"")+'" data-cat="'+esc(r.key)+'"><td class="l">'+(open?"▼ ":"▶ ")+esc(r.nome)+(r.ignorado?' <span class="mtag">ignorado no DRE</span>':"")+((r.key==="__semcat"&&Math.abs(r.total)>0.004)?' <span class="mtag" style="color:var(--yellow)">⚠ edite e escolha a categoria</span>':"")+'</td><td style="white-space:nowrap"><b>'+((r.total<0)?("− "+BRL(-r.total)):BRL(r.total))+'</b></td><td>'+part.toFixed(1).replace(".",",")+'%</td></tr>';
+    linhas+='<tr class="relcat-row'+(open?" open":"")+'" data-cat="'+esc(r.key)+'"><td class="l">'+(open?"▼ ":"▶ ")+esc(r.nome)+(r.ignorado?' <span class="mtag">ignorado no DRE</span>':"")+((r.key==="__semcat"&&Math.abs(r.total)>0.004)?' <span class="mtag" style="color:var(--yellow)">⚠ sem categoria: toque aqui e use ✏️ Editar no lançamento</span>':"")+'</td><td style="white-space:nowrap"><b>'+((r.total<0)?("− "+BRL(-r.total)):BRL(r.total))+'</b></td><td>'+part.toFixed(1).replace(".",",")+'%</td></tr>';
   });
   html+='<div class="relcat-main"><div class="card relcat-list-card"><h3>Por categoria ('+esc(R.label)+' · '+isoToBR(R.ini)+' a '+isoToBR(R.fim)+')<button type="button" class="infoBtn" data-tip="Toque numa categoria para abrir os lançamentos; o detalhe rola por dentro à direita." aria-label="Sobre este bloco">i</button></h3>'
     +'<div class="relcat-list" id="relcatList" role="region" aria-label="Totais por categoria"><table class="tbl"><thead><tr><th style="text-align:left">Categoria</th><th>Total</th><th>Partic.</th></tr></thead><tbody>'+linhas+'</tbody></table></div>'
@@ -11496,10 +11526,10 @@ function rRelcat(){
     var dl="";
     sel.items.forEach(function(it){
       var vv=(it.valor<0)?("− "+BRL(-it.valor)):BRL(it.valor);
-      dl+='<tr><td>'+isoToBR(it.data)+'</td><td class="l">'+esc(it.desc||"—")+'<br><span class="rateio-sub">'+esc(it.origem||"")+(it.venc?(" · venc "+isoToBR(it.venc)):"")+(it.luz?" · medido":"")+'</span></td><td style="white-space:nowrap"><b>'+vv+'</b></td><td class="l">'+relcatCentroCell(it)+'</td></tr>';
+      dl+='<tr><td>'+isoToBR(it.data)+'</td><td class="l">'+esc(it.desc||"—")+'<br><span class="rateio-sub">'+esc(it.origem||"")+(it.venc?(" · venc "+isoToBR(it.venc)):"")+(it.luz?" · medido":"")+'</span></td><td style="white-space:nowrap"><b>'+vv+'</b></td><td class="l">'+relcatCentroCell(it)+'</td><td>'+(it.tid?'<button type="button" class="btn sm" data-relcat-edit="'+esc(it.tid)+'" title="Abrir no Contas a pagar para editar (categoria, valor, centro…)" aria-label="Editar '+esc(it.desc||"lançamento")+'">✏️ Editar</button>':"")+'</td></tr>';
     });
-    if(!dl) dl='<tr><td colspan="4" style="color:var(--muted)">Nenhum lançamento com parte neste centro.</td></tr>';
-    det+='<div class="relcat-det" id="relcatDet" role="region" aria-label="Lançamentos"><table class="tbl"><thead><tr><th>Data</th><th style="text-align:left">Descrição</th><th>Valor</th><th style="text-align:left">Centro / rateio</th></tr></thead><tbody>'+dl+'</tbody></table></div>';
+    if(!dl) dl='<tr><td colspan="5" style="color:var(--muted)">Nenhum lançamento com parte neste centro.</td></tr>';
+    det+='<div class="relcat-det" id="relcatDet" role="region" aria-label="Lançamentos"><table class="tbl"><thead><tr><th>Data</th><th style="text-align:left">Descrição</th><th>Valor</th><th style="text-align:left">Centro / rateio</th><th aria-label="Ações"></th></tr></thead><tbody>'+dl+'</tbody></table></div>';
   }
   var mh="";
   C.manuais.slice().sort(function(a,b){ return String(a.date)<String(b.date)?-1:1; }).forEach(function(x){
@@ -11520,6 +11550,9 @@ function rRelcat(){
   cs.onchange=function(){ relcatCentro=dreNormFiltro(cs.value); relcatOpen=null; rRelcat(); };
   var rs=document.getElementById("relcatRegSeg");
   if(rs){ var rbs=rs.querySelectorAll("button"); rbs.forEach(function(bb){ if(bb.dataset.r===relcatRegime) bb.classList.add("on"); bb.onclick=function(){ var nr=(bb.dataset.r==="caixa")?"caixa":"competencia"; if(nr!==relcatRegime){ relcatRegime=nr; relcatOpen=null; rRelcat(); } }; }); }
+  /* Editar: abre o título no Contas a pagar (ou a receber), já no formulário de edição */
+  viewCtn.querySelectorAll("[data-relcat-edit]").forEach(function(b){ b.onclick=function(ev){ ev.stopPropagation(); var t=tituloById(b.dataset.relcatEdit); if(!t){ customAlert("Lançamento não encontrado (pode ter sido excluído).","Lançamentos por categoria"); return; }
+    titTipoF=(t.tipo==="receber")?"receber":"pagar"; titNovoOpen=false; titBaixaId=null; titAgingOpen=false; titEditId=t.id; show("contaspagar"); }; });
   viewCtn.querySelectorAll(".relcat-row").forEach(function(tr){ tr.onclick=function(){ var kk=tr.dataset.cat; relcatOpen=(relcatOpen===kk?null:kk); rRelcat(); try{ if(relcatOpen){ var dd=document.getElementById("relcatDet"); if(dd) dd.scrollIntoView({block:"nearest"}); } }catch(e){rmLogErr(e)} }; });
 }
 /* ---------- FASE 2A — CONTAS A PAGAR (título + baixa) ----------
