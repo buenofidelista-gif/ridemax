@@ -1969,7 +1969,37 @@ body[data-density="compact"] #viewCtn::before{height:var(--s2)}
 #viewCtn table.tbl{border-collapse:separate;border-spacing:0}
 #viewCtn th.stk-th{background:var(--card)!important;box-shadow:0 -8px 0 0 var(--card),inset 0 -1px 0 var(--border);padding-top:6px!important;padding-bottom:6px!important}
 #viewCtn .stk-cap{box-shadow:0 -8px 0 0 var(--card)}
-body[data-sol="1"] #viewCtn th.stk-th{background:#fff!important;box-shadow:0 -8px 0 0 #fff,inset 0 -1px 0 var(--border)}</style>
+body[data-sol="1"] #viewCtn th.stk-th{background:#fff!important;box-shadow:0 -8px 0 0 #fff,inset 0 -1px 0 var(--border)}
+/* ---------- MENU LATERAL RECOLHÍVEL (trilho só com ícones; js/42-menu-recolhido.js) ---------- */
+.grphead .nav-ic{flex-shrink:0;opacity:.85}
+#sidebar .logo{position:relative}
+#sideRecolher{position:absolute;top:var(--s2);right:var(--s2);width:36px;height:36px;display:grid;place-items:center;background:transparent;border:0;border-radius:var(--r-sm);color:var(--muted);cursor:pointer}
+#sideRecolher:hover,#sideRecolher:focus-visible{background:var(--accent);color:var(--text)}
+#sideFly:not(.on){display:none}
+#sideFly{position:fixed;inset:auto;margin:0;z-index:200;min-width:200px;max-width:280px;max-height:calc(100vh - 16px);overflow-y:auto;padding:var(--s1) 0;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:var(--r-md,10px);box-shadow:0 10px 32px rgba(0,0,0,.45)}
+#sideFly .fly-tit{padding:var(--s2) var(--s4) var(--s1);font-size:var(--f-sm);font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+#sideFly button{display:block;width:100%;text-align:left;background:transparent;border:0;color:var(--text);padding:var(--s2) var(--s4);font:inherit;font-size:var(--f-base);cursor:pointer}
+#sideFly button:hover,#sideFly button:focus-visible{background:var(--accent)}
+#sideFly button.active{background:var(--accent);font-weight:700;box-shadow:inset 3px 0 0 var(--blue)}
+@media(min-width:861px){
+  #sidebar{transition:width .2s ease}
+  body.side-mini #sidebar{width:64px;overflow-x:hidden}
+  body.side-mini #sidebar .logo{padding:var(--s3) 0 var(--s1)}
+  body.side-mini #sidebar .logo h1,body.side-mini #sidebar .logo small{display:none}
+  body.side-mini #sideRecolher{position:static;margin:var(--s2) auto 0}
+  body.side-mini #sidebar .side-sep{margin:var(--s2) var(--s2)}
+  body.side-mini #navCtn .lbl,body.side-mini #navCtn .chev,body.side-mini #navCtn .atalho-tag{display:none}
+  body.side-mini #navCtn .grptabs{display:none}
+  body.side-mini #navCtn .grphead{justify-content:center;padding:var(--s3) 0;min-height:44px}
+  body.side-mini #navCtn .grphead .nav-ic{opacity:1}
+  body.side-mini #navCtn .grphead.hasactive,body.side-mini #navCtn .grp:has(.navbtn.active) .grphead{background:var(--accent);box-shadow:inset 3px 0 0 var(--blue)}
+  body.side-mini #navCtn .grp + .grphead.fim{padding-top:var(--s3)}
+  body.side-mini #syncSideBtn,body.side-mini #instBtn{width:40px;height:40px;margin:0 auto var(--s2);padding:0 0 0 9px;overflow:hidden;white-space:nowrap;text-overflow:clip;text-align:left}
+}
+@media(min-width:861px) and (prefers-reduced-motion:reduce){ #sidebar{transition:none} }
+@media(max-width:860px){ #sideRecolher{display:none} }
+@media print{ #sideRecolher,#sideFly{display:none!important} }
+</style>
 </head>
 <body>
 <div id="app">
@@ -17212,6 +17242,128 @@ async function evPastaLer(){
 }
 try{ window.RM.evImportarSympla=evImportarSympla; window.RM.evTipoPeloNome=evTipoPeloNome; }catch(e){}
 try{ window.RM.evFeriadosNacionais=evFeriadosNacionais; window.RM.evPascoa=evPascoa; window.RM.evOcorrencias=evOcorrencias; window.RM.evAprendizado=evAprendizado; window.RM.evImpacto=evImpacto; }catch(e){}
+/* ---------- MENU LATERAL RECOLHÍVEL (computador e tablet; no celular o menu já é gaveta) ----------
+   Padrão "trilho de navegação" (Material 3 / VS Code / Gmail): recolhido, o menu vira uma faixa estreita
+   só com os ícones dos grupos. Tocar num grupo abre um menu flutuante com as telas dele (Popover API:
+   fecha ao tocar fora e com Esc). Botão no topo do menu e atalho Ctrl+B. A escolha fica gravada
+   neste aparelho (localStorage), não vai na sincronização: cada tela tem seu tamanho. */
+var MR_CHAVE="rm_menu_recolhido";
+var MR_SVG={
+  "g-dash":'<path d="M3 11l9-7 9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/>',
+  "g-uber":'<path d="M5 16l1.5-5A2 2 0 0 1 8.4 9.5h7.2a2 2 0 0 1 1.9 1.5L19 16"/><rect x="3" y="16" width="18" height="4" rx="1.5"/><circle cx="7.5" cy="20" r="1.5"/><circle cx="16.5" cy="20" r="1.5"/>',
+  "g-fin":'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M16 14.5h2"/>',
+  "g-inv":'<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+  "g-cfg":'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>',
+  "g-manual":'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/>',
+  "g-lix":'<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/>',
+  painel:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>'
+};
+function mrIcone(k){ return '<svg class="nav-ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'+(MR_SVG[k]||"")+'</svg>'; }
+function mrLigado(){ try{ return localStorage.getItem(MR_CHAVE)==="1"; }catch(e){ return false; } }
+function mrCelular(){ try{ return window.matchMedia("(max-width:860px)").matches; }catch(e){ return false; } }
+function mrBotao(){
+  var b=document.getElementById("sideRecolher");
+  if(!b){
+    var lg=document.querySelector("#sidebar .logo"); if(!lg) return null;
+    b=document.createElement("button"); b.id="sideRecolher"; b.type="button";
+    b.innerHTML=mrIcone("painel");
+    lg.appendChild(b);
+    b.onclick=function(){ mrAplicar(!document.body.classList.contains("side-mini"),true); };
+  }
+  return b;
+}
+function mrAplicar(on,gravar){
+  try{
+    mrFecharFlyout();
+    document.body.classList.toggle("side-mini",!!on);
+    var b=mrBotao();
+    if(b){ var t=on?"Expandir menu (Ctrl+B)":"Recolher menu (Ctrl+B)"; b.title=t; b.setAttribute("aria-label",t); b.setAttribute("aria-expanded",on?"false":"true"); }
+    if(gravar){ try{ localStorage.setItem(MR_CHAVE,on?"1":"0"); }catch(e){}
+      /* a área da tela mudou de largura: gráficos e cabeçalhos fixos se refazem como num redimensionar */
+      setTimeout(function(){ try{ window.dispatchEvent(new Event("resize")); }catch(e){} },260); }
+  }catch(e){ rmLogErr(e,"menu-recolher"); }
+}
+/* ícones nos cabeçalhos de grupo (também com o menu aberto: o olho já acha o grupo pelo ícone) */
+function mrIcones(){
+  try{
+    navCtn.querySelectorAll(".grphead").forEach(function(h){
+      if(h.querySelector(".nav-ic")) return;
+      var gid=h.dataset.gid; if(!MR_SVG[gid]) return;
+      h.insertAdjacentHTML("afterbegin",mrIcone(gid));
+    });
+  }catch(e){ rmLogErr(e,"menu-icones"); }
+}
+/* menu flutuante de um grupo (só com o menu recolhido) */
+function mrFlyout(){
+  var f=document.getElementById("sideFly");
+  if(!f){
+    f=document.createElement("div"); f.id="sideFly"; f.setAttribute("role","menu");
+    if("popover" in HTMLElement.prototype) f.setAttribute("popover","auto");
+    document.body.appendChild(f);
+    f.addEventListener("click",function(ev){
+      var b=ev.target.closest("button[data-i]"); if(!b) return;
+      var g=NAV_GROUPS.filter(function(x){ return x.id===f.dataset.gid; })[0]; var t=g&&g.tabs[Number(b.dataset.i)];
+      mrFecharFlyout(); if(t) navIrPara(t);
+    });
+    f.addEventListener("keydown",function(ev){
+      var bs=[].slice.call(f.querySelectorAll("button")), i=bs.indexOf(document.activeElement);
+      if(ev.key==="ArrowDown"||ev.key==="ArrowUp"){ ev.preventDefault(); var n=bs[(i+(ev.key==="ArrowDown"?1:-1)+bs.length)%bs.length]; if(n) n.focus(); }
+      else if(ev.key==="Escape"&&!f.matches(":popover-open")){ mrFecharFlyout(); }
+    });
+    f.addEventListener("toggle",function(ev){ if(ev.newState==="closed"){ var h=navCtn.querySelector('.grphead[data-gid="'+f.dataset.gid+'"]'); if(h) h.setAttribute("aria-expanded","false"); } });
+  }
+  return f;
+}
+function mrFecharFlyout(){
+  var f=document.getElementById("sideFly"); if(!f) return;
+  try{ if(f.hidePopover&&f.matches(":popover-open")) f.hidePopover(); }catch(e){}
+  f.classList.remove("on");
+}
+function mrAbrirFlyout(g,hb){
+  var f=mrFlyout(), cur=current, sub=navSubAtual(cur);
+  if(f.dataset.gid===g.id&&(f.classList.contains("on")||(f.matches&&f.matches(":popover-open")))){ mrFecharFlyout(); return; }
+  f.dataset.gid=g.id;
+  f.innerHTML='<div class="fly-tit">'+esc(g.label)+'</div>'+g.tabs.map(function(t,i){
+    var info=navTabInfo(t), s=navTabSub(t), on=t.view===(cur==="extrato"?"saldos":cur)&&(!s||s===sub);
+    return '<button type="button" role="menuitem" data-i="'+i+'"'+(on?' class="active" aria-current="page"':"")+'>'+esc(info.label)+'</button>';
+  }).join("");
+  var r=hb.getBoundingClientRect();
+  f.style.left=Math.round(r.right+6)+"px";
+  f.style.top=Math.max(8,Math.round(r.top))+"px";
+  try{ if(f.showPopover) f.showPopover(); }catch(e){}
+  f.classList.add("on");
+  /* não deixa passar do fim da tela */
+  var fh=f.getBoundingClientRect().height, lim=window.innerHeight-8;
+  if(r.top+fh>lim) f.style.top=Math.max(8,Math.round(lim-fh))+"px";
+  hb.setAttribute("aria-expanded","true");
+  var a=f.querySelector(".active")||f.querySelector("button"); if(a) a.focus();
+}
+/* com o menu recolhido, tocar no grupo abre o flutuante em vez de expandir a lista */
+navCtn.addEventListener("click",function(ev){
+  if(!document.body.classList.contains("side-mini")||mrCelular()) return;
+  var hb=ev.target.closest(".grphead"); if(!hb||hb.classList.contains("single")) return;
+  var g=NAV_GROUPS.filter(function(x){ return x.id===hb.dataset.gid; })[0]; if(!g||!g.tabs) return;
+  ev.stopImmediatePropagation(); ev.preventDefault();
+  mrAbrirFlyout(g,hb);
+},true);
+document.addEventListener("click",function(ev){
+  var f=document.getElementById("sideFly");
+  if(f&&f.classList.contains("on")&&!f.contains(ev.target)&&!ev.target.closest("#navCtn .grphead")) mrFecharFlyout();
+});
+document.addEventListener("keydown",function(ev){
+  if((ev.ctrlKey||ev.metaKey)&&!ev.altKey&&!ev.shiftKey&&(ev.key==="b"||ev.key==="B")){
+    if(mrCelular()) return;
+    var el=document.activeElement; if(el&&(el.isContentEditable)) return;
+    ev.preventDefault(); mrAplicar(!document.body.classList.contains("side-mini"),true);
+  }
+});
+window.addEventListener("resize",function(){ mrFecharFlyout(); });
+/* buildNav recria os botões: repõe os ícones depois */
+var _mrBuildNav=buildNav;
+buildNav=function(){ _mrBuildNav.apply(this,arguments); mrIcones(); };
+mrIcones();
+mrAplicar(mrLigado(),false);
+try{ window.RM=window.RM||{}; RM.menuRecolher=function(on){ mrAplicar(on,true); }; }catch(e){}
 /* primeira tela: só depois de todos os módulos (antes, cartões que usam listas definidas mais abaixo falhavam na abertura) */
 try{ show(current||"dashboard"); }catch(e){ rmLogErr(e,"primeira-tela"); }
 
