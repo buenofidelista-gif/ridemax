@@ -3537,7 +3537,40 @@ function sanitizeDB(d, rawBackup){
     _vok.forEach(function(v,i){ if(i<_vok.length-1&&!v.arq) v.arq=null; if(i===_vok.length-1) v.arq=null; });
     d.veiculos=_vok;
   }catch(_eV){ rmLogErr(_eV); d.veiculos=[]; }
+  try{ carteiraUnica(d); }catch(_eCU){ rmLogErr(_eCU,"carteira-unica"); }
   return d;
+}
+/* Uma Carteira protegida só. Cada aparelho nasce com a sua (código interno diferente); na primeira
+   sincronização as duas se somavam e apareciam repetidas. Fica a de menor código (todos os aparelhos
+   escolhem a mesma); tudo que apontava para a outra passa a apontar para ela, e a outra sai.
+   Se as duas tiverem saldo inicial diferente de zero, não dá para juntar sem errar o saldo:
+   a outra só deixa de ser protegida (aparece como conta comum, que você pode inativar). */
+function carteiraUnica(d){
+  var prot=(d.contas||[]).filter(function(c){ return c&&c.tipo==="carteira"&&c.protegida; });
+  if(prot.length<2) return 0;
+  prot.sort(function(a,b){ return String(a.id)<String(b.id)?-1:1; });
+  var fica=prot[0], sai={}, n=0;
+  prot.slice(1).forEach(function(c){
+    var si=Number(c.saldoInicial)||0, sf=Number(fica.saldoInicial)||0;
+    if(si!==0&&sf!==0&&!(si===sf&&c.dataSaldoInicial===fica.dataSaldoInicial)){ c.protegida=0; return; }
+    if(si!==0&&sf===0){ fica.saldoInicial=c.saldoInicial; fica.dataSaldoInicial=c.dataSaldoInicial; }
+    if(c.reserva) fica.reserva=1;
+    sai[String(c.id)]=1; n++;
+  });
+  if(!n) return 0;
+  fica.ativa=1;
+  var troca=function(o){
+    if(Array.isArray(o)){ for(var i=0;i<o.length;i++){ if(typeof o[i]==="string"&&sai[o[i]]) o[i]=fica.id; else if(o[i]&&typeof o[i]==="object") troca(o[i]); } return; }
+    Object.keys(o).forEach(function(k){
+      var v=o[k];
+      if(typeof v==="string"&&sai[v]) o[k]=fica.id;
+      else if(v&&typeof v==="object") troca(v);
+      if(sai[k]){ if(!(fica.id in o)) o[fica.id]=o[k]; delete o[k]; }
+    });
+  };
+  Object.keys(d).forEach(function(k){ if(k!=="contas"&&d[k]&&typeof d[k]==="object") troca(d[k]); });
+  d.contas=d.contas.filter(function(c){ return !sai[String(c.id)]; });
+  return n;
 }
 /* Concorrência entre abas (só carimbo + checagem; sem lock, sem regra nova).
    A base carrega um contador (_rev) que aumenta a cada gravação. Cada aba
@@ -13591,6 +13624,7 @@ function syncJuntar(base,local,nuvem){
   var L=syncNorm(local), R=syncNorm(nuvem), B=base?syncNorm(base):{};
   var m=syncMerge(B,L,R,est,"");
   if(!syncObj(m)) m=L;
+  try{ carteiraUnica(m); }catch(_eCU){ rmLogErr(_eCU,"sync-carteira"); } /* cada aparelho nasce com a sua Carteira: junta numa só */
   est.deLa=syncDif(m,L); est.daqui=syncDif(m,R);
   m._rev=rev;
   return {dados:m,est:est};
