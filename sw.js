@@ -3,7 +3,7 @@
    Ícones/manifesto: cópia guardada primeiro.
    Nada de outros sites (ex.: clima) passa por aqui, e os DADOS não ficam neste cache
    (eles ficam no IndexedDB do app). Ao publicar uma versão nova, aumente VERSAO. */
-var VERSAO = "ridemax-v6"; // v6: ícones novos (R prata e atalhos) — 25/11/2026
+var VERSAO = "ridemax-v7"; // v7: endereço dos ícones com ?v=2 (Chrome 144+ só troca o ícone do app instalado se o endereço mudar) — 27/11/2026
 var ARQUIVOS = ["./ridemax.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./atalho-corrida.png", "./atalho-turno.png", "./atalho-rapida.png", "./atalho-despesa.png"];
 
 self.addEventListener("install", function (ev) {
