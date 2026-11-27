@@ -1994,9 +1994,17 @@ body[data-sol="1"] #viewCtn th.stk-th{background:#fff!important;box-shadow:0 -8p
   body.side-mini #navCtn .grphead .nav-ic{opacity:1}
   body.side-mini #navCtn .grphead.hasactive,body.side-mini #navCtn .grp:has(.navbtn.active) .grphead{background:var(--accent);box-shadow:inset 3px 0 0 var(--blue)}
   body.side-mini #navCtn .grp + .grphead.fim{padding-top:var(--s3)}
-  body.side-mini #syncSideBtn,body.side-mini #instBtn{width:40px;height:40px;margin:0 auto var(--s2);padding:0 0 0 9px;overflow:hidden;white-space:nowrap;text-overflow:clip;text-align:left}
+  /* recolhido, Sincronizar e Instalar viram só ícone (o texto fica para o leitor de tela e a dica) */
+  body.side-mini #syncSideBtn,body.side-mini #instBtn{position:relative;width:100%;height:44px;margin:0;padding:0;border:0;border-radius:0;background:transparent;color:var(--muted);font-size:0;overflow:hidden}
+  body.side-mini #syncSideBtn:hover,body.side-mini #instBtn:hover,body.side-mini #syncSideBtn:focus-visible,body.side-mini #instBtn:focus-visible{background:var(--accent);color:var(--text)}
+  body.side-mini #instBtn{color:var(--blue)}
+  body.side-mini #syncSideBtn::before,body.side-mini #instBtn::before{content:"";position:absolute;left:50%;top:50%;width:20px;height:20px;margin:-10px 0 0 -10px;background:currentColor;-webkit-mask:var(--mr-ic) center/contain no-repeat;mask:var(--mr-ic) center/contain no-repeat}
+  body.side-mini #syncSideBtn{--mr-ic:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M20 11a8 8 0 0 0-14.5-4.5L4 8%22/%3E%3Cpath d=%22M4 3v5h5%22/%3E%3Cpath d=%22M4 13a8 8 0 0 0 14.5 4.5L20 16%22/%3E%3Cpath d=%22M20 21v-5h-5%22/%3E%3C/svg%3E")}
+  body.side-mini #instBtn{--mr-ic:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3v12%22/%3E%3Cpath d=%22M7 10l5 5 5-5%22/%3E%3Cpath d=%22M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2%22/%3E%3C/svg%3E")}
+  body.side-mini #syncSideBtn:disabled::before{animation:mrGira 1s linear infinite}
 }
-@media(min-width:861px) and (prefers-reduced-motion:reduce){ #sidebar{transition:none} }
+@keyframes mrGira{to{transform:rotate(360deg)}}
+@media(min-width:861px) and (prefers-reduced-motion:reduce){ #sidebar{transition:none} body.side-mini #syncSideBtn:disabled::before{animation:none} }
 @media(max-width:860px){ #sideRecolher{display:none} }
 @media print{ #sideRecolher,#sideFly{display:none!important} }
 </style>
@@ -12358,7 +12366,7 @@ function pwaInstBtn(){
   if(!b){
     /* logo abaixo do logo: no celular o menu vira uma caixa com rolagem e o fim dela fica escondido */
     var host=document.querySelector("#sidebar .logo"); if(!host||!host.parentNode) return null;
-    b=document.createElement("button"); b.id="instBtn"; b.type="button"; b.hidden=true; b.textContent="📲 Instalar app";
+    b=document.createElement("button"); b.id="instBtn"; b.type="button"; b.hidden=true; b.textContent="📲 Instalar app"; b.title="Instalar app";
     host.parentNode.insertBefore(b,host.nextSibling);
     b.onclick=function(){
       if(pwaPrompt){ var p=pwaPrompt; pwaPrompt=null; try{ p.prompt(); p.userChoice.then(function(){ pwaRefreshInst(); }).catch(function(){}); }catch(e){ rmLogErr(e,"pwa-prompt"); } return; }
