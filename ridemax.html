@@ -1692,7 +1692,7 @@ body[data-sol="1"] .cmp-nao{background:#fff!important;color:#a01d0f!important;bo
   .cls-kpi{align-items:flex-start}
   .cls-kpi small{text-align:left}
   .pos-head{display:none}
-  .pos-lin{grid-template-columns:1fr auto auto;grid-template-areas:"ativo saldo saldo" "var rent pct" "qtd pm preco" "leit ideal comp";gap:6px 10px;padding:10px 14px}
+  .pos-lin{grid-template-columns:1fr auto auto;grid-template-areas:"ativo ativo saldo" "var rent pct" "qtd pm preco" "leit ideal comp";gap:6px 10px;padding:10px 14px}
   .pos-lin>.c-ativo{grid-area:ativo}.pos-lin>.c-saldo{grid-area:saldo;font-size:15px}
   .pos-lin>.c-var{grid-area:var;text-align:left}.pos-lin>.c-rent{grid-area:rent}.pos-lin>.c-pct{grid-area:pct}
   .pos-lin>.c-qtd{grid-area:qtd;text-align:left}.pos-lin>.c-pm{grid-area:pm}.pos-lin>.c-preco{grid-area:preco}
@@ -1941,7 +1941,7 @@ table.dm-tbl tr.dm-pct td.dm-l{padding-left:18px}
 .pos-tab{container-type:inline-size;container-name:postab}
 @container postab (max-width:860px){
   .pos-head{display:none}
-  .pos-lin{grid-template-columns:1fr auto auto;grid-template-areas:"ativo saldo saldo" "var rent pct" "qtd pm preco" "leit ideal comp";gap:6px 10px;padding:10px 14px}
+  .pos-lin{grid-template-columns:1fr auto auto;grid-template-areas:"ativo ativo saldo" "var rent pct" "qtd pm preco" "leit ideal comp";gap:6px 10px;padding:10px 14px}
   .pos-lin>.c-ativo{grid-area:ativo}.pos-lin>.c-saldo{grid-area:saldo;font-size:15px}
   .pos-lin>.c-var{grid-area:var;text-align:left}.pos-lin>.c-rent{grid-area:rent}.pos-lin>.c-pct{grid-area:pct}
   .pos-lin>.c-qtd{grid-area:qtd;text-align:left}.pos-lin>.c-pm{grid-area:pm}.pos-lin>.c-preco{grid-area:preco}
@@ -9882,12 +9882,13 @@ function invIrResumoMeses(){ var ir=invIrSettings(); var map={};
 function r2v(x){ return Math.round((Number(x)||0)*100)/100; }
 function invIrImpTxt(e){ try{ if(e.isento) return "isento"; if(!(e.imposto>0)) return BRL(0); return BRL(e.imposto); }catch(_e){ return "—"; } }
 function invIrTabHTML(){ var ir=invIrSettings(); var h='<div class="card"><h3>IR estimado nas vendas (só aviso)<button type="button" class="infoBtn" data-tip="Só aviso: não lança nada, não mexe em saldo, DRE, MEI nem movimentos. Lucro = (preço − PM na data) × qtd. Ações no mês até a isenção = isento; FII/ETF sem isenção; day trade (compra e venda do mesmo código no mesmo dia) sem isenção, separado. O imposto é sobre o resultado do mês de cada grupo (comum = ações + ETF; FII; day trade), descontando o prejuízo acumulado do mesmo grupo; mês de ações isento não paga sobre o lucro de ações, mas o prejuízo dele vale. DARF abaixo de R$ 10 acumula. Não é apuração oficial; confira com quem faz seu imposto. DARF vence no último dia útil do mês seguinte." aria-label="Sobre este bloco">i</button></h3>' +'<div class="kv"><span>Isenção ações/mês</span><b>'+BRL(ir.isencaoAcoesMes)+'</b></div>' +'<div class="kv"><span>Ações</span><b>'+esc(String(ir.aliqAcoes).replace(".",","))+'%</b></div>' +'<div class="kv"><span>Day trade</span><b>'+esc(String(ir.aliqDayTrade).replace(".",","))+'%</b></div>' +'<div class="kv"><span>FII</span><b>'+esc(String(ir.aliqFii).replace(".",","))+'%</b></div>' +'<div class="kv"><span>ETF</span><b>'+esc(String(ir.aliqEtf).replace(".",","))+'%</b></div>';  var rows=[]; try{ rows=invIrResumoMeses(); }catch(e){ rows=[]; } if(!rows.length){ h+='<div class="empty">Sem venda de ação/FII/ETF — nenhuma venda tributável.</div>'; } else { var rh=""; var lin=function(res,imp){ return '<td style="white-space:nowrap">'+BRL(res)+'<br><span style="font-size:12px;color:var(--muted)">IR '+BRL(imp)+'</span></td>'; };
+    var temDay=rows.some(function(x){ return Math.abs(x.lucroDay)>0.004; }); /* coluna de day trade só aparece se houver */
     for(var i=0;i<rows.length;i++){ var r=rows[i];
       rh+='<tr><td>'+esc(String(r.mes).slice(5,7)+"/"+String(r.mes).slice(0,4))+'</td><td style="white-space:nowrap">'+BRL(r.vendasAcoes)+(r.isentoAcoes?'<br><span style="font-size:12px;color:var(--muted)">ações isentas</span>':'')+'</td>'
-        +lin(r2v(r.lucroAcoes+r.lucroEtf),r.impostoComum)+lin(r.lucroFii,r.impostoFii)+lin(r.lucroDay,r.impostoDay)
+        +lin(r2v(r.lucroAcoes+r.lucroEtf),r.impostoComum)+lin(r.lucroFii,r.impostoFii)+(temDay?lin(r.lucroDay,r.impostoDay):"")
         +'<td style="white-space:nowrap">'+(r.prejTotal>0.004?BRL(r.prejTotal):"—")+'</td>'
         +'<td style="white-space:nowrap"><b>'+BRL(r.darf)+'</b>'+(r.acumulado>0.004?'<br><span style="font-size:12px;color:var(--muted)">'+BRL(r.acumulado)+' fica para o próximo (menos de R$ 10)</span>':'')+'</td></tr>'; }
-    h+='<div class="tblwrap" style="grid-column:1/-1"><table class="tbl"><thead><tr><th style="text-align:left">Mês</th><th>Vendas de ações</th><th>Ações e ETF: resultado</th><th>FII: resultado</th><th>Day trade: resultado</th><th>Prejuízo a compensar</th><th>DARF</th></tr></thead><tbody>'+rh+'</tbody></table></div>'; } try{ h+=invDarfPendentesHTML(); }catch(_eD){ rmLogErr(_eD,"darf"); } h+='<div class="btnrow"><button class="btn sm green" id="invIrEditBtn">Editar IR</button></div></div>'; return h; }
+    h+='<div class="tblwrap" style="grid-column:1/-1"><table class="tbl"><thead><tr><th style="text-align:left">Mês</th><th>Vendas de ações</th><th>Ações + ETF</th><th>FII</th>'+(temDay?'<th>Day trade</th>':'')+'<th title="Prejuízo que fica para descontar dos próximos lucros">A compensar</th><th>DARF</th></tr></thead><tbody>'+rh+'</tbody></table></div>'; } try{ h+=invDarfPendentesHTML(); }catch(_eD){ rmLogErr(_eD,"darf"); } h+='<div class="btnrow"><button class="btn sm green" id="invIrEditBtn">Editar IR</button></div></div>'; return h; }
 /* JANELA ÚNICA dos proventos "dos últimos 12 meses" (Resumo, Proventos, ranking por ativo, Planejamento):
    do dia 1º do mês, 11 meses atrás, até hoje — os mesmos 12 meses do gráfico "Proventos mês a mês".
    Média por mês = total ÷ 12, sempre. rotulo = "dez/25 a nov/26", para escrever o período na tela. */
