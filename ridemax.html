@@ -2007,6 +2007,26 @@ body[data-sol="1"] #viewCtn th.stk-th{background:#fff!important;box-shadow:0 -8p
 @media(min-width:861px) and (prefers-reduced-motion:reduce){ #sidebar{transition:none} body.side-mini #syncSideBtn:disabled::before{animation:none} }
 @media(max-width:860px){ #sideRecolher{display:none} }
 @media print{ #sideRecolher,#sideFly{display:none!important} }
+
+/* ---------- COLUNAS ALINHADAS (formulário ao lado de lista comprida; só com as colunas lado a lado) ----------
+   A lista não estica a linha: "contain:size" faz a coluna da direita ter a altura do formulário
+   e a lista rola por dentro, com o título das colunas fixo. Sem buraco embaixo do formulário. */
+@media(min-width:1100px){
+  .inv-screen.inv-tab2 .inv-prov-main{align-items:stretch}
+  .inv-screen.inv-tab2 .inv-prov-right{contain:size;min-height:520px;display:flex!important;flex-direction:column;gap:var(--s3);overflow:hidden}
+  .inv-screen.inv-tab2 .inv-prov-right>.card{display:flex;flex-direction:column;min-height:0;overflow:hidden;margin:0}
+  .inv-screen.inv-tab2 .inv-prov-right>.card:first-child{flex:0 1 auto!important;max-height:40%}
+  .inv-screen.inv-tab2 .inv-prov-right>.card:last-child{flex:1 1 0!important}
+  .inv-screen.inv-tab2 .inv-prov-right>.card .tblwrap{flex:1 1 auto;min-height:0;overflow:auto;max-height:none}
+  .inv-screen.inv-tab2 .inv-prov-right>.card>h3,.inv-screen.inv-tab2 .inv-prov-right>.card>.kv{flex-shrink:0}
+  .inv-screen.inv-tab2 .inv-prov-right thead th{position:sticky;top:0;z-index:2;background:var(--card)}
+  /* Planejamento: cartões soltos fluem em colunas equilibradas (sem coluna curta com buraco embaixo) */
+  #viewCtn .inv-acomp-top{display:block;columns:420px 3;column-gap:var(--s3)}
+  #viewCtn .inv-acomp-top>.inv-col{display:contents}
+  #viewCtn .inv-acomp-top>.inv-col>.card{break-inside:avoid;margin:0 0 var(--s3);display:block}
+  /* Observação: o quadro da direita rola (com o gráfico aberto o conteúdo passa da altura) */
+  .inv-obs-right>.card{overflow-y:auto}
+}
 </style>
 </head>
 <body>
