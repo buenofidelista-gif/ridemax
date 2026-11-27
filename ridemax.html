@@ -2236,7 +2236,7 @@ function droppedSummary(){ var parts=droppedParts(); if(!parts.length) return ""
 function downloadDropped(){ var payload={app:"RideMax-registros-ignorados",exportedAt:new Date().toISOString(),counts:droppedInvalid.counts,registros:droppedInvalid.items,statusAlterados:droppedStatusChanges}; var name="ridemax-registros-ignorados.json"; try{ downloadFile(name,JSON.stringify(payload,null,1),"application/json"); }catch(e){rmLogErr(e)} return name; }
 var _sanBackupSaved=false;
 var PER_PAGE = 100;
-var LIMITS = { ride: 5000, expense: 20000, kwh: 300, fuel: 200, cost: 2000 };
+var LIMITS = { ride: 5000, expense: 20000, kwh: 300, fuel: 200, cost: 2000, kmCorrida: 300, meta: 1000000 };
 var DIAS = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado","Domingo"];
 var DIAS_S = ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"];
 var NAV = [
@@ -2304,7 +2304,7 @@ function invSerieNorm(src,compactar){
   return n?out:null;
 }
 function isFuturo(iso){ try{ return String(iso||"")>todayISO(); }catch(e){ return false; } }
-var SAVE_FAIL_MSG="N\u00e3o foi poss\u00edvel salvar. Exporte um backup e libere espa\u00e7o.";
+var SAVE_FAIL_PADRAO="N\u00e3o foi poss\u00edvel salvar. Exporte um backup e libere espa\u00e7o.", SAVE_FAIL_MSG=SAVE_FAIL_PADRAO;
 function todayISO(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function nowHM(){ var d=new Date(); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
 function workdayISO(now){ var d=(now instanceof Date)?now:new Date(); if(d.getHours()<4){ d=new Date(d.getFullYear(),d.getMonth(),d.getDate()-1); } return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
@@ -2354,6 +2354,8 @@ function validColor(c,fb){ var s=String(c||""); return /^#[0-9a-fA-F]{6}$/.test(
 var modalBk=document.getElementById("modalBk"), mTitle=document.getElementById("mTitle"),
     mMsg=document.getElementById("mMsg"), mBtns=document.getElementById("mBtns"), modalRes=null;
 function openModal(title,msg,buttons){
+  /* caixa nova por cima de outra ainda aberta: a de baixo responde "voltar" (nunca fica pendurada) */
+  if(modalRes){ var _ant=modalRes; modalRes=null; try{ _ant(false); }catch(_e){} }
   mTitle.textContent=title; mMsg.textContent=msg; mBtns.innerHTML="";
   modalBk.hidden=false;
   return new Promise(function(res){
@@ -2361,7 +2363,8 @@ function openModal(title,msg,buttons){
     buttons.forEach(function(b){
       var el=document.createElement("button");
       el.className="btn sm "+(b.cls||"accent"); el.textContent=b.label;
-      el.onclick=function(){ modalBk.hidden=true; var r=modalRes; modalRes=null; r(b.val); };
+      /* toque duplo: a 2ª vez já não tem a quem responder — ignora */
+      el.onclick=function(){ if(modalRes!==res) return; modalBk.hidden=true; modalRes=null; res(b.val); };
       mBtns.appendChild(el);
     });
   });
@@ -2766,7 +2769,7 @@ function sanitizeDB(d, rawBackup){
         if(!(isFinite(_fare)&&_fare>0)) _fare=null;
         var _cash=(r.cash===1||r.cash===true||r.cash==="1")?1:0;
         if(_cash&&!(_fare>0)) _cash=0;
-        return {id:String(r.id||uid()),platform_id:String(r.platform_id||""),date:r.date,start_time:/^\d{2}:\d{2}$/.test(r.start_time)?r.start_time:"12:00",end_time:/^\d{2}:\d{2}$/.test(r.end_time||"")?(r.end_time||null):null,earnings:Number(r.earnings),tip:_tip,fare:_fare,cash:_cash,distance:isFinite(Number(r.distance))&&Number(r.distance)>=0?Number(r.distance):null,notes:String(r.notes||"").slice(0,300)};
+        return {id:String(r.id||uid()),platform_id:String(r.platform_id||""),date:r.date,start_time:/^([01]\d|2[0-3]):[0-5]\d$/.test(r.start_time)?r.start_time:"12:00",end_time:/^([01]\d|2[0-3]):[0-5]\d$/.test(r.end_time||"")?(r.end_time||null):null,earnings:Number(r.earnings),tip:_tip,fare:_fare,cash:_cash,distance:isFinite(Number(r.distance))&&Number(r.distance)>=0?Number(r.distance):null,notes:String(r.notes||"").slice(0,300)};
       });
     }
   }catch(e){
@@ -2778,9 +2781,9 @@ function sanitizeDB(d, rawBackup){
     else{
       if(!Array.isArray(d.shifts)){ throw new Error("shifts"); }
       var _shSrc=d.shifts.slice(), _shOk=[], _shI;
-      for(_shI=0;_shI<_shSrc.length;_shI++){ var _shX=_shSrc[_shI]; if(_shX&&validISO(_shX.date)&&/^\d{2}:\d{2}$/.test(_shX.start_time||"")&&parseHM(_shX.start_time)!=null){ _shOk.push(_shX); } else { noteDropped("shifts",_shX); } }
+      for(_shI=0;_shI<_shSrc.length;_shI++){ var _shX=_shSrc[_shI]; if(_shX&&validISO(_shX.date)&&/^([01]\d|2[0-3]):[0-5]\d$/.test(_shX.start_time||"")&&parseHM(_shX.start_time)!=null){ _shOk.push(_shX); } else { noteDropped("shifts",_shX); } }
       d.shifts=_shOk.map(function(s){
-        var et=(s.end_time==null||s.end_time==="")?null:(/^\d{2}:\d{2}$/.test(s.end_time)?s.end_time:null);
+        var et=(s.end_time==null||s.end_time==="")?null:(/^([01]\d|2[0-3]):[0-5]\d$/.test(s.end_time)?s.end_time:null);
         if(et&&parseHM(et)==null) et=null;
         var os=(s.odo_start==null||s.odo_start==="")?null:Number(s.odo_start);
         if(!(os!=null&&isFinite(os)&&os>=0)) os=null;
@@ -2815,7 +2818,7 @@ function sanitizeDB(d, rawBackup){
       for(_rcI=0;_rcI<_rcSrc.length;_rcI++){ var _rcX=_rcSrc[_rcI]; if(_rcX&&validISO(_rcX.date)&&isFinite(Number(_rcX.kwh))&&Number(_rcX.kwh)>0&&isFinite(Number(_rcX.cost))&&Number(_rcX.cost)>=0){ _rcOk.push(_rcX); } else { noteDropped("recharges",_rcX); } }
       d.recharges=_rcOk.map(function(r){
         var _loc=""; try{ var _ln=normName(r.local||""); if(_ln.indexOf("casa")>=0) _loc="casa"; else if(_ln.indexOf("rua")>=0) _loc="rua"; }catch(_e){ _loc=""; }
-        return {id:String(r.id||uid()),date:r.date,time:/^\d{2}:\d{2}$/.test(r.time)?r.time:"12:00",location:String(r.location||"").slice(0,80),kwh:Number(r.kwh),cost:Number(r.cost),odometer:isFinite(Number(r.odometer))?Number(r.odometer):null,notes:String(r.notes||"").slice(0,300),resetVehicle:r.resetVehicle?1:0,unit:String(r.unit)==="L"?"L":"kwh",local:_loc};
+        return {id:String(r.id||uid()),date:r.date,time:/^([01]\d|2[0-3]):[0-5]\d$/.test(r.time)?r.time:"12:00",location:String(r.location||"").slice(0,80),kwh:Number(r.kwh),cost:Number(r.cost),odometer:isFinite(Number(r.odometer))?Number(r.odometer):null,notes:String(r.notes||"").slice(0,300),resetVehicle:r.resetVehicle?1:0,unit:String(r.unit)==="L"?"L":"kwh",local:_loc};
       });
     }
   }catch(e){
@@ -3196,7 +3199,7 @@ function sanitizeDB(d, rawBackup){
       if(!Array.isArray(d.eventos)) throw new Error("eventos");
       var _eTip={show:1,jogo:1,festa:1,formatura:1,feira:1,religioso:1,universidade:1,congresso:1,feriado:1};
       d.eventos=d.eventos.filter(function(e){ var ok=e&&validISO(e.data)&&String(e.titulo||"").trim()&&_eTip[e.tipo]; if(!ok) noteDropped("eventos",e); return ok; }).map(function(e){
-        var o={id:String(e.id||uid()).slice(0,40),titulo:String(e.titulo).trim().slice(0,80),tipo:e.tipo,data:e.data,hora:(/^\d{2}:\d{2}$/.test(String(e.hora||""))?e.hora:""),local:String(e.local||"").trim().slice(0,60),anual:e.anual?1:0};
+        var o={id:String(e.id||uid()).slice(0,40),titulo:String(e.titulo).trim().slice(0,80),tipo:e.tipo,data:e.data,hora:(/^([01]\d|2[0-3]):[0-5]\d$/.test(String(e.hora||""))?e.hora:""),local:String(e.local||"").trim().slice(0,60),anual:e.anual?1:0};
         if(e.origem==="sympla"){ o.origem="sympla"; o.sid=String(e.sid||"").slice(0,20); o.link=String(e.link||"").slice(0,200); }
         var _bai=String(e.bairro||"").trim().slice(0,40); if(_bai) o.bairro=_bai;
         if(/^-?\d{1,2}\.\d+,-?\d{1,3}\.\d+$/.test(String(e.geo||""))) o.geo=e.geo;
@@ -3276,11 +3279,11 @@ function sanitizeDB(d, rawBackup){
       try{ for(_gi=0;_gi<(d.dre_manual||[]).length;_gi++){ var _gd=d.dre_manual[_gi]; if(_gd&&_gd.id) _gDre[String(_gd.id)]=1; } }catch(_e){rmLogErr(_e)}
       try{ for(_gi=0;_gi<(d.lotes||[]).length;_gi++){ var _gl=d.lotes[_gi]; if(_gl&&_gl.id) _gLote[String(_gl.id)]=1; } }catch(_e){rmLogErr(_e)}
       var _has=function(m,id){ try{ if(id==null||id==="") return true; return !!m[String(id)]; }catch(_e){ return false; } };
-      /* platforms.contaRecebimento fantasma -> remove plataforma */
+      /* platforms.contaRecebimento fantasma -> a plataforma FICA, só perde o vínculo com a conta que sumiu
+         (antes a plataforma era removida e, em cascata, TODAS as corridas dela — um backup com a lista de
+         contas danificada apagava o histórico inteiro). A conta de recebimento se religa em Configurações. */
       try{
-        var _plOk=[];
-        for(_gi=0;_gi<(d.platforms||[]).length;_gi++){ var _px=d.platforms[_gi]; if(_px&&_px.contaRecebimento&&!_gConta[String(_px.contaRecebimento)]){ noteDropped("platforms",_px); _gChanged=true; continue; } _plOk.push(_px); }
-        if(_plOk.length!==(d.platforms||[]).length) d.platforms=_plOk;
+        for(_gi=0;_gi<(d.platforms||[]).length;_gi++){ var _px=d.platforms[_gi]; if(_px&&_px.contaRecebimento&&!_gConta[String(_px.contaRecebimento)]){ _px.contaRecebimento=null; _gChanged=true; } }
       }catch(_e){rmLogErr(_e)}
       /* rides.platform_id fantasma -> remove corrida */
       try{
@@ -3626,7 +3629,10 @@ function save(){
   try{ if(typeof fechGuarda==="function"&&fechGuarda()){ SAVE_RESTAUROU=true; return false; } }catch(_eF){ rmLogErr(_eF,"fech-guarda"); }
   var _st;
   try{ _st=readStoredRev(); }catch(_e){ _st={rev:DB_MEM_REV,has:false}; }
+  /* a mensagem que as telas mostram ao falhar acompanha o motivo (não manda "liberar espaço" sem estar cheio) */
+  SAVE_FAIL_MSG=SAVE_FAIL_PADRAO;
   if(_st.rev!==DB_MEM_REV){
+    SAVE_FAIL_MSG="Não foi salvo: outra aba (ou janela) mudou a base. Recarregue esta tela — veja o aviso.";
     try{ DB_CONFLICT_PENDING=dbSnapshot(); }catch(_e2){ DB_CONFLICT_PENDING=null; }
     try{ showSaveConflictModal(); }catch(_e3){rmLogErr(_e3)}
     return false;
@@ -4117,7 +4123,7 @@ function rideMinutes(r){
 }
 function workedStats(days){
   var s=sinceISO(days), e0=todayISO(), ms=0, e=0, n=0, t=0;
-  DB.rides.forEach(function(r){ if(r.date>=s&&r.date<=e0){ t++; if(r.end_time&&/^\d{2}:\d{2}$/.test(r.end_time)&&parseHM(r.end_time)!=null&&parseHM(r.start_time)!=null){ ms+=rideMinutes(r); e+=rideTotal(r); n++; } } });
+  DB.rides.forEach(function(r){ if(r.date>=s&&r.date<=e0){ t++; if(r.end_time&&/^([01]\d|2[0-3]):[0-5]\d$/.test(r.end_time)&&parseHM(r.end_time)!=null&&parseHM(r.start_time)!=null){ ms+=rideMinutes(r); e+=rideTotal(r); n++; } } });
   var h=ms/60;
   return {hours:h,earn:e,n:n,total:t,perHour:h>0?e/h:0};
 }
@@ -4697,6 +4703,24 @@ try{
 }catch(e){rmLogErr(e)}
 /* Trocar de tela (ou de aba) abre no topo. A rolagem no PC acontece dentro de #viewCtn (que é sempre o mesmo
    elemento e guardava a posição de uma tela para a outra). Redesenhar a MESMA tela (depois de salvar) mantém a posição. */
+/* TOQUE DUPLO: o 2º toque no MESMO botão de ação, logo depois do 1º, é ignorado — no carro, um toque
+   duplo sem querer gravava a corrida, a despesa ou a baixa duas vezes. Vale para todo botão de ação
+   (salvar, confirmar, baixar, excluir, restaurar…), inclusive o que a tela redesenha com o mesmo id.
+   Ficam de fora o que precisa de toques seguidos: teclado do PIN, páginas (◀ ▶), seletores e abas. */
+var TOQUE_JANELA=800, TOQUE_ULT={el:null,id:"",t:0};
+function toqueRepetido(b){
+  var agora=Date.now(), mesmo=(b===TOQUE_ULT.el)||(b.id&&b.id===TOQUE_ULT.id);
+  if(mesmo&&agora-TOQUE_ULT.t<TOQUE_JANELA) return true;
+  TOQUE_ULT={el:b,id:b.id||"",t:agora}; return false;
+}
+try{ document.addEventListener("click",function(ev){
+  var b=ev.target&&ev.target.closest?ev.target.closest("button"):null; if(!b||b.disabled) return;
+  if(b.closest(".pin-box,.seg,.toolbar.seg,#finTabs,#invTabs,#cfgTabs,#contaTabs,#histTabs,#navCtn,#mbar,.ms-grade,.f3-chips,.qr-chips")||b.hasAttribute("data-pg")||b.classList.contains("infoBtn")||b.classList.contains("hbtn")) return;
+  if(toqueRepetido(b)){ ev.stopImmediatePropagation(); ev.preventDefault(); }
+},true);
+  /* mexeu em algum campo entre um toque e outro (corrigiu o valor e salvou de novo): não é toque duplo */
+  ["input","change"].forEach(function(t){ document.addEventListener(t,function(){ TOQUE_ULT.t=0; },true); });
+}catch(e){ rmLogErr(e,"toque-duplo"); }
 var SHOW_ULT=null;
 /* App de tela única: quem decide a rolagem é o app, não o navegador. Sem isto, fechar a gaveta "Mais"
    (que usa o "voltar" do histórico) fazia o navegador devolver a rolagem da tela anterior — e a tela nova
@@ -5385,7 +5409,7 @@ function rNova(){
     var st=document.getElementById("fStart").value.trim(), et=document.getElementById("fEnd").value.trim(), v=parseBR(document.getElementById("fEarn").value);
     var tp=parseBR(document.getElementById("fTip").value.trim()); if(!(tp>=0)) tp=0;
     var el=document.getElementById("fCalc");
-    if(!/^\d{2}:\d{2}$/.test(st)||!et||!/^\d{2}:\d{2}$/.test(et)||!(v>0)){ el.textContent=""; return; }
+    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(st)||!et||!/^([01]\d|2[0-3]):[0-5]\d$/.test(et)||!(v>0)){ el.textContent=""; return; }
     var sh=(+st.slice(0,2))*60+(+st.slice(3)), eh=(+et.slice(0,2))*60+(+et.slice(3)), d=(eh-sh+1440)%1440;
     if(d===0||d>720){ el.textContent=""; return; }
     el.textContent="⏱ "+Math.floor(d/60)+"h"+String(d%60).padStart(2,"0")+" · "+BRL((v+tp)/(d/60))+"/h";
@@ -5421,10 +5445,12 @@ function rNova(){
     var tip=tipRaw===""?0:parseBR(tipRaw), fare=fareRaw===""?null:parseBR(fareRaw);
     var cashBox=document.getElementById("fCash"), cash=cashBox&&cashBox.checked?1:0;
     var msg=document.getElementById("fMsg");
+    /* lê tudo antes de qualquer espera: se a tela trocar no meio, os campos já não existem */
+    var notesTxt=document.getElementById("fNotes").value;
     if(isFuturo(iso)){ customAlert("Data no futuro não é aceita. Use uma data até hoje.","Nova corrida"); return; }
     if(!iso){ customAlert("Data inválida. Use DD/MM/AAAA com dia real (ex: 28/02, não 31/02).","Nova corrida"); return; }
-    if(!/^\d{2}:\d{2}$/.test(st)){ customAlert("Digite a hora de início como 18:30.","Nova corrida"); return; }
-    if(et&&!/^\d{2}:\d{2}$/.test(et)){ customAlert("Digite a hora de fim como 19:05, ou deixe em branco.","Nova corrida"); return; }
+    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(st)){ customAlert("Digite a hora de início como 18:30.","Nova corrida"); return; }
+    if(et&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(et)){ customAlert("Digite a hora de fim como 19:05, ou deixe em branco.","Nova corrida"); return; }
     if(!(earn>0)){ customAlert("Digite o valor da corrida, maior que zero (ex.: 32,50).","Nova corrida"); return; }
     if(!(tip>=0)){ customAlert("Gorjeta inválida. Use 0 ou mais, ou deixe em branco.","Nova corrida"); return; }
     if(cash&&!(fare>0)){ customAlert("Informe o preço pago pelo passageiro: com a caixa de dinheiro marcada, esse campo é obrigatório.","Nova corrida"); return; }
@@ -5432,7 +5458,8 @@ function rNova(){
     if(!(await confirmIfAbsurd("ride",earn))) return;
     if(tip>0&&!(await confirmIfAbsurd("ride",tip))) return;
     var dist=null; if(distRaw){ dist=parseBR(distRaw); if(!(dist>=0)){ customAlert("Digite a distância em km (ex.: 12,5) ou deixe em branco.","Nova corrida"); return; } }
-    var notes=document.getElementById("fNotes").value.trim().slice(0,300);
+    if(dist>LIMITS.kmCorrida&&!(await customProceed("A distância "+brDec(dist,1)+" km está acima de "+LIMITS.kmCorrida+" km para uma corrida só. Confira a digitação (ex.: 12,5 e não 125).","Distância muito alta","Salvar mesmo assim"))) return;
+    var notes=String(notesTxt||"").trim().slice(0,300);
     if(editRide){
       /* FASE 4A — corrida com recebível baixado não edita (desfaça a baixa antes). */
       var _lkE=tituloDaCorrida(editRide.id);
@@ -5660,7 +5687,7 @@ function renderRides(box){
     document.getElementById("hBody").querySelectorAll("tr[data-id]").forEach(function(tr){ tr.onclick=function(){ selected=tr.dataset.id; refresh(); }; });
   }
   sel.onchange=function(){ histPage=1; refresh(); }; refresh();
-  (function(){ var bi=document.getElementById("hBusca"), t=null; if(bi) bi.oninput=function(){ var v=bi.value; clearTimeout(t); t=setTimeout(function(){ histBusca=v; histPage=1; selected=null; refresh(); },200); }; })();
+  (function(){ var bi=document.getElementById("hBusca"), t=null; if(bi) bi.oninput=function(){ var v=bi.value; clearTimeout(t); t=setTimeout(function(){ if(!document.body.contains(bi)) return; /* saiu da tela antes da busca rodar */ histBusca=v; histPage=1; selected=null; refresh(); },200); }; })();
   document.getElementById("hDel").onclick=async function(){
     if(!selected){ customAlert("Selecione uma corrida clicando na linha.","Hist\u00F3rico"); return; }
     var _rC=null; try{ _rC=DB.rides.find(function(x){return x.id===selected;}); }catch(e){ _rC=null; }
@@ -5735,8 +5762,8 @@ function renderShifts(box){
     var msg=document.getElementById("shFMsg");
     if(!iso){ customAlert("Data inv\u00E1lida. Use DD/MM/AAAA com dia real.","Turnos"); return; }
     if(isFuturo(iso)){ customAlert("Data no futuro n\u00E3o \u00E9 aceita.","Turnos"); return; }
-    if(!/^\d{2}:\d{2}$/.test(st)||parseHM(st)==null){ customAlert("In\u00EDcio inv\u00E1lido. Use HH:MM.","Turnos"); return; }
-    if(et&&(!/^\d{2}:\d{2}$/.test(et)||parseHM(et)==null)){ customAlert("Fim inv\u00E1lido. Use HH:MM ou deixe vazio.","Turnos"); return; }
+    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(st)||parseHM(st)==null){ customAlert("In\u00EDcio inv\u00E1lido. Use HH:MM.","Turnos"); return; }
+    if(et&&(!/^([01]\d|2[0-3]):[0-5]\d$/.test(et)||parseHM(et)==null)){ customAlert("Fim inv\u00E1lido. Use HH:MM ou deixe vazio.","Turnos"); return; }
     var os=null, oe=null;
     if(osRaw){ os=_brToN(osRaw); if(!(os>=0)){ customAlert("Od\u00F4metro inicial inv\u00E1lido.","Turnos"); return; } }
     if(oeRaw){ oe=_brToN(oeRaw); if(!(oe>=0)){ customAlert("Od\u00F4metro final inv\u00E1lido.","Turnos"); return; } }
@@ -5873,8 +5900,11 @@ function rMetas(){
   try{ metaMesCardPintar(); }catch(_eMM){ rmLogErr(_eMM,"meta-mes-card"); }
   document.getElementById("gSave").onclick=function(){
     var vals=[["daily","gD"],["weekly","gW"],["monthly","gM"]];
-    for(var i=0;i<vals.length;i++){ var s=document.getElementById(vals[i][1]).value.trim(); if(s==="")s="0"; var v=parseBR(s); if(!(v>=0)){ customAlert("Digite a meta em reais (ex.: 280).","Metas"); return; } DB.goals[vals[i][0]]=v; }
-    if(!save()){ document.getElementById("gMsg").textContent=SAVE_FAIL_MSG; return; }
+    /* confere as três antes de mudar qualquer uma (senão uma meta errada deixava a anterior trocada sem salvar) */
+    var novas={};
+    for(var i=0;i<vals.length;i++){ var s=document.getElementById(vals[i][1]).value.trim(); if(s==="")s="0"; var v=parseBR(s); if(!(v>=0)){ customAlert("Digite a meta em reais (ex.: 280).","Metas"); return; } if(v>LIMITS.meta){ customAlert("Meta de "+BRL(v)+" é alta demais. Confira a digitação (o teto é "+BRL(LIMITS.meta)+").","Metas"); return; } novas[vals[i][0]]=Math.round(v*100)/100; }
+    var antes=JSON.stringify(DB.goals||{}); Object.keys(novas).forEach(function(k){ DB.goals[k]=novas[k]; });
+    if(!save()){ if(!SAVE_RESTAUROU){ try{ DB.goals=JSON.parse(antes); }catch(_e){} } document.getElementById("gMsg").textContent=SAVE_FAIL_MSG; return; }
     document.getElementById("gMsg").textContent="Metas salvas."; prog();
   };
 }
@@ -5898,35 +5928,38 @@ function rDesp(){
     var iso=brToISO(document.getElementById("dDate").value), amt=parseBR(document.getElementById("dAmt").value);
     if(!iso){ customAlert("Data inválida. Use DD/MM/AAAA com dia real.","Despesas"); return; } if(!(amt>0)){ customAlert("Digite um valor maior que zero (ex.: 45,90).","Despesas"); return; }
     if(isFuturo(iso)){ customAlert("Data no futuro não é aceita. Use uma data até hoje.","Despesas"); return; }
+    /* lê tudo antes de qualquer espera: se a tela trocar no meio, os campos já não existem */
+    var _cat=document.getElementById("dCat").value, _descTxt=document.getElementById("dDesc").value.trim().slice(0,300), _recChk=document.getElementById("dRec").checked?1:0, _pgPre=pagoLer("d");
     if(!(await confirmIfAbsurd("expense",amt))) return;
-    var _cat=document.getElementById("dCat").value;
     if(!_cat||!catById(_cat)){ customAlert("Cadastre uma categoria em Configurações > Categorias antes de salvar.","Despesas"); return; }
     if(editExp){
       var _edT=tituloDoDespesa(editExp.id);
-      var _newDesc=document.getElementById("dDesc").value.trim().slice(0,300);
+      var _newDesc=_descTxt;
       var _chgV=Math.round(amt*100)!==Math.round(Number(editExp.amount)*100), _chgD=(iso!==editExp.date);
       if(_edT&&tituloTemBaixa(_edT)&&!pagoSoAuto(_edT)&&(_chgV||_chgD)){ customAlert("Esta despesa já gerou um título com baixa(s) no Contas a pagar. Desfaça a baixa antes de alterar valor ou data.","Despesas"); return; }
-      var _pgE=pagoLer("d"); var _pgErrE=_edT?pagoValidar(_pgE,iso):null; if(_pgErrE){ customAlert(_pgErrE,"Despesas"); return; }
+      var _pgE=_pgPre; var _pgErrE=_edT?pagoValidar(_pgE,iso):null; if(_pgErrE){ customAlert(_pgErrE,"Despesas"); return; }
       var _bxSnapE=_edT?JSON.stringify(_edT.baixas||[]):null;
       if(_edT&&_chgV&&_edT.rateio&&_edT.rateio.length>1){ var _rl=[]; for(var _rli=0;_rli<_edT.rateio.length;_rli++){ _rl.push(centroNome(_edT.rateio[_rli].centro)+" "+BRL(_edT.rateio[_rli].valor)); } customAlert("Este título tem rateio manual em "+_edT.rateio.length+" linhas no Contas a pagar ("+_rl.join(" · ")+"). O sistema não recalcula rateio medido sozinho: volte o rateio para 100% numa linha só no Contas a pagar e repita a alteração do valor. Nada foi gravado.","Despesas"); return; }
       var _oldE={date:editExp.date,category_id:editExp.category_id,amount:editExp.amount,description:editExp.description,recurring:editExp.recurring};
       var _oldT=null;
       if(_edT){ _oldT={descricao:_edT.descricao,valor:_edT.valor,competencia:_edT.competencia,vencimento:_edT.vencimento,categoria:_edT.categoria}; }
       editExp.date=iso; editExp.category_id=_cat; editExp.amount=amt;
-      editExp.description=_newDesc; editExp.recurring=document.getElementById("dRec").checked?1:0;
+      editExp.description=_newDesc; editExp.recurring=_recChk;
       if(_edT){ _edT.descricao=tituloDescDeDespesa(editExp); _edT.valor=Math.round(amt*100)/100; if(_edT.rateio&&_edT.rateio.length===1){ _edT.rateio[0].valor=Math.round(amt*100)/100; } _edT.competencia=String(iso).slice(0,7)+"-01"; _edT.vencimento=iso; _edT.categoria=String(_cat||"").slice(0,64); tituloRecalc(_edT); }
       try{ if(_edT) pagoSincronizar(_edT,_pgE,iso); }catch(_eP){ rmLogErr(_eP,"pago-desp"); }
       if(!save()){ try{ if(_edT&&_bxSnapE!=null){ _edT.baixas=JSON.parse(_bxSnapE); tituloRecalc(_edT); } }catch(_eB){} editExp.date=_oldE.date; editExp.category_id=_oldE.category_id; editExp.amount=_oldE.amount; editExp.description=_oldE.description; editExp.recurring=_oldE.recurring; if(_edT&&_oldT){ _edT.descricao=_oldT.descricao; _edT.valor=_oldT.valor; _edT.competencia=_oldT.competencia; _edT.vencimento=_oldT.vencimento; _edT.categoria=_oldT.categoria; tituloRecalc(_edT); } document.getElementById("dMsg").textContent=SAVE_FAIL_MSG; return; }
       resetExpForm(); document.getElementById("dMsg").textContent="Alterações salvas."+(_edT?(pagoBaixaAuto(_edT)?" Paga com "+contaNome(pagoBaixaAuto(_edT).conta)+".":(tituloTemBaixa(_edT)?"":" Fica a pagar no Contas a pagar.")):"");
       refreshCats(); refreshHist(); return;
     }
-    var _pgN=pagoLer("d"), _pgErrN=pagoValidar(_pgN,iso); if(_pgErrN){ customAlert(_pgErrN,"Despesas"); return; }
-    var _newExp={id:uid(),date:iso,category_id:_cat,amount:amt,description:document.getElementById("dDesc").value.trim().slice(0,300),recurring:document.getElementById("dRec").checked?1:0};
+    var _pgN=_pgPre, _pgErrN=pagoValidar(_pgN,iso); if(_pgErrN){ customAlert(_pgErrN,"Despesas"); return; }
+    var _newExp={id:uid(),date:iso,category_id:_cat,amount:amt,description:_descTxt,recurring:_recChk};
     DB.expenses.push(_newExp);
     var _newTit=criarTituloDeDespesa(_newExp);
     var _pgB=null; try{ if(_newTit) _pgB=pagoAplicar(_newTit,_pgN,iso); }catch(_eP){ rmLogErr(_eP,"pago-desp-novo"); }
     if(!save()){ var _p1=DB.expenses.indexOf(_newExp); if(_p1>=0) DB.expenses.splice(_p1,1); if(_newTit&&DB.titulos){ var _p2=DB.titulos.indexOf(_newTit); if(_p2>=0) DB.titulos.splice(_p2,1); } document.getElementById("dMsg").textContent=SAVE_FAIL_MSG; return; }
     try{ recVincular(_newExp.id); }catch(_eR){ rmLogErr(_eR,"rec"); }
+    /* já gravou: se a pessoa saiu da tela nesse meio-tempo, não há mensagem a mostrar */
+    if(!document.getElementById("dMsg")) return;
     document.getElementById("dMsg").textContent=BRL(amt)+" registrado."+(_newTit?(_pgB?" Paga com "+contaNome(_pgB.conta)+".":" Fica a pagar no Contas a pagar."):" ⚠️ Sem centro de custo: título não foi criado."); document.getElementById("dAmt").value="";document.getElementById("dDesc").value="";
     expPage=1; refreshCats(); refreshHist();
   };
@@ -5992,7 +6025,7 @@ function rDesp(){
     document.getElementById("dBody").querySelectorAll("tr[data-id]").forEach(function(tr){ tr.onclick=function(){ dsel=tr.dataset.id; refreshHist(); }; });
   }
   fsel.onchange=function(){ expPage=1; refreshHist(); }; refreshCats(); refreshHist();
-  (function(){ var bi=document.getElementById("dBusca"), t=null; if(bi){ var inf=document.createElement("div"); inf.id="dBuscaInfo"; inf.className="sub"; bi.parentNode.parentNode.insertBefore(inf,bi.parentNode.nextSibling); bi.oninput=function(){ var v=bi.value; clearTimeout(t); t=setTimeout(function(){ despBusca=v; expPage=1; dsel=null; refreshHist(); },200); }; if(despBusca) refreshHist(); } })();
+  (function(){ var bi=document.getElementById("dBusca"), t=null; if(bi){ var inf=document.createElement("div"); inf.id="dBuscaInfo"; inf.className="sub"; bi.parentNode.parentNode.insertBefore(inf,bi.parentNode.nextSibling); bi.oninput=function(){ var v=bi.value; clearTimeout(t); t=setTimeout(function(){ if(!document.body.contains(bi)) return; /* saiu da tela antes da busca rodar */ despBusca=v; expPage=1; dsel=null; refreshHist(); },200); }; if(despBusca) refreshHist(); } })();
   document.getElementById("dGoDre").onclick=function(){ window.__finTab=1; show("financeiro"); };
   document.getElementById("dDel").onclick=async function(){
     if(!dsel){ customAlert("Selecione uma despesa clicando na linha.","Despesas"); return; }
@@ -6104,12 +6137,20 @@ function rRec(){
     if(!isF&&locSel==="casa") c=0;
     if(isFuturo(iso)){ customAlert("Data no futuro não é aceita. Use uma data até hoje.",enName); return; }
     if(!iso){ customAlert("Data inválida. Use DD/MM/AAAA com dia real.",enName); return; }
-    if(!/^\d{2}:\d{2}$/.test(tm)){ customAlert("Hora inválida. Use HH:MM.",enName); return; }
+    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(tm)){ customAlert("Hora inválida. Use HH:MM.",enName); return; }
     if(!(k>0&&c>=0)){ customAlert((isF?"Litros ou custo inválido.":"kWh ou custo inválido."),enName); return; }
     if(!(await confirmIfAbsurd(isF?"fuel":"kwh",k))) return;
     if(!(await confirmIfAbsurd("cost",c))) return;
     var odoRaw=document.getElementById("rOdo").value.trim(), odo=null;
     if(odoRaw){ odo=parseBR(odoRaw); if(!(odo>=0)){ customAlert("Digite o km do painel, só números (ex.: 45230).",enName); return; } }
+    /* odômetro não anda para trás: menor que o da recarga anterior (ou maior que o da seguinte) só com
+       "Odômetro reiniciou / troca de veículo" marcado — senão o km/kWh e a manutenção saem errados */
+    if(odo!=null&&!document.getElementById("rReset").checked){
+      var _ch=iso+" "+tm, _ant=null, _seg=null;
+      (DB.recharges||[]).forEach(function(r){ if(!r||r===editRec||r.odometer==null||!isFinite(Number(r.odometer))) return; var k2=r.date+" "+(r.time||"00:00"); if(k2<=_ch){ if(!_ant||k2>_ant.k) _ant={k:k2,r:r}; } else { if(!_seg||k2<_seg.k) _seg={k:k2,r:r}; } });
+      if(_ant&&odo<Number(_ant.r.odometer)){ customAlert("O odômetro "+brGroup(String(Math.round(odo)))+" km é menor que o da recarga anterior ("+brGroup(String(Math.round(Number(_ant.r.odometer))))+" km em "+isoToBR(_ant.r.date)+"). Confira a digitação. Se trocou de veículo ou o painel zerou, marque \"Odômetro reiniciou / troca de veículo\".",enName); return; }
+      if(_seg&&!_seg.r.resetVehicle&&odo>Number(_seg.r.odometer)){ customAlert("O odômetro "+brGroup(String(Math.round(odo)))+" km é maior que o da recarga seguinte ("+brGroup(String(Math.round(Number(_seg.r.odometer))))+" km em "+isoToBR(_seg.r.date)+"). Confira a digitação.",enName); return; }
+    }
     if(editRec){
       var _old={date:editRec.date,time:editRec.time,location:editRec.location,kwh:editRec.kwh,cost:editRec.cost,odometer:editRec.odometer,notes:editRec.notes,resetVehicle:editRec.resetVehicle,local:editRec.local||""};
       var _oldLocal=_old.local, _newLocal=isF?_oldLocal:locSel;
@@ -6633,7 +6674,7 @@ function renderKmPeriod(){
 function platCardHTML(){
   var D=computeDRE("30");
   var agg={};
-  DB.rides.forEach(function(r){ if(r.date>=sinceISO(30)&&r.date<=todayISO()){ var p=DB.platforms.find(function(x){return x.id===r.platform_id;}); var n=p?p.name:"—"; agg[n]=agg[n]||{v:0,km:0,n:0,nEnd:0,sumE:0,sumMin:0,c:(p?p.color:"#8f96a3")}; agg[n].v+=rideTotal(r); agg[n].km+=Number(r.distance)||0; agg[n].n++; try{ if(r.end_time&&/^\d{2}:\d{2}$/.test(r.end_time)&&parseHM(r.end_time)!=null&&parseHM(r.start_time)!=null){ agg[n].nEnd++; agg[n].sumE+=rideTotal(r); agg[n].sumMin+=rideMinutes(r); } }catch(_e){rmLogErr(_e)} } });
+  DB.rides.forEach(function(r){ if(r.date>=sinceISO(30)&&r.date<=todayISO()){ var p=DB.platforms.find(function(x){return x.id===r.platform_id;}); var n=p?p.name:"—"; agg[n]=agg[n]||{v:0,km:0,n:0,nEnd:0,sumE:0,sumMin:0,c:(p?p.color:"#8f96a3")}; agg[n].v+=rideTotal(r); agg[n].km+=Number(r.distance)||0; agg[n].n++; try{ if(r.end_time&&/^([01]\d|2[0-3]):[0-5]\d$/.test(r.end_time)&&parseHM(r.end_time)!=null&&parseHM(r.start_time)!=null){ agg[n].nEnd++; agg[n].sumE+=rideTotal(r); agg[n].sumMin+=rideMinutes(r); } }catch(_e){rmLogErr(_e)} } });
   var earnAll=0, earnKm=0;
   DB.rides.forEach(function(r){ if(r.date>=sinceISO(30)&&r.date<=todayISO()){ var e=rideTotal(r); earnAll+=e; if((Number(r.distance)||0)>0) earnKm+=e; } });
   var prop=earnAll>0?earnKm/earnAll:1, costRat=D.varT*prop;
@@ -12426,8 +12467,9 @@ async function qrSubmit(again){
     if(!iso){ fail("Data inválida. Use DD/MM/AAAA.","qrDate"); return; }
     if(isFuturo(iso)){ fail("Data no futuro não é aceita.","qrDate"); return; }
     var st=(document.getElementById("qrStart").value||"").trim();
-    if(!/^\d{2}:\d{2}$/.test(st)||Number(st.slice(0,2))>23||Number(st.slice(3))>59){ fail("Início inválido. Use HH:MM.","qrStart"); return; }
-    var en=((document.getElementById("qrEnd")||{}).value||"").trim(); if(!/^\d{2}:\d{2}$/.test(en)) en="";
+    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(st)||Number(st.slice(0,2))>23||Number(st.slice(3))>59){ fail("Início inválido. Use HH:MM.","qrStart"); return; }
+    var en=((document.getElementById("qrEnd")||{}).value||"").trim(); if(en&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(en)){ fail("Fim inválido. Use HH:MM (ex.: 19:05) ou deixe em branco.","qrEnd"); return; }
+    if(dist>LIMITS.kmCorrida&&!(await customProceed("A distância "+brDec(dist,1)+" km está acima de "+LIMITS.kmCorrida+" km para uma corrida só. Confira a digitação (ex.: 12,5 e não 125).","Distância muito alta","Salvar mesmo assim"))) return;
     if(!(await confirmIfAbsurd("ride",earn))) return;
     if(tip>0&&!(await confirmIfAbsurd("ride",tip))) return;
     var ride={id:uid(),platform_id:pid,date:iso,start_time:st,end_time:en||null,earnings:earn,tip:tip,fare:fare,cash:cash,distance:dist,notes:""};
@@ -12690,7 +12732,11 @@ function bkpEnviar(){
   if(!bkpPodeEnviar()||!navigator.canShare({files:[f]})){ downloadFile(nome.replace(/\.txt$/,".json"),txt); bkpMarcarFeito(); customAlert("Este navegador não tem o compartilhar de arquivo, então o backup foi baixado.","Enviar backup"); show(currentViewSafe()); return; }
   navigator.share({files:[f],title:"Backup RideMax",text:"Backup do RideMax de "+isoToBR(todayISO())+". Para restaurar: Configurações › Segurança e backup › Restaurar backup (arquivo)."}).then(function(){
     bkpMarcarFeito(); customAlert("Backup enviado. Guarde onde não dependa deste celular (Google Drive, e-mail ou WhatsApp para você mesmo).","Enviar backup"); show(currentViewSafe());
-  }).catch(function(e){ if(e&&e.name==="AbortError") return; rmLogErr(e,"bkp-share"); customAlert("O envio não foi concluído: "+String((e&&e.message)||e),"Enviar backup"); });
+  }).catch(function(e){ if(e&&e.name==="AbortError") return;
+    /* o celular não liberou o compartilhar (demorou demais depois do toque, ou bloqueio do sistema):
+       em vez da mensagem técnica do navegador, baixa o arquivo e explica */
+    if(e&&e.name==="NotAllowedError"){ try{ downloadFile(nome.replace(/\.txt$/,".json"),txt); bkpMarcarFeito(); }catch(_eD){ rmLogErr(_eD,"bkp-share-dl"); } customAlert("O celular não liberou o compartilhar desta vez, então o backup foi baixado no aparelho (pasta Downloads). Para mandar para o Drive ou WhatsApp, toque em Enviar de novo ou envie o arquivo pelo app de arquivos.","Enviar backup"); return; }
+    rmLogErr(e,"bkp-share"); customAlert("O envio não foi concluído: "+String((e&&e.message)||e),"Enviar backup"); });
 }
 function currentViewSafe(){ try{ return current||"plataformas"; }catch(e){ return "plataformas"; } }
 
@@ -14177,7 +14223,7 @@ function turnoAbrirInicio(){
     var msg=document.getElementById("tuMsg"); msg.textContent="";
     var os=turnoNum(document.getElementById("tuOdo").value), st=document.getElementById("tuHora").value.trim();
     if(isNaN(os)){ msg.textContent="Odômetro inválido (só números)."; return; }
-    if(!/^\d{2}:\d{2}$/.test(st)||parseHM(st)==null){ msg.textContent="Início inválido. Use HH:MM."; return; }
+    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(st)||parseHM(st)==null){ msg.textContent="Início inválido. Use HH:MM."; return; }
     if(openShift()){ msg.textContent="Já existe um turno aberto. Encerre-o antes de abrir outro."; return; }
     var s={id:uid(),date:todayISO(),start_time:st,end_time:null,odo_start:os,odo_end:null,notes:""};
     DB.shifts.push(s);
@@ -14202,7 +14248,7 @@ function turnoAbrirFim(){
     var msg=document.getElementById("tuMsg"); msg.textContent="";
     var oe=turnoNum(document.getElementById("tuOdo").value), et=document.getElementById("tuHora").value.trim();
     if(isNaN(oe)){ msg.textContent="Odômetro inválido (só números)."; return; }
-    if(!/^\d{2}:\d{2}$/.test(et)||parseHM(et)==null){ msg.textContent="Fim inválido. Use HH:MM."; return; }
+    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(et)||parseHM(et)==null){ msg.textContent="Fim inválido. Use HH:MM."; return; }
     var cur=openShift(); if(!cur||cur.id!==op.id){ msg.textContent="Este turno já foi encerrado (talvez em outra tela)."; return; }
     if(oe!=null&&op.odo_start!=null&&oe<Number(op.odo_start)){
       crFechar();
@@ -14242,7 +14288,7 @@ function shiftPausaMin(s,ateMin){ var iv=shiftInterval(s); if(!iv) return 0; var
 function shiftKmPessoal(s){ var k=0; shiftPausas(s).forEach(function(x){ var of=x.of; if(of==null&&x.fim==null&&s&&s.end_time&&s.odo_end!=null&&isFinite(Number(s.odo_end))) of=Number(s.odo_end); if(x.oi!=null&&of!=null&&of>=x.oi) k+=of-x.oi; }); return k; }
 function shiftPausaAberta(s){ var ps=(s&&Array.isArray(s.pausas))?s.pausas:[]; for(var i=ps.length-1;i>=0;i--){ if(ps[i]&&!ps[i].fim) return ps[i]; } return null; }
 function agoraAbs(){ var d=new Date(); return isoDays(todayISO())*1440+d.getHours()*60+d.getMinutes(); }
-function sanitizePausas(arr){ if(!Array.isArray(arr)) return []; var out=[]; arr.forEach(function(p){ if(!p||!validISO(p.d)||!/^\d{2}:\d{2}$/.test(p.ini||"")||parseHM(p.ini)==null) return; var q={d:p.d,ini:p.ini,fd:null,fim:null,oi:null,of:null}; if(p.fim&&/^\d{2}:\d{2}$/.test(p.fim)&&parseHM(p.fim)!=null&&validISO(p.fd)){ q.fd=p.fd; q.fim=p.fim; } var oi=Number(p.oi), of=Number(p.of); if(p.oi!=null&&p.oi!==""&&isFinite(oi)&&oi>=0) q.oi=oi; if(p.of!=null&&p.of!==""&&isFinite(of)&&of>=0) q.of=of; out.push(q); }); return out.slice(0,50); }
+function sanitizePausas(arr){ if(!Array.isArray(arr)) return []; var out=[]; arr.forEach(function(p){ if(!p||!validISO(p.d)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(p.ini||"")||parseHM(p.ini)==null) return; var q={d:p.d,ini:p.ini,fd:null,fim:null,oi:null,of:null}; if(p.fim&&/^([01]\d|2[0-3]):[0-5]\d$/.test(p.fim)&&parseHM(p.fim)!=null&&validISO(p.fd)){ q.fd=p.fd; q.fim=p.fim; } var oi=Number(p.oi), of=Number(p.of); if(p.oi!=null&&p.oi!==""&&isFinite(oi)&&oi>=0) q.oi=oi; if(p.of!=null&&p.of!==""&&isFinite(of)&&of>=0) q.of=of; out.push(q); }); return out.slice(0,50); }
 
 /* ---- pausar / retomar ---- */
 var turnoPularCheque=false;
@@ -14262,7 +14308,7 @@ function turnoAbrirPausa(){
     var msg=document.getElementById("tuMsg"); msg.textContent="";
     var oi=turnoNum(document.getElementById("tuOdo").value), hm=document.getElementById("tuHora").value.trim();
     if(isNaN(oi)){ msg.textContent="Odômetro inválido (só números)."; return; }
-    if(!/^\d{2}:\d{2}$/.test(hm)||parseHM(hm)==null){ msg.textContent="Hora inválida. Use HH:MM."; return; }
+    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(hm)||parseHM(hm)==null){ msg.textContent="Hora inválida. Use HH:MM."; return; }
     var cur=openShift(); if(!cur||cur.id!==op.id||shiftPausaAberta(cur)){ msg.textContent="O turno mudou em outra tela. Feche e tente de novo."; return; }
     var d=todayISO(), a=pausaAbs(d,hm), iv=shiftInterval(cur);
     if(iv&&a<iv.start){ msg.textContent="A pausa não pode começar antes do turno ("+cur.start_time+")."; return; }
@@ -14291,7 +14337,7 @@ function turnoAbrirRetomar(depois){
     var msg=document.getElementById("tuMsg"); msg.textContent="";
     var of=turnoNum(document.getElementById("tuOdo").value), hm=document.getElementById("tuHora").value.trim();
     if(isNaN(of)){ msg.textContent="Odômetro inválido (só números)."; return; }
-    if(!/^\d{2}:\d{2}$/.test(hm)||parseHM(hm)==null){ msg.textContent="Hora inválida. Use HH:MM."; return; }
+    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(hm)||parseHM(hm)==null){ msg.textContent="Hora inválida. Use HH:MM."; return; }
     var cur=openShift(); var pp=cur&&shiftPausaAberta(cur); if(!pp||pp!==p){ msg.textContent="A pausa já foi encerrada em outra tela."; return; }
     var fd=todayISO(), b=pausaAbs(fd,hm); if(b<a){ fd=somaDiasISO(fd,-1); b=pausaAbs(fd,hm); }
     if(b<a){ msg.textContent="O fim da pausa não pode ser antes do início ("+p.ini+")."; return; }
@@ -17102,7 +17148,7 @@ function evLigar(){
     var tit=g("evTit").value.trim().slice(0,80), tipo=g("evTipo").value, data=brToISO(g("evData").value), hora=g("evHora").value.trim(), local=g("evLocal").value.trim().slice(0,60), bairro=g("evBairro").value.trim().slice(0,40), anual=g("evAnual").checked?1:0;
     if(!tit){ err("Diga o que é (ex.: Show de forró)."); return; }
     if(!data){ err("Data inválida. Use DD/MM/AAAA."); return; }
-    if(hora&&!/^\d{2}:\d{2}$/.test(hora)){ err("Hora inválida. Use HH:MM (ex.: 21:00) ou deixe em branco."); return; }
+    if(hora&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(hora)){ err("Hora inválida. Use HH:MM (ex.: 21:00) ou deixe em branco."); return; }
     if(hora&&parseHM(hora)==null){ err("Hora inválida."); return; }
     if(!EV_TIPOS.some(function(t){ return t[0]===tipo; })){ err("Escolha o tipo."); return; }
     DB.eventos=DB.eventos||[];
@@ -17140,7 +17186,7 @@ function evImportarSympla(J){
     vistos[ch]=1; if(e) vistos[e.data+"|"+evNormNome(e.titulo)]=1;
     var bai=String(x.bairro||"").trim().slice(0,40), geo=EV_GEO_RE.test(String(x.geo||""))?String(x.geo):"";
     if(e){ if(!e.editado&&!e.oculto){ e.titulo=String(x.nome).slice(0,80); e.data=d; e.hora=h; e.local=String(x.local||"").slice(0,60); if(bai) e.bairro=bai; if(geo) e.geo=geo; e.link=String(x.link||""); atual++; } return; }
-    var n={id:uid(),origem:"sympla",sid:String(x.sid||"").slice(0,20),titulo:String(x.nome||"").slice(0,80),tipo:evTipoPeloNome(x.nome),data:d,hora:/^\d{2}:\d{2}$/.test(h)?h:"",local:String(x.local||"").slice(0,60),link:String(x.link||"").slice(0,200),anual:0};
+    var n={id:uid(),origem:"sympla",sid:String(x.sid||"").slice(0,20),titulo:String(x.nome||"").slice(0,80),tipo:evTipoPeloNome(x.nome),data:d,hora:/^([01]\d|2[0-3]):[0-5]\d$/.test(h)?h:"",local:String(x.local||"").slice(0,60),link:String(x.link||"").slice(0,200),anual:0};
     if(bai) n.bairro=bai; if(geo) n.geo=geo;
     DB.eventos.push(n); porChave[ch]=n; porSid[n.sid]=n; novos++;
   });
