@@ -2020,10 +2020,6 @@ body[data-sol="1"] #viewCtn th.stk-th{background:#fff!important;box-shadow:0 -8p
   .inv-screen.inv-tab2 .inv-prov-right>.card .tblwrap{flex:1 1 auto;min-height:0;overflow:auto;max-height:none}
   .inv-screen.inv-tab2 .inv-prov-right>.card>h3,.inv-screen.inv-tab2 .inv-prov-right>.card>.kv{flex-shrink:0}
   .inv-screen.inv-tab2 .inv-prov-right thead th{position:sticky;top:0;z-index:2;background:var(--card)}
-  /* Planejamento: cartões soltos fluem em colunas equilibradas (sem coluna curta com buraco embaixo) */
-  #viewCtn .inv-acomp-top{display:block;columns:420px 3;column-gap:var(--s3)}
-  #viewCtn .inv-acomp-top>.inv-col{display:contents}
-  #viewCtn .inv-acomp-top>.inv-col>.card{break-inside:avoid;margin:0 0 var(--s3);display:block}
   /* Observação: o quadro da direita rola (com o gráfico aberto o conteúdo passa da altura) */
   .inv-obs-right>.card{overflow-y:auto}
 }
@@ -2044,6 +2040,38 @@ body[data-sol="1"] #viewCtn th.stk-th{background:#fff!important;box-shadow:0 -8p
 body:has(.tit-panel-bk) #qrFab{display:none!important}
 /* painel lateral: campos lado a lado alinhados pelo topo (a dica embaixo de um deles não empurra o outro) */
 .tit-panel .shortgrid{align-items:start}
+/* Fluxo de caixa sem buraco: quadro vazio acompanha a altura do vizinho; com 2 colunas a Projeção ocupa a linha inteira */
+@media(min-width:1100px){
+  #viewCtn .fin-flx-bot{container:flxbot / inline-size}
+  #viewCtn .fin-flx-bot>.card.is-empty{align-self:stretch!important;max-height:none!important}
+}
+@container flxbot (max-width:1103px){
+  #viewCtn .fin-flx-bot>.fin-flx-proj{grid-column:1 / -1}
+}
+
+/* ---------- MOSAICO (js/43-mosaico.js): cada quadro na coluna mais curta, sem buraco; a ordem na página não muda ---------- */
+@media(min-width:1100px){
+  #viewCtn .mosaico{display:grid!important;grid-auto-rows:1px!important;row-gap:0!important;column-gap:12px!important;align-items:start!important;grid-template-rows:none!important;overflow:visible!important;height:auto!important;max-height:none!important}
+  #viewCtn .mosaico>*{margin:0!important;min-width:0;max-height:none!important;align-self:start!important}
+}
+/* Despesas: Orçamento embaixo do formulário; "Últimas despesas" ocupa a altura toda à direita e a lista rola por dentro */
+@media(min-width:1100px){
+  #viewCtn .desp-main{grid-template-rows:auto minmax(0,1fr)}
+  #viewCtn .desp-main>.desp-form{grid-column:1;grid-row:1}
+  #viewCtn .desp-main>.desp-side{grid-column:2;grid-row:1 / span 2}
+  #viewCtn .desp-main>#orcCard{grid-column:1;grid-row:2;margin:0;min-height:0}
+  /* a página rola; a lista da direita tem a altura das duas caixas da esquerda (contain:size) e rola por dentro */
+  body.fit-lock #viewCtn:has(.desp-screen){display:block!important;overflow-y:auto!important}
+  #viewCtn .desp-screen{display:block!important;height:auto!important;overflow:visible!important}
+  #viewCtn .desp-main{grid-template-rows:auto auto;height:auto!important;overflow:visible!important}
+  #viewCtn .desp-main>.desp-side{contain:size;min-height:560px}
+}
+/* Resumo: a linha "base: …" dos quadros Hoje/7/30/90 dias no tamanho de nota (estava maior que os valores) */
+.fin-res-top .stat .sub{font-size:12px;color:var(--muted);line-height:1.3;margin:0 0 2px}
+/* Resumo: os quadros do meio (gráfico, teto do MEI) ocupam a linha toda, lado a lado e na mesma altura */
+@media(min-width:1100px){
+  #viewCtn .fin-res-mid{grid-template-columns:repeat(auto-fit,minmax(360px,1fr))!important;align-items:stretch!important}
+}
 </style>
 </head>
 <body>
@@ -10011,8 +10039,8 @@ function invAcompTabHTML(){
   +'<div class="inv-col inv-col-a">'+(function(){ try{ return planoCardHTML(); }catch(_eP){ rmLogErr(_eP,"plano"); return ""; } })()+hReserva+hMetas+'</div>'
   +'<div class="inv-col inv-col-b">'+hDistrib+hAporte+'</div>'
   +'<div class="inv-col inv-col-c">'+hIR+hSim+'</div>'
-  +'</div>'
-  +'<div class="card inv-aviso"><div class="sub">Indicação calculada, não é recomendação.</div></div></div>';
+  +'<div class="card inv-aviso"><div class="sub">Indicação calculada, não é recomendação.</div></div>' /* dentro da grade: no mosaico entra como último quadro, sem vão em cima */
+  +'</div></div>';
   return h;
 }
 /* Tesouro do arquivo do script: "ipca-juros-2035-05-15" → "IPCAJ2035" (até 12 letras; com o mês se repetir) */
@@ -17444,6 +17472,108 @@ buildNav=function(){ _mrBuildNav.apply(this,arguments); mrIcones(); };
 mrIcones();
 mrAplicar(mrLigado(),false);
 try{ window.RM=window.RM||{}; RM.menuRecolher=function(on){ mrAplicar(on,true); }; }catch(e){}
+/* ---------- MOSAICO: telas de quadros soltos sem buraco (computador e tablet deitado) ----------
+   Em grade comum, cada linha tem a altura do quadro mais alto e o vizinho curto deixa um buraco embaixo.
+   Aqui cada quadro vai para a coluna que estiver mais curta naquele momento (como um mural).
+   A ORDEM DOS QUADROS NA PÁGINA NÃO MUDA (teclado e leitor de tela seguem a ordem lógica): cada quadro
+   só recebe uma posição na grade (coluna + linhas de 1 px). Quando um quadro cresce ou encolhe (gráfico,
+   recolhível aberto), as posições da coluna dele se refazem sem trocar ninguém de coluna; quando a
+   largura muda (janela, menu recolhido) as colunas se refazem.
+   Só a partir de 1100 px; abaixo disso a tela volta ao normal (um quadro embaixo do outro).
+   Telas que usam: Início, Previsão IA e Investimentos › Planejamento (lista MOS abaixo).
+   min = largura mínima de cada coluna (a tabela mais larga da tela tem que caber sem rolar de lado). */
+var MOS=[
+  {sel:".dash-grid",min:440},
+  {sel:".prev-main",min:480,achatar:".prev-col"},   /* 480: cabe a tabela do Top 10 sem rolar de lado */
+  {sel:".inv-acomp-top",min:480,achatar:".inv-col"} /* 480: cabe a tabela do IR estimado */
+];
+var MOS_GAP=12;
+function mosGrande(){ try{ return window.matchMedia("(min-width:1100px)").matches; }catch(e){ return false; } }
+/* tira os quadros das colunas fixas de origem (ficam guardadas para voltar em tela pequena) */
+function mosAchatar(box,cfg){
+  if(box.__mosItens) return box.__mosItens;
+  var orig=[], it=[];
+  [].slice.call(box.children).forEach(function(ch){
+    if(cfg.achatar&&ch.matches(cfg.achatar)){ var fs=[].slice.call(ch.children); orig.push({el:ch,filhos:fs}); fs.forEach(function(x){ it.push(x); }); }
+    else { orig.push({el:ch,filhos:null}); it.push(ch); }
+  });
+  box.__mosOrig=orig;
+  if(cfg.achatar){ box.innerHTML=""; it.forEach(function(x){ box.appendChild(x); }); }
+  box.__mosItens=it;
+  return it;
+}
+function mosDesfazer(box){
+  if(!box.__mosItens) return;
+  box.__mosOcup=1;
+  box.__mosItens.forEach(function(x){ x.style.gridColumn=""; x.style.gridRow=""; });
+  if(box.__mosOrig&&box.__mosOrig.some(function(o){ return o.filhos; })){
+    box.innerHTML="";
+    box.__mosOrig.forEach(function(o){ if(o.filhos) o.filhos.forEach(function(f){ o.el.appendChild(f); }); box.appendChild(o.el); });
+  }
+  box.classList.remove("mosaico"); box.style.gridTemplateColumns=""; box.__mosItens=null; box.__mosN=0; box.__mosCol=null;
+  box.__mosOcup=0;
+}
+/* posiciona: na 1ª vez (ou com outra largura) escolhe a coluna de cada quadro; depois só refaz as linhas */
+function mosPosicionar(box,escolher){
+  var it=box.__mosItens, n=box.__mosN; if(!it||!n) return;
+  var alt=new Array(n).fill(0);
+  if(escolher){ box.__mosCol=[]; it.forEach(function(x){ x.style.gridRow="1 / span 1"; x.style.gridColumn="1"; }); }
+  it.forEach(function(x,i){
+    if(x.hidden||getComputedStyle(x).display==="none"){ x.style.gridRow=""; return; }
+    var k;
+    if(escolher){ k=0; for(var j=1;j<n;j++){ if(alt[j]<alt[k]-1) k=j; } box.__mosCol[i]=k; x.style.gridColumn=String(k+1); }
+    else k=box.__mosCol[i]||0;
+    var h=Math.ceil(x.getBoundingClientRect().height);
+    x.style.gridRow=(alt[k]+1)+" / span "+Math.max(1,h);
+    alt[k]+=h+MOS_GAP;
+  });
+}
+function mosMontar(box,cfg){
+  if(!mosGrande()){ mosDesfazer(box); return; }
+  var larg=box.clientWidth; if(larg<50) return;
+  var n=Math.max(1,Math.floor((larg+MOS_GAP)/(cfg.min+MOS_GAP)));
+  if(box.__mosN===n) return;
+  box.__mosOcup=1;
+  mosAchatar(box,cfg);
+  box.classList.add("mosaico");
+  box.style.gridTemplateColumns="repeat("+n+",minmax(0,1fr))";
+  box.__mosN=n;
+  mosPosicionar(box,true);
+  box.__mosOcup=0;
+  /* quadro mudou de altura: refaz as linhas da grade (mesmas colunas, nada troca de lugar) */
+  if(window.ResizeObserver){
+    if(box.__mosRO) box.__mosRO.disconnect();
+    var pend=0;
+    box.__mosRO=new ResizeObserver(function(){ if(pend) return; pend=1; requestAnimationFrame(function(){ pend=0; if(document.body.contains(box)&&box.__mosN) mosPosicionar(box,false); }); });
+    box.__mosItens.forEach(function(x){ box.__mosRO.observe(x); });
+  }
+}
+function mosVarrer(){
+  try{
+    MOS.forEach(function(cfg){
+      document.querySelectorAll("#viewCtn "+cfg.sel).forEach(function(box){
+        if(box.__mosOcup) return;
+        mosMontar(box,cfg);
+        if(!box.__mosLarg&&window.ResizeObserver){
+          var w0=box.clientWidth;
+          box.__mosLarg=new ResizeObserver(function(){ var w=box.clientWidth; if(Math.abs(w-w0)<2) return; w0=w; requestAnimationFrame(function(){ if(document.body.contains(box)) mosMontar(box,cfg); }); });
+          box.__mosLarg.observe(box);
+        }
+      });
+    });
+  }catch(e){ rmLogErr(e,"mosaico"); }
+}
+/* toda tela nova: monta assim que aparece */
+(function(){
+  var pend=0;
+  var agenda=function(){ if(pend) return; pend=1; requestAnimationFrame(function(){ pend=0; mosVarrer(); }); };
+  try{ new MutationObserver(function(ms){
+    for(var i=0;i<ms.length;i++){ var t=ms[i].target; if(t&&t.closest&&t.closest(".mosaico")) continue; agenda(); return; }
+  }).observe(viewCtn,{childList:true,subtree:true}); }catch(e){ rmLogErr(e,"mosaico-obs"); }
+  window.addEventListener("resize",function(){ requestAnimationFrame(mosVarrer); });
+  agenda();
+})();
+try{ window.RM.mosaico=mosVarrer; }catch(e){}
 /* primeira tela: só depois de todos os módulos (antes, cartões que usam listas definidas mais abaixo falhavam na abertura) */
 try{ show(current||"dashboard"); }catch(e){ rmLogErr(e,"primeira-tela"); }
 
