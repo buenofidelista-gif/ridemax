@@ -3152,6 +3152,7 @@ function sanitizeDB(d, rawBackup){
         try{ if(m.tipo==="cdb"&&m.op==="compra"){ var _raw=(m.cdiPct!=null)?m.cdiPct:((m.pct!=null)?m.pct:((m.cdi!=null)?m.cdi:"")); var _pn=Number(String(_raw).replace(",",".")); if(isFinite(_pn)&&_pn>0&&_pn<=1000) _cp=Math.round(_pn*100)/100; if(typeof m.venc==="string"&&validISO(m.venc)) _vc=m.venc; else if(typeof m.vencimento==="string"&&validISO(m.vencimento)) _vc=m.vencimento; } }catch(_e){ _cp=null; _vc=null; }
         return {id:String(m.id||uid()),data:m.data,conta:String(m.conta),codigo:String(m.codigo).trim().toUpperCase().slice(0,12),tipo:m.tipo,op:m.op,qtd:Number(m.qtd),preco:Math.round(Number(m.preco)*100)/100,conciliado:(m.conciliado===1||m.conciliado===true)?1:0,cdiPct:_cp,venc:_vc,reserva:(m.reserva===1||m.reserva===true)?1:0};
       });
+      d.invMovs.forEach(function(o,ix){ var _tx=Number(_ivOk[ix]&&_ivOk[ix].taxa); if(isFinite(_tx)&&_tx>0&&_tx<1e7) o.taxa=Math.round(_tx*100)/100; }); /* taxas da corretora/B3 (opcional) */
     }
   }catch(e){
     _fail("invMovs");
@@ -3188,6 +3189,7 @@ function sanitizeDB(d, rawBackup){
         }
         if(!(_p>0)){ noteDropped("invCotacoes",{codigo:_code,valor:_v}); return; }
         var _o={preco:Math.round(_p*100)/100};
+        try{ var _tp=String((_extra&&_extra.tipo)||"").toLowerCase(); if(_tp==="acao"||_tp==="fii"||_tp==="etf") _o.tipo=_tp; }catch(_eT){} /* tipo da lista de cotações: confere o tipo na Nova operação */
         try{
           ["lpa","vpa","graham","dividendo_anual","bazin","pvp","dy"].forEach(function(_f){
             var _n=Number(_extra&&_extra[_f]);
@@ -3267,7 +3269,7 @@ function sanitizeDB(d, rawBackup){
       }
       d.invProventos=_pvOk.map(function(p){
         var _ir2=0; try{ if(p.tipo==="jcp"){ var _t=Number(p.ir); _ir2=isFinite(_t)?Math.round(_t*100)/100:15; if(_ir2<0) _ir2=0; if(_ir2>100) _ir2=100; } }catch(e){ _ir2=(p.tipo==="jcp"?15:0); }
-        return {id:String(p.id||uid()),dataCom:p.dataCom,dataPag:p.dataPag,conta:String(p.conta),codigo:String(p.codigo).trim().toUpperCase().slice(0,12),tipo:p.tipo,valorPorCota:Math.round(Number(p.valorPorCota)*100)/100,ir:_ir2,conciliado:(p.conciliado===1||p.conciliado===true)?1:0};
+        return {id:String(p.id||uid()),dataCom:p.dataCom,dataPag:p.dataPag,conta:String(p.conta),codigo:String(p.codigo).trim().toUpperCase().slice(0,12),tipo:p.tipo,valorPorCota:Math.round(Number(p.valorPorCota)*1e8)/1e8, /* 8 casas: provento real tem 4 ou mais (R$ 0,0234) */ir:_ir2,conciliado:(p.conciliado===1||p.conciliado===true)?1:0};
       });
     }
   }catch(e){
@@ -4724,7 +4726,7 @@ metas:"Quanto você quer ganhar e quanto falta para chegar lá. Olha a receita d
 plataformas:"Todos os cadastros ficam aqui: Plataformas, Categorias (cada categoria com seu grupo no DRE), Contas, Centros de custo, MEI e DAS, Veículo e energia (carros, manutenção, gastos anuais e tipo de energia) e Segurança e backup (PIN, backup, armazenamento, sincronizar e lembretes). Botões de outras telas que levam a Contas ou Centros de custo abrem a aba certa daqui.",
 analise:"Os números operacionais por plataforma e por km. Custo total por km (com o carro) soma energia, todas as despesas e o custo do carro; o gráfico mensal mostra o custo variável por km (energia e despesas variáveis). Bruta × líquido mês a mês está na DRE › Mês a mês; despesas por categoria, na tela Despesas. A energia recarregada em casa só entra no custo depois que a conta de luz é lançada e apurada. Até isso acontecer, o custo por km fica sem ela, e o app mostra quantos kWh estão de fora em vez de chutar um valor. Deduções manuais (taxas) não entram no rateio do card por plataforma.",
 repasses:"A conferência do repasse: agrupa as corridas de uma plataforma por janela e mostra o que era esperado. O repasse se lança só aqui: com “Dar baixa no Financeiro” marcado, o app cria o lote do período e já concilia — o dinheiro entra na conta da plataforma e os valores a receber saem do Contas a pagar. Desmarcado, a tela só confere. O que restar após os ajustes costuma ser virada de fechamento: confira no próximo repasse.",
-investimentos:"As contas de tipo investimento, com os aportes e os resgates. O aporte é uma transferência comum: dinheiro saindo de uma conta e entrando na de investimento. Total investido = dinheiro nas contas de investimento + valor dos ativos (cotação carregada; sem cotação, preço médio; CDB pelo CDI). Comprar um ativo troca dinheiro por ativo: o patrimônio não cai. Desdobramento/grupamento: excluir evento que deixaria venda acima da posição é bloqueado. Abas: Resumo (como você está indo), Carteira (seus ativos por classe, com o alvo), Movimentos (contas, compras e vendas, aportes e resgates no período), Proventos, Observação e Planejamento (plano do Uber para a renda, reserva, metas e alvos, próximo aporte, IR e simulador). O aporte é feito na tela de Transferência: escolha a conta de origem e a conta de investimento como destino. Em Planejamento › Metas e alvos, os pesos por classe têm de somar 100.",
+investimentos:"As contas de tipo investimento, com os aportes e os resgates. O aporte é uma transferência comum: dinheiro saindo de uma conta e entrando na de investimento. Total na corretora = dinheiro nas contas de investimento + valor dos ativos a preço de hoje (cotação carregada; sem cotação, preço médio; CDB pelo CDI). Comprar um ativo troca dinheiro por ativo: o patrimônio não cai. Desdobramento/grupamento: excluir evento que deixaria venda acima da posição é bloqueado. Abas: Resumo (como você está indo), Carteira (seus ativos por classe, com o alvo), Movimentos (contas, compras e vendas, aportes e resgates no período), Proventos, Observação e Planejamento (plano do Uber para a renda, reserva, metas e alvos, próximo aporte, IR e simulador). O aporte é feito na tela de Transferência: escolha a conta de origem e a conta de investimento como destino. Em Planejamento › Metas e alvos, os pesos por classe têm de somar 100.",
    lixeira:"O que foi excluído fica aqui e pode ser restaurado, com os saldos voltando a refletir. Registro conciliado precisa ser desconciliado antes de excluir. Registro que faz parte de um lote conciliado precisa que o lote seja desfeito primeiro.",
    backup:"Fazer backup baixa um arquivo com tudo. Restaurar backup SUBSTITUI a base atual — antes de substituir, o app baixa sozinho um backup do estado anterior. Registros inválidos do arquivo são descartados e relatados, com a indicação de quais foram, para você poder relançar.",
     limpeza:"Apaga todo o movimento e preserva os cadastros. Serve para zerar os dados de teste antes do primeiro dia de trabalho real. Pede backup, data de corte e confirmação digitada, nessa ordem. Atenção: as séries de recorrente e parcelado são cadastro e NÃO são apagadas — as de teste precisam ser excluídas à mão.",
@@ -9266,11 +9268,15 @@ function contaUsoTxt(c,u){ try{ var parts=[]; if(u.transferencias>0) parts.push(
 var INV_TIPOS=[["acao","Ação"],["fii","FII"],["etf","ETF"],["tesouro","Tesouro"],["cdb","CDB"]];
 function invTipoLabel(t){ for(var _i=0;_i<INV_TIPOS.length;_i++){ if(INV_TIPOS[_i][0]===t) return INV_TIPOS[_i][1]; } return t||"—"; }
 function invMovValor(m){ try{ return Math.round(Number(m.qtd)*Number(m.preco)*100)/100; }catch(e){ return 0; } }
+/* dinheiro que o movimento mexe na conta: compra = qtd × preço + taxas (sai); venda = qtd × preço − taxas (entra).
+   taxas = corretagem + emolumentos da B3 (campo opcional "Taxas" da Nova operação). Use SEMPRE esta função para saldo. */
+function invMovCaixa(m){ try{ var b=Number(m.qtd)*Number(m.preco), t=Number(m.taxa)||0; return Math.round((m.op==="venda"?b-t:b+t)*100)/100; }catch(e){ return 0; } }
 /* ---------- FASE 8I — DESDOBRAMENTO/GRUPAMENTO (só ajuste de qtd/PM; nunca saldo/DRE/MEI) ---------- */
 function invEventosDo(codigo,ate,ignoreEventoId){ var out=[]; try{ var _cod=String(codigo||"").trim().toUpperCase(); var _arr=DB.invEventos||[]; for(var i=0;i<_arr.length;i++){ var e=_arr[i]; if(!e) continue; if(ignoreEventoId&&String(e.id)===String(ignoreEventoId)) continue; if(String(e.codigo||"").trim().toUpperCase()!==_cod) continue; if(!validISO(e.data)) continue; if(!(e.tipo==="desdobramento"||e.tipo==="grupamento")) continue; var de=Number(e.de), para=Number(e.para); if(!(isFinite(de)&&isFinite(para)&&de>0&&para>0&&Math.round(de)===de&&Math.round(para)===para)) continue; if(ate&&String(e.data)>String(ate)) continue; out.push(e); } out.sort(function(a,b){ if(a.data!==b.data) return a.data<b.data?-1:1; return String(a.id||"")<String(b.id||"")?-1:1; }); }catch(_e){rmLogErr(_e)} return out; }
 function invPosQtdTotal(codigo,ate,ignoreEventoId){ var s=0; try{ var _cod=String(codigo||"").trim().toUpperCase(); var _seen={}; (DB.invMovs||[]).forEach(function(m){ if(!m) return; if(String(m.codigo||"").trim().toUpperCase()!==_cod) return; if(ate&&String(m.data)>String(ate)) return; _seen[String(m.conta)]=1; }); for(var k in _seen){ s+=invPosQtd(k,_cod,ate||null,null,ignoreEventoId||null); } }catch(e){rmLogErr(e)} return Math.round(s*100000000)/100000000; }
 function invPosQtd(contaId,codigo,ate,ignoreId,ignoreEventoId){ var s=0; try{ var _l=DB.invMovs||[]; var _cod=String(codigo||"").trim().toUpperCase(); var _movs=[]; for(var i=0;i<_l.length;i++){ var m=_l[i]; if(!m||String(m.conta)!==String(contaId)) continue; if(String(m.codigo||"").trim().toUpperCase()!==_cod) continue; if(ignoreId&&String(m.id)===String(ignoreId)) continue; if(ate&&String(m.data)>String(ate)) continue; _movs.push(m); } var _evs=invEventosDo(_cod,ate||null,ignoreEventoId||null); var _comb=[]; for(var a=0;a<_movs.length;a++){ _comb.push({data:_movs[a].data,id:String(_movs[a].id||""),kind:"mov",ref:_movs[a]}); } for(var b=0;b<_evs.length;b++){ _comb.push({data:_evs[b].data,id:String(_evs[b].id||""),kind:"ev",ref:_evs[b]}); } _comb.sort(function(x,y){ if(x.data!==y.data) return x.data<y.data?-1:1; return String(x.id)<String(y.id)?-1:1; }); for(var k=0;k<_comb.length;k++){ var c=_comb[k]; if(c.kind==="mov"){ var q=Number(c.ref.qtd)||0; if(c.ref.op==="compra") s+=q; else if(c.ref.op==="venda") s-=q; } else { var de=Number(c.ref.de), para=Number(c.ref.para); if(de>0&&para>0) s=s*para/de; } s=Math.round(s*100000000)/100000000; } }catch(e){rmLogErr(e)} return Math.round(s*100000000)/100000000; }
-function invPosicaoDe(contaId,codigo,ate,ignoreId,ignoreEventoId){ var q=0, qc=0, vc=0, pmZerado=0; try{ var _l=DB.invMovs||[]; var _cod=String(codigo||"").trim().toUpperCase(); var _movs=[]; for(var i=0;i<_l.length;i++){ var m=_l[i]; if(!m||String(m.conta)!==String(contaId)) continue; if(String(m.codigo||"").trim().toUpperCase()!==_cod) continue; if(ignoreId&&String(m.id)===String(ignoreId)) continue; if(ate&&String(m.data)>String(ate)) continue; _movs.push(m); } var _evs=invEventosDo(_cod,ate||null,ignoreEventoId||null); var _comb=[]; for(var a=0;a<_movs.length;a++){ _comb.push({data:_movs[a].data,id:String(_movs[a].id||""),kind:"mov",ref:_movs[a]}); } for(var b=0;b<_evs.length;b++){ _comb.push({data:_evs[b].data,id:String(_evs[b].id||""),kind:"ev",ref:_evs[b]}); } _comb.sort(function(x,y){ if(x.data!==y.data) return x.data<y.data?-1:1; return String(x.id)<String(y.id)?-1:1; }); for(var k=0;k<_comb.length;k++){ var c=_comb[k]; if(c.kind==="mov"){ var _q=Number(c.ref.qtd)||0, _p=Number(c.ref.preco)||0; if(c.ref.op==="compra"){ q+=_q; qc+=_q; vc=Math.round((vc+_q*_p)*100)/100; } else if(c.ref.op==="venda"){ /* venda abate o custo na proporção vendida: o PM das que sobraram não muda e uma compra depois entra na média certa */ var _pmAntes=qc>0.00000001?vc/qc:0; if(qc>0.00000001){ var _fr=Math.min(1,_q/qc); vc=Math.round((vc-vc*_fr)*100)/100; qc=Math.max(0,qc-_q); } q-=_q; if(q<=0.00000001){ /* posição zerou: o PM informado é o do lote vendido (ganho da venda); a próxima compra recomeça do zero */ pmZerado=Math.round(_pmAntes*100)/100; vc=0; qc=0; } } } else { var de2=Number(c.ref.de), para2=Number(c.ref.para); if(de2>0&&para2>0){ q=q*para2/de2; qc=qc*para2/de2; } } q=Math.round(q*100000000)/100000000; qc=Math.round(qc*100000000)/100000000; } }catch(e){rmLogErr(e)} q=Math.round(q*100000000)/100000000; qc=Math.round(qc*100000000)/100000000; var pm=qc>0?Math.round(vc/qc*100)/100:(q<=0.00000001?pmZerado:0); if(qc>0) pmZerado=0; return {qtd:q,pm:pm,total:Math.round(q*pm*100)/100,compQtd:qc,compVal:Math.round(vc*100)/100}; }
+/* contaId=null: todas as contas juntas (o preço médio do IR é um só por CPF, somando as corretoras) */
+function invPosicaoDe(contaId,codigo,ate,ignoreId,ignoreEventoId){ var q=0, qc=0, vc=0, pmZerado=0; try{ var _l=DB.invMovs||[]; var _cod=String(codigo||"").trim().toUpperCase(); var _movs=[]; for(var i=0;i<_l.length;i++){ var m=_l[i]; if(!m||(contaId!=null&&String(m.conta)!==String(contaId))) continue; if(String(m.codigo||"").trim().toUpperCase()!==_cod) continue; if(ignoreId&&String(m.id)===String(ignoreId)) continue; if(ate&&String(m.data)>String(ate)) continue; _movs.push(m); } var _evs=invEventosDo(_cod,ate||null,ignoreEventoId||null); var _comb=[]; for(var a=0;a<_movs.length;a++){ _comb.push({data:_movs[a].data,id:String(_movs[a].id||""),kind:"mov",ref:_movs[a]}); } for(var b=0;b<_evs.length;b++){ _comb.push({data:_evs[b].data,id:String(_evs[b].id||""),kind:"ev",ref:_evs[b]}); } _comb.sort(function(x,y){ if(x.data!==y.data) return x.data<y.data?-1:1; return String(x.id)<String(y.id)?-1:1; }); for(var k=0;k<_comb.length;k++){ var c=_comb[k]; if(c.kind==="mov"){ var _q=Number(c.ref.qtd)||0, _p=Number(c.ref.preco)||0; if(c.ref.op==="compra"){ q+=_q; qc+=_q; vc=Math.round((vc+_q*_p+(Number(c.ref.taxa)||0))*100)/100; /* taxas entram no custo (regra do IR) */ } else if(c.ref.op==="venda"){ /* venda abate o custo na proporção vendida: o PM das que sobraram não muda e uma compra depois entra na média certa */ var _pmAntes=qc>0.00000001?vc/qc:0; if(qc>0.00000001){ var _fr=Math.min(1,_q/qc); vc=Math.round((vc-vc*_fr)*100)/100; qc=Math.max(0,qc-_q); } q-=_q; if(q<=0.00000001){ /* posição zerou: o PM informado é o do lote vendido (ganho da venda); a próxima compra recomeça do zero */ pmZerado=Math.round(_pmAntes*100)/100; vc=0; qc=0; } } } else { var de2=Number(c.ref.de), para2=Number(c.ref.para); if(de2>0&&para2>0){ q=q*para2/de2; qc=qc*para2/de2; } } q=Math.round(q*100000000)/100000000; qc=Math.round(qc*100000000)/100000000; } }catch(e){rmLogErr(e)} q=Math.round(q*100000000)/100000000; qc=Math.round(qc*100000000)/100000000; var pm=qc>0?Math.round(vc/qc*100)/100:(q<=0.00000001?pmZerado:0); if(qc>0) pmZerado=0; return {qtd:q,pm:pm,total:Math.round(q*pm*100)/100,compQtd:qc,compVal:Math.round(vc*100)/100}; }
 function invFicariaNegativo(contaId,codigo,ignoreId,extra,ignoreEventoId,extraEvento){ try{ var _l=DB.invMovs||[]; var _cod=String(codigo||"").trim().toUpperCase(); var _movs=[]; for(var i=0;i<_l.length;i++){ var m=_l[i]; if(!m||String(m.conta)!==String(contaId)) continue; if(String(m.codigo||"").trim().toUpperCase()!==_cod) continue; if(ignoreId&&String(m.id)===String(ignoreId)) continue; _movs.push(m); } if(extra){ _movs.push(extra); } var _evs=invEventosDo(_cod,null,ignoreEventoId||null); if(extraEvento){ _evs.push(extraEvento); } var _comb=[]; for(var a=0;a<_movs.length;a++){ _comb.push({data:_movs[a].data,id:String(_movs[a].id||""),kind:"mov",ref:_movs[a]}); } for(var b=0;b<_evs.length;b++){ _comb.push({data:_evs[b].data,id:String(_evs[b].id||""),kind:"ev",ref:_evs[b]}); } _comb.sort(function(x,y){ if(x.data!==y.data) return x.data<y.data?-1:1; return String(x.id)<String(y.id)?-1:1; }); var s=0; for(var j=0;j<_comb.length;j++){ var c=_comb[j]; if(c.kind==="mov"){ var q=Number(c.ref.qtd)||0; if(c.ref.op==="compra") s+=q; else s-=q; } else { var de=Number(c.ref.de), para=Number(c.ref.para); if(de>0&&para>0) s=s*para/de; } s=Math.round(s*100000000)/100000000; if(s<-0.0000001) return true; } }catch(e){rmLogErr(e)} return false; }
 function invEventoValidar(o,ignoreId){ var data=String((o&&o.data)||""), cod="", tipo=String((o&&o.tipo)||""); try{ cod=String((o&&o.codigo)||"").trim().toUpperCase().slice(0,12); }catch(e){ cod=""; } var de=Number(o&&o.de), para=Number(o&&o.para); if(!validISO(data)) return {ok:false,msg:"Data inválida. Use DD/MM/AAAA com dia real."}; if(isFuturo(data)) return {ok:false,msg:"Data no futuro não é aceita. Use uma data até hoje."}; if(!cod) return {ok:false,msg:"Digite o código do ativo (ex: PETR4)."}; if(!(tipo==="desdobramento"||tipo==="grupamento")) return {ok:false,msg:"Tipo inválido. Use desdobramento ou grupamento."}; if(!(isFinite(de)&&isFinite(para)&&de>0&&para>0&&Math.round(de)===de&&Math.round(para)===para)) return {ok:false,msg:"De e Para precisam ser inteiros maiores que zero (ex: desdobramento 1 para 2; grupamento 10 para 1)."}; if(de===para) return {ok:false,msg:"De e Para iguais não alteram nada. Desdobramento 1 para 2 multiplica por 2; grupamento 10 para 1 divide por 10."}; var tot=0; try{ tot=invPosQtdTotal(cod,data,ignoreId||null); }catch(e){ tot=0; } if(!(tot>0.0000001)) return {ok:false,msg:"Sem posição de "+cod+" em "+isoToBR(data)+": o evento exige posição maior que zero na data (das compras e vendas até essa data). Registre a compra com data até o evento antes de lançar."}; return {ok:true,evento:{data:data,codigo:cod,tipo:tipo,de:Math.round(de),para:Math.round(para)}}; }
 function invEventoAdd(o){ var v=null; try{ v=invEventoValidar(o,null); }catch(e){ return {ok:false,msg:"Validação falhou."}; } if(!v.ok) return v; var rec={id:uid(),data:v.evento.data,codigo:v.evento.codigo,tipo:v.evento.tipo,de:v.evento.de,para:v.evento.para}; (DB.invEventos=DB.invEventos||[]).push(rec); return {ok:true,id:rec.id,rec:rec}; }
@@ -9278,9 +9284,9 @@ function invEventoPodeExcluir(ev){ try{ if(!ev) return {ok:false,msg:"Evento inv
 function invEventoFracaoAlerta(contaId,codigo){ try{ var p=null; try{ p=invPosicaoDe(contaId,codigo,null,null,null); }catch(e){ return null; } if(!p||!(p.qtd>0.0000001)) return null; var frac=Math.abs(p.qtd-Math.round(p.qtd)); if(!(frac>0.0000001)) return null; var evs=invEventosDo(String(codigo||"").trim().toUpperCase(),null,null); var tem=false; for(var i=0;i<evs.length;i++){ if(evs[i]&&evs[i].tipo==="grupamento"){ tem=true; break; } } if(!tem) return null; return {qtd:p.qtd,msg:"fração vendida em leilão pela empresa \u2014 lance o valor recebido como venda"}; }catch(e){ return null; } }
 function invPosicoes(contaId){ var map={}; try{ var _l=DB.invMovs||[]; for(var i=0;i<_l.length;i++){ var m=_l[i]; if(!m) continue; if(contaId&&String(m.conta)!==String(contaId)) continue; var k=String(m.conta)+"||"+String(m.codigo||"").trim().toUpperCase(); if(!map[k]) map[k]={conta:m.conta,codigo:String(m.codigo||"").trim().toUpperCase()}; } Object.keys(map).forEach(function(k){ var p=invPosicaoDe(map[k].conta,map[k].codigo,null,null); map[k].qtd=p.qtd; map[k].pm=p.pm; map[k].total=p.total; }); }catch(e){rmLogErr(e)} return map; }
 function contaAvisos(c){ var out=[]; if(!c) return out; var _l=DB.transferencias||[]; for(var i=0;i<_l.length;i++){ var t=_l[i]; if((t.contaOrigem===c.id||t.contaDestino===c.id)&&t.data<c.dataSaldoInicial) out.push(t); } var _tl=DB.titulos||[]; for(var _j=0;_j<_tl.length;_j++){ var _bb=tituloBaixas(_tl[_j]); for(var _k=0;_k<_bb.length;_k++){ if(_bb[_k].conta===c.id&&_bb[_k].data<c.dataSaldoInicial) out.push(_bb[_k]); } } try{ var _aj=DB.concAjustes||[]; for(var _a=0;_a<_aj.length;_a++){ var _x=_aj[_a]; if(_x&&_x.conta===c.id&&_x.data<c.dataSaldoInicial) out.push(_x); } }catch(_eAj){rmLogErr(_eAj)} try{ var _ivA=DB.invMovs||[]; for(var _va=0;_va<_ivA.length;_va++){ var _xa=_ivA[_va]; if(_xa&&_xa.conta===c.id&&_xa.data<c.dataSaldoInicial) out.push(_xa); } }catch(_eIv){rmLogErr(_eIv)} try{ var _pvA=DB.invProventos||[]; for(var _vpa=0;_vpa<_pvA.length;_vpa++){ var _xpa=_pvA[_vpa]; if(_xpa&&_xpa.conta===c.id&&_xpa.dataPag<c.dataSaldoInicial) out.push(_xpa); } }catch(_ePv){rmLogErr(_ePv)} try{ var _cc=null; try{ _cc=carteiraCreditoContaId(); }catch(_eCc){ _cc=null; } if(_cc&&c.id===_cc){ for(var _r=0;_r<(DB.rides||[]).length;_r++){ var _rd=DB.rides[_r]; if(isCashRide(_rd)&&_rd.date<c.dataSaldoInicial) out.push(_rd); } } }catch(_eRd){rmLogErr(_eRd)} return out; }
-function contaAvisosSoma(lst){ var s=0; try{ for(var i=0;i<(lst||[]).length;i++){ var it=lst[i]; if(!it) continue; if(it.qtd!=null&&it.preco!=null&&(it.op==="compra"||it.op==="venda")){ s+=Math.abs(Math.round(Number(it.qtd)*Number(it.preco)*100)/100); continue; } if(it.dataPag!=null&&it.valorPorCota!=null&&it.codigo){ try{ s+=Math.abs(invProvValor(it))||0; }catch(_ePv){ s+=0; } continue; } if(it.contaOrigem||it.contaDestino){ s+=Math.abs(Number(it.valor)||0); } else if(it.platform_id!==undefined||it.cash!==undefined||it.earnings!==undefined){ try{ s+=Math.abs(creditoDinheiroDe(it))||0; }catch(_e){rmLogErr(_e)} } else if(it.conta&&it.valor!=null){ if(it.encRateio!==undefined||it.juros!==undefined||it.desconto!==undefined){ try{ s+=Math.abs(baixaEntrada(it))||0; }catch(_e2){ s+=Math.abs(Number(it.valor)||0); } } else { s+=Math.abs(Number(it.valor)||0); } } } }catch(_e3){rmLogErr(_e3)} return Math.round(s*100)/100; }
-function contaEntradas(c){ var s=0; if(!c) return 0; var _l=DB.transferencias||[]; for(var i=0;i<_l.length;i++){ var t=_l[i]; if(t.contaDestino===c.id&&t.data>=c.dataSaldoInicial) s+=Number(t.valor)||0; } var _tl=DB.titulos||[]; for(var _j=0;_j<_tl.length;_j++){ if(_tl[_j]&&_tl[_j].tipo==="receber"){ var _bb=tituloBaixas(_tl[_j]); for(var _k=0;_k<_bb.length;_k++){ var _b=_bb[_k]; if(_b.conta===c.id&&_b.data>=c.dataSaldoInicial) s+=baixaEntrada(_b); } } } /* FASE 5B — ajuste de conciliação: só a entrada soma aqui. */ try{ var _aj5=DB.concAjustes||[]; for(var _a5=0;_a5<_aj5.length;_a5++){ var _x5=_aj5[_a5]; if(_x5&&_x5.conta===c.id&&_x5.data>=c.dataSaldoInicial&&(Number(_x5.valor)||0)>0) s+=Number(_x5.valor); } }catch(_e5){rmLogErr(_e5)} /* FASE 8A — investimento: venda soma em entradas (troca de ativo por dinheiro, sem DRE). */ try{ var _ivE=DB.invMovs||[]; for(var _ve=0;_ve<_ivE.length;_ve++){ var _xe=_ivE[_ve]; if(_xe&&_xe.conta===c.id&&_xe.op==="venda"&&_xe.data>=c.dataSaldoInicial) s+=Math.round(Number(_xe.qtd)*Number(_xe.preco)*100)/100; } }catch(_e8){rmLogErr(_e8)} /* FASE 8D — proventos: valor líquido na data de pagamento, só com dataPag<=hoje e >=dataSaldoInicial. */ try{ var _hoje8D=todayISO(); var _pvE=DB.invProventos||[]; for(var _vpe=0;_vpe<_pvE.length;_vpe++){ var _xpe=_pvE[_vpe]; if(_xpe&&_xpe.conta===c.id&&_xpe.dataPag>=c.dataSaldoInicial&&_xpe.dataPag<=_hoje8D) s+=invProvValor(_xpe); } }catch(_e8d){rmLogErr(_e8d)} /* FASE 4A — dinheiro: crédito derivado na Carteira (fare+gorjeta, na data da corrida). */ try{ if(c.id===carteiraCreditoContaId()){ for(var _r=0;_r<(DB.rides||[]).length;_r++){ var _rd=DB.rides[_r]; if(isCashRide(_rd)&&_rd.date>=c.dataSaldoInicial) s+=creditoDinheiroDe(_rd); } } }catch(e){rmLogErr(e)} s+=loteDifSoma(c,1,null); return Math.round(s*100)/100; }
-function contaSaidas(c){ var s=0; if(!c) return 0; var _l=DB.transferencias||[]; for(var i=0;i<_l.length;i++){ var t=_l[i]; if(t.contaOrigem===c.id&&t.data>=c.dataSaldoInicial) s+=Number(t.valor)||0; } var _tl=DB.titulos||[]; for(var _j=0;_j<_tl.length;_j++){ if(_tl[_j]&&_tl[_j].tipo==="receber") continue; var _bb=tituloBaixas(_tl[_j]); for(var _k=0;_k<_bb.length;_k++){ var _b=_bb[_k]; if(_b.conta===c.id&&_b.data>=c.dataSaldoInicial) s+=baixaSaida(_b); } } /* FASE 5B — ajuste de conciliação: só a saída soma aqui. */ try{ var _aj6=DB.concAjustes||[]; for(var _a6=0;_a6<_aj6.length;_a6++){ var _x6=_aj6[_a6]; if(_x6&&_x6.conta===c.id&&_x6.data>=c.dataSaldoInicial&&(Number(_x6.valor)||0)<0) s+=Math.abs(Number(_x6.valor)); } }catch(_e6){rmLogErr(_e6)} /* FASE 8A — investimento: compra soma em saídas (troca de dinheiro por ativo, sem DRE). */ try{ var _ivS=DB.invMovs||[]; for(var _vs=0;_vs<_ivS.length;_vs++){ var _xs=_ivS[_vs]; if(_xs&&_xs.conta===c.id&&_xs.op==="compra"&&_xs.data>=c.dataSaldoInicial) s+=Math.round(Number(_xs.qtd)*Number(_xs.preco)*100)/100; } }catch(_e8){rmLogErr(_e8)} s+=loteDifSoma(c,-1,null); return Math.round(s*100)/100; }
+function contaAvisosSoma(lst){ var s=0; try{ for(var i=0;i<(lst||[]).length;i++){ var it=lst[i]; if(!it) continue; if(it.qtd!=null&&it.preco!=null&&(it.op==="compra"||it.op==="venda")){ s+=Math.abs(invMovCaixa(it)); continue; } if(it.dataPag!=null&&it.valorPorCota!=null&&it.codigo){ try{ s+=Math.abs(invProvValor(it))||0; }catch(_ePv){ s+=0; } continue; } if(it.contaOrigem||it.contaDestino){ s+=Math.abs(Number(it.valor)||0); } else if(it.platform_id!==undefined||it.cash!==undefined||it.earnings!==undefined){ try{ s+=Math.abs(creditoDinheiroDe(it))||0; }catch(_e){rmLogErr(_e)} } else if(it.conta&&it.valor!=null){ if(it.encRateio!==undefined||it.juros!==undefined||it.desconto!==undefined){ try{ s+=Math.abs(baixaEntrada(it))||0; }catch(_e2){ s+=Math.abs(Number(it.valor)||0); } } else { s+=Math.abs(Number(it.valor)||0); } } } }catch(_e3){rmLogErr(_e3)} return Math.round(s*100)/100; }
+function contaEntradas(c){ var s=0; if(!c) return 0; var _l=DB.transferencias||[]; for(var i=0;i<_l.length;i++){ var t=_l[i]; if(t.contaDestino===c.id&&t.data>=c.dataSaldoInicial) s+=Number(t.valor)||0; } var _tl=DB.titulos||[]; for(var _j=0;_j<_tl.length;_j++){ if(_tl[_j]&&_tl[_j].tipo==="receber"){ var _bb=tituloBaixas(_tl[_j]); for(var _k=0;_k<_bb.length;_k++){ var _b=_bb[_k]; if(_b.conta===c.id&&_b.data>=c.dataSaldoInicial) s+=baixaEntrada(_b); } } } /* FASE 5B — ajuste de conciliação: só a entrada soma aqui. */ try{ var _aj5=DB.concAjustes||[]; for(var _a5=0;_a5<_aj5.length;_a5++){ var _x5=_aj5[_a5]; if(_x5&&_x5.conta===c.id&&_x5.data>=c.dataSaldoInicial&&(Number(_x5.valor)||0)>0) s+=Number(_x5.valor); } }catch(_e5){rmLogErr(_e5)} /* FASE 8A — investimento: venda soma em entradas (troca de ativo por dinheiro, sem DRE). */ try{ var _ivE=DB.invMovs||[]; for(var _ve=0;_ve<_ivE.length;_ve++){ var _xe=_ivE[_ve]; if(_xe&&_xe.conta===c.id&&_xe.op==="venda"&&_xe.data>=c.dataSaldoInicial) s+=invMovCaixa(_xe); } }catch(_e8){rmLogErr(_e8)} /* FASE 8D — proventos: valor líquido na data de pagamento, só com dataPag<=hoje e >=dataSaldoInicial. */ try{ var _hoje8D=todayISO(); var _pvE=DB.invProventos||[]; for(var _vpe=0;_vpe<_pvE.length;_vpe++){ var _xpe=_pvE[_vpe]; if(_xpe&&_xpe.conta===c.id&&_xpe.dataPag>=c.dataSaldoInicial&&_xpe.dataPag<=_hoje8D) s+=invProvValor(_xpe); } }catch(_e8d){rmLogErr(_e8d)} /* FASE 4A — dinheiro: crédito derivado na Carteira (fare+gorjeta, na data da corrida). */ try{ if(c.id===carteiraCreditoContaId()){ for(var _r=0;_r<(DB.rides||[]).length;_r++){ var _rd=DB.rides[_r]; if(isCashRide(_rd)&&_rd.date>=c.dataSaldoInicial) s+=creditoDinheiroDe(_rd); } } }catch(e){rmLogErr(e)} s+=loteDifSoma(c,1,null); return Math.round(s*100)/100; }
+function contaSaidas(c){ var s=0; if(!c) return 0; var _l=DB.transferencias||[]; for(var i=0;i<_l.length;i++){ var t=_l[i]; if(t.contaOrigem===c.id&&t.data>=c.dataSaldoInicial) s+=Number(t.valor)||0; } var _tl=DB.titulos||[]; for(var _j=0;_j<_tl.length;_j++){ if(_tl[_j]&&_tl[_j].tipo==="receber") continue; var _bb=tituloBaixas(_tl[_j]); for(var _k=0;_k<_bb.length;_k++){ var _b=_bb[_k]; if(_b.conta===c.id&&_b.data>=c.dataSaldoInicial) s+=baixaSaida(_b); } } /* FASE 5B — ajuste de conciliação: só a saída soma aqui. */ try{ var _aj6=DB.concAjustes||[]; for(var _a6=0;_a6<_aj6.length;_a6++){ var _x6=_aj6[_a6]; if(_x6&&_x6.conta===c.id&&_x6.data>=c.dataSaldoInicial&&(Number(_x6.valor)||0)<0) s+=Math.abs(Number(_x6.valor)); } }catch(_e6){rmLogErr(_e6)} /* FASE 8A — investimento: compra soma em saídas (troca de dinheiro por ativo, sem DRE). */ try{ var _ivS=DB.invMovs||[]; for(var _vs=0;_vs<_ivS.length;_vs++){ var _xs=_ivS[_vs]; if(_xs&&_xs.conta===c.id&&_xs.op==="compra"&&_xs.data>=c.dataSaldoInicial) s+=invMovCaixa(_xs); } }catch(_e8){rmLogErr(_e8)} s+=loteDifSoma(c,-1,null); return Math.round(s*100)/100; }
 function saldoConta(c){ if(!c) return 0; return Math.round((Number(c.saldoInicial)+contaEntradas(c)-contaSaidas(c))*100)/100; }
 function totalGeralContas(){ var s=0, _l=DB.contas||[]; for(var i=0;i<_l.length;i++){ s+=saldoConta(_l[i]); } return Math.round(s*100)/100; }
 function finSortNome(a,b){ var x=String(a.nome||""), y=String(b.nome||""); return x<y?-1:(x>y?1:0); }
@@ -9551,6 +9557,25 @@ function invRange(){
    Só o ÚLTIMO arquivo carregado. Exportação "ativos_bueno.json" exata.
    Arquivo de cotação: objeto com data + por ativo preco (+ extras opcionais). */
 function invCotacoesGet(){ try{ if(!DB.invCotacoes||typeof DB.invCotacoes!=="object") return null; if(!validISO(DB.invCotacoes.data)) return null; if(!DB.invCotacoes.dados||typeof DB.invCotacoes.dados!=="object") return null; return DB.invCotacoes; }catch(e){ return null; } }
+/* Tipo que um código TEM que ter (ação/FII/ETF), na ordem de confiança:
+   1) o código já tem lançamentos aqui → o mesmo tipo (um ativo não pode ser de dois tipos: estragaria distribuição e IR);
+   2) a lista de cotações (ativos_bueno.json) diz o tipo;
+   3) regra da B3: final 3, 4, 5, 6, 7 ou 8 é ação (final 11 pode ser FII, ETF ou unit de ação, como TAEE11).
+   BDR (final 31–35 e 39) não é ação brasileira: não tem a isenção de R$ 20 mil — ver invCodAviso.
+   null = não dá para saber (ex.: final 11 sem lançamento nem cotação). */
+/* lote fracionário: PETR4F é o mesmo ativo que PETR4 (senão vira uma posição separada) */
+function invCodNormal(cod){ cod=String(cod||"").trim().toUpperCase(); var m=cod.match(/^([A-Z]{4}\d{1,2})F$/); return m?m[1]:cod; }
+/* BDR: recibo de ação estrangeira negociado aqui. O app não tem esse tipo: lançado como ação, ganharia a isenção de R$ 20 mil, que não vale para BDR */
+function invCodAviso(cod){ cod=String(cod||"").trim().toUpperCase(); if(/^[A-Z]{4}(3[1-5]|39)$/.test(cod)) return cod+" parece um BDR (recibo de ação de fora, final 31 a 35 ou 39). BDR não tem a isenção de R$ 20 mil por mês das ações e o dividendo dele tem outra regra; o app não tem esse tipo, então o IR estimado e a aba IRPF podem sair errados para ele. Confira com quem faz seu imposto."; return null; }
+var INV_TIPO_NOME={acao:"Ação",fii:"FII",etf:"ETF",tesouro:"Tesouro",cdb:"CDB"};
+function invTipoEsperado(cod){
+  cod=String(cod||"").trim().toUpperCase(); if(!cod) return null;
+  try{ var ms=(DB.invMovs||[]).filter(function(m){ return m&&String(m.codigo||"").toUpperCase()===cod&&INV_TIPO_NOME[m.tipo]; });
+    if(ms.length){ ms.sort(function(a,b){ return String(a.data)<String(b.data)?-1:1; }); return {tipo:ms[ms.length-1].tipo,por:"já está lançado assim aqui"}; } }catch(e){ rmLogErr(e,"tipo-movs"); }
+  try{ var _c=invCotacoesGet(); var _v=_c&&_c.dados&&_c.dados[cod]; if(_v&&INV_TIPO_NOME[_v.tipo]) return {tipo:_v.tipo,por:"é o tipo na sua lista de cotações"}; }catch(e){ rmLogErr(e,"tipo-cot"); }
+  if(/^[A-Z]{4}[345678]F?$/.test(cod)) return {tipo:"acao",por:"código da B3 terminado em "+cod.replace(/F$/,"").slice(-1)+" é sempre ação (FII, ETF e units terminam em 11)"};
+  return null;
+}
 function invCotDataBR(){ var _c=invCotacoesGet(); if(!_c) return ""; try{ return isoToBR(_c.data).slice(0,5); }catch(e){ return ""; } }
 function invCotIdadeDias(){ var _c=invCotacoesGet(); if(!_c) return null; try{ var _a=new Date(_c.data+"T12:00:00"), _b=new Date(todayISO()+"T12:00:00"); return Math.round((_b-_a)/86400000); }catch(e){ return null; } }
 function invCotPreco(cod){ try{ var _c=invCotacoesGet(); if(!_c) return null; var _v=_c.dados[String(cod||"").trim().toUpperCase().slice(0,12)]; if(!_v) return null; var _p=Number(_v.preco); return (_p>0)?_p:null; }catch(e){ return null; } }
@@ -9679,7 +9704,7 @@ function invProvValor(prov){ return invProvLiquido(prov); }
 function invProvList(){ try{ return (DB.invProventos||[]).slice().sort(function(a,b){ if(a.dataPag!==b.dataPag) return a.dataPag<b.dataPag?-1:1; return String(a.id)<String(b.id)?-1:1; }); }catch(e){ return []; } }
 function invProvValidar(o){
   var dataCom=String((o&&o.dataCom)||""), dataPag=String((o&&o.dataPag)||""), contaId=String((o&&o.conta)||""), cod="", tipo=String((o&&o.tipo)||"");
-  try{ cod=String((o&&o.codigo)||"").trim().toUpperCase().slice(0,12); }catch(e){ cod=""; }
+  try{ cod=invCodNormal(String((o&&o.codigo)||"").trim().toUpperCase().slice(0,12)); }catch(e){ cod=""; } /* PETR4F = PETR4 */
   var vpc=Number(o&&o.valorPorCota), ir=Number(o&&o.ir);
   if(!validISO(dataCom)) return {ok:false,msg:"Data-com inválida. Use DD/MM/AAAA com dia real."};
   if(!validISO(dataPag)) return {ok:false,msg:"Data de pagamento inválida. Use DD/MM/AAAA com dia real."};
@@ -9693,7 +9718,7 @@ function invProvValidar(o){
   if(dataPag<c.dataSaldoInicial) return {ok:false,msg:"Data de pagamento "+isoToBR(dataPag)+" anterior à data do saldo inicial de '"+c.nome+"' (saldo inicial desde "+isoToBR(c.dataSaldoInicial)+"). Vale a data do movimento (regime de caixa): para lançar nessa data, edite a data do saldo inicial dessa conta em Contas.",contaId:c.id};
   var q=invPosQtd(contaId,cod,dataCom);
   if(!(q>0.0000001)) return {ok:false,msg:"Posição zero de "+cod+" na conta '"+c.nome+"' em "+isoToBR(dataCom)+" (data-com): o provento usa a posição da data-com, calculada das compras e vendas até essa data. Compra depois da data-com não conta. Registre a compra com data até a data-com antes de lançar o provento."};
-  var prov={dataCom:dataCom,dataPag:dataPag,conta:contaId,codigo:cod,tipo:tipo,valorPorCota:Math.round(vpc*100)/100,ir:(tipo==="jcp"?Math.round(ir*100)/100:0)};
+  var prov={dataCom:dataCom,dataPag:dataPag,conta:contaId,codigo:cod,tipo:tipo,valorPorCota:Math.round(vpc*1e8)/1e8 /* 8 casas: só o total vai a centavos */,ir:(tipo==="jcp"?Math.round(ir*100)/100:0)};
   var bruto=Math.round(q*prov.valorPorCota*100)/100;
   var ret=(tipo==="jcp"?Math.round(bruto*prov.ir)/100:0);
   var liq=Math.round((bruto-ret)*100)/100;
@@ -9717,7 +9742,7 @@ function invProvTabHTML(){
   var rowH=function(p){
     var q=invProvQtd(p), b=invProvBruto(p), liq=invProvValor(p);
     var irT=(p.tipo==="jcp")?(BRL(Math.round(b*invProvIrPct(p))/100)+" ("+String(invProvIrPct(p)).replace(".",",")+"%)"):'<span style="color:var(--muted)">—</span>';
-    return '<tr><td class="pv-data">'+isoToBR(p.dataCom)+'<br><span style="font-size:12px;color:var(--muted)">pag '+isoToBR(p.dataPag)+'</span></td><td class="l pv-cod"><b>'+esc(p.codigo)+'</b><br><span style="font-size:12px;color:var(--muted)">'+esc(invProvTipoLabel(p.tipo))+' · '+esc(contaNome(p.conta))+'</span></td><td class="pv-qtd" data-rot="Qtd">'+String(q).replace(".",",")+'</td><td class="pv-cota" style="white-space:nowrap" data-rot="Por cota">'+BRL(Number(p.valorPorCota))+'</td><td class="pv-bruto" style="white-space:nowrap" data-rot="Bruto">'+BRL(b)+'</td><td class="pv-ir" style="white-space:nowrap" data-rot="IR">'+irT+'</td><td class="pv-liq" style="white-space:nowrap"><b>'+BRL(liq)+'</b>'+(p.conciliado?' 🔒':"")+'</td><td class="pv-del"><button class="btn sm rowdel" data-invprovdel="'+esc(p.id)+'">🗑</button></td></tr>';
+    return '<tr><td class="pv-data">'+isoToBR(p.dataCom)+'<br><span style="font-size:12px;color:var(--muted)">pag '+isoToBR(p.dataPag)+'</span></td><td class="l pv-cod"><b>'+esc(p.codigo)+'</b><br><span style="font-size:12px;color:var(--muted)">'+esc(invProvTipoLabel(p.tipo))+' · '+esc(contaNome(p.conta))+'</span></td><td class="pv-qtd" data-rot="Qtd">'+String(q).replace(".",",")+'</td><td class="pv-cota" style="white-space:nowrap" data-rot="Por cota">'+rendaCotaTxt(p.valorPorCota)+'</td><td class="pv-bruto" style="white-space:nowrap" data-rot="Bruto">'+BRL(b)+'</td><td class="pv-ir" style="white-space:nowrap" data-rot="IR">'+irT+'</td><td class="pv-liq" style="white-space:nowrap"><b>'+BRL(liq)+'</b>'+(p.conciliado?' 🔒':"")+'</td><td class="pv-del"><button class="btn sm rowdel" data-invprovdel="'+esc(p.id)+'">🗑</button></td></tr>';
   };
   var hR="", hG="";
   if(!rec.length) hR='<tr><td colspan="8" style="color:var(--muted)">Nada a receber. Pagamento futuro entra aqui como agenda e não mexe no saldo.</td></tr>';
@@ -9733,7 +9758,7 @@ function invProvTabHTML(){
     +'<label class="f">Conta *<select id="invPConta">'+_opts+'</select><span class="tip">ex: conta onde o dinheiro cai.</span></label>'
     +'<label class="f">Código *<input id="invPCod" maxlength="12" placeholder="ex: PETR4" style="text-transform:uppercase"><span class="tip">ex: PETR4.</span></label>'
     +'<label class="f">Tipo *<select id="invPTipo">'+_tipoOpts+'</select></label>'
-    +'<label class="f">Valor por cota (R$) *<input id="invPValor" inputmode="decimal" placeholder="ex: 1,50"><span class="tip">ex: 1,50 por cota/ação.</span></label>'
+    +'<label class="f">Valor por cota (R$) *<input id="invPValor" inputmode="decimal" placeholder="ex: 1,50"><span class="tip">ex: 1,50 ou 0,0834 — use todas as casas do informe (até 8); só o total é arredondado em centavos.</span></label>'
     +'<div class="sub" id="invPPrev" style="grid-column:1/-1;font-size:14px"></div>'
     +'<label class="f" id="invPIrWrap">IR do JCP (%) *<input id="invPIr" inputmode="decimal" value="15"><span class="tip">ex: 15 — só vale para JCP; outros tipos ignoram.</span></label>'
     +'<div class="msg-ok" id="invPMsg"></div><div class="btnrow inv-actions"><button class="btn green" id="invPSave">Salvar provento</button></div></div></div><div class="inv-prov-right">'
@@ -9814,31 +9839,72 @@ function invAcompValidarAlvos(f,v){
 function invIrPadrao(){ return {isencaoAcoesMes:20000,aliqAcoes:15,aliqDayTrade:20,aliqFii:20,aliqEtf:15}; }
 function invIrSettings(){ var d=invIrPadrao(); try{ var s=DB.settings&&DB.settings.inv&&DB.settings.inv.ir; if(s&&typeof s==="object"&&!Array.isArray(s)){ var a=Number(s.isencaoAcoesMes); if(isFinite(a)&&a>=0) d.isencaoAcoesMes=Math.round(a*100)/100; var b=Number(s.aliqAcoes); if(isFinite(b)&&b>=0&&b<=100) d.aliqAcoes=Math.round(b*100)/100; var c=Number(s.aliqDayTrade); if(isFinite(c)&&c>=0&&c<=100) d.aliqDayTrade=Math.round(c*100)/100; var e=Number(s.aliqFii); if(isFinite(e)&&e>=0&&e<=100) d.aliqFii=Math.round(e*100)/100; var g=Number(s.aliqEtf); if(isFinite(g)&&g>=0&&g<=100) d.aliqEtf=Math.round(g*100)/100; } }catch(_e){rmLogErr(_e)} return d; }
 function invIrValidar(o){ var _is=parseBR(String((o&&o.isencaoAcoesMes!=null)?o.isencaoAcoesMes:"")); if(!(isFinite(_is)&&_is>=0)) return {ok:false,msg:"Isenção inválida. Use 0 ou mais (ex: 20.000,00)."}; var _a=parseBR(String((o&&o.aliqAcoes!=null)?o.aliqAcoes:"")); if(!(isFinite(_a)&&_a>=0&&_a<=100)) return {ok:false,msg:"Alíquota de ações inválida. Use 0 a 100 (ex: 15)."}; var _d=parseBR(String((o&&o.aliqDayTrade!=null)?o.aliqDayTrade:"")); if(!(isFinite(_d)&&_d>=0&&_d<=100)) return {ok:false,msg:"Alíquota day trade inválida. Use 0 a 100 (ex: 20)."}; var _f=parseBR(String((o&&o.aliqFii!=null)?o.aliqFii:"")); if(!(isFinite(_f)&&_f>=0&&_f<=100)) return {ok:false,msg:"Alíquota de FII inválida. Use 0 a 100 (ex: 20)."}; var _e2=parseBR(String((o&&o.aliqEtf!=null)?o.aliqEtf:"")); if(!(isFinite(_e2)&&_e2>=0&&_e2<=100)) return {ok:false,msg:"Alíquota de ETF inválida. Use 0 a 100 (ex: 15)."}; return {ok:true,valor:{isencaoAcoesMes:Math.round(_is*100)/100,aliqAcoes:Math.round(_a*100)/100,aliqDayTrade:Math.round(_d*100)/100,aliqFii:Math.round(_f*100)/100,aliqEtf:Math.round(_e2*100)/100}}; }
-function invIrTextoFixo(){ return "Estimativa sem compensação de prejuízo. Não é apuração; confira com quem faz seu imposto. DARF vence no último dia útil do mês seguinte."; }
+function invIrTextoFixo(){ return "Estimativa do app: imposto sobre o resultado do mês (lucros − prejuízos), descontando prejuízos de meses anteriores do mesmo grupo; DARF abaixo de R$ 10 acumula para o mês seguinte. Não considera taxas da corretora nem o IR retido na fonte (dedo-duro). Não é apuração oficial; confira com quem faz seu imposto. DARF vence no último dia útil do mês seguinte."; }
 function invEhDayTrade(contaId,codigo,data,ignoreId){ try{ if(!validISO(data)) return false; var cod=String(codigo||"").trim().toUpperCase(); if(!cod) return false; var l=DB.invMovs||[]; for(var i=0;i<l.length;i++){ var m=l[i]; if(!m) continue; if(ignoreId&&String(m.id)===String(ignoreId)) continue; if(String(m.conta)!==String(contaId)) continue; if(String(m.codigo||"").trim().toUpperCase()!==cod) continue; if(String(m.data)!==String(data)) continue; if(m.op==="compra"&&Number(m.qtd)>0&&Number(m.preco)>0) return true; } }catch(e){rmLogErr(e)} return false; }
 function invIrVendasAcoesMes(mes){ var s=0; try{ var l=DB.invMovs||[]; for(var i=0;i<l.length;i++){ var m=l[i]; if(!m||m.op!=="venda"||m.tipo!=="acao") continue; if(!validISO(m.data)) continue; if(String(m.data).slice(0,7)!==String(mes)) continue; if(!(Number(m.qtd)>0&&Number(m.preco)>0)) continue; var isD=false; try{ isD=invEhDayTrade(m.conta,m.codigo,m.data,String(m.id)); }catch(e){ isD=false; } if(isD) continue; s=Math.round((s+Math.round(Number(m.qtd)*Number(m.preco)*100)/100)*100)/100; } }catch(e){rmLogErr(e)} return Math.round(s*100)/100; }
-function invIrEstimarVenda(contaId,codigo,tipo,data,qtd,preco){ var ir=invIrSettings(); var pm=0; try{ var p=invPosicaoDe(contaId,codigo,data,null,null); if(p&&isFinite(Number(p.pm))) pm=Math.round(Number(p.pm)*100)/100; }catch(e){ pm=0; } var q=Number(qtd)||0, pr=Number(preco)||0; var lucro=Math.round((pr-pm)*q*100)/100; var mes=String(data||"").slice(0,7); var day=false; try{ day=invEhDayTrade(contaId,codigo,data,null); }catch(e){ day=false; } var t=String(tipo||""); if(!(t==="acao"||t==="fii"||t==="etf")) return {lucro:lucro,pm:pm,dayTrade:day,aliquota:0,imposto:0,isento:false,motivo:"sem estimativa (só ação/FII/ETF)",vendasMesAcoes:0}; if(day){ var impD=(lucro>0)?Math.round(lucro*ir.aliqDayTrade)/100:0; return {lucro:lucro,pm:pm,dayTrade:true,aliquota:ir.aliqDayTrade,imposto:impD,isento:false,motivo:"day trade",vendasMesAcoes:0}; } if(t==="acao"){ var vm=0; try{ vm=invIrVendasAcoesMes(mes); }catch(e){ vm=0; } if(vm<=ir.isencaoAcoesMes+0.000001) return {lucro:lucro,pm:pm,dayTrade:false,aliquota:0,imposto:0,isento:true,motivo:"isento",vendasMesAcoes:vm}; var impA=(lucro>0)?Math.round(lucro*ir.aliqAcoes)/100:0; return {lucro:lucro,pm:pm,dayTrade:false,aliquota:ir.aliqAcoes,imposto:impA,isento:false,motivo:"ações",vendasMesAcoes:vm}; } if(t==="fii"){ var impF=(lucro>0)?Math.round(lucro*ir.aliqFii)/100:0; return {lucro:lucro,pm:pm,dayTrade:false,aliquota:ir.aliqFii,imposto:impF,isento:false,motivo:"FII",vendasMesAcoes:0}; } var impE=(lucro>0)?Math.round(lucro*ir.aliqEtf)/100:0; return {lucro:lucro,pm:pm,dayTrade:false,aliquota:ir.aliqEtf,imposto:impE,isento:false,motivo:"ETF",vendasMesAcoes:0}; }
-function invIrResumoMeses(){ var ir=invIrSettings(); var map={}; try{ var l=DB.invMovs||[]; for(var i=0;i<l.length;i++){ var m=l[i]; if(!m||m.op!=="venda") continue; if(!(m.tipo==="acao"||m.tipo==="fii"||m.tipo==="etf")) continue; if(!validISO(m.data)) continue; var mes=String(m.data).slice(0,7); if(!map[mes]) map[mes]={mes:mes,vendasAcoes:0,lucroAcoes:0,impostoAcoes:0,lucroFii:0,impostoFii:0,lucroEtf:0,impostoEtf:0,lucroDay:0,impostoDay:0,total:0,n:0}; var e=null; try{ e=invIrEstimarVenda(m.conta,m.codigo,m.tipo,m.data,Number(m.qtd),Number(m.preco)); }catch(_e){ e=null; } if(!e) continue; map[mes].n++; if(e.dayTrade){ map[mes].lucroDay=Math.round((map[mes].lucroDay+e.lucro)*100)/100; map[mes].impostoDay=Math.round((map[mes].impostoDay+e.imposto)*100)/100; } else if(m.tipo==="acao"){ map[mes].lucroAcoes=Math.round((map[mes].lucroAcoes+e.lucro)*100)/100; map[mes].impostoAcoes=Math.round((map[mes].impostoAcoes+e.imposto)*100)/100; } else if(m.tipo==="fii"){ map[mes].lucroFii=Math.round((map[mes].lucroFii+e.lucro)*100)/100; map[mes].impostoFii=Math.round((map[mes].impostoFii+e.imposto)*100)/100; } else if(m.tipo==="etf"){ map[mes].lucroEtf=Math.round((map[mes].lucroEtf+e.lucro)*100)/100; map[mes].impostoEtf=Math.round((map[mes].impostoEtf+e.imposto)*100)/100; } } }catch(e){rmLogErr(e)} var out=Object.keys(map).sort().map(function(k){ var r=map[k]; try{ r.vendasAcoes=invIrVendasAcoesMes(k); }catch(_e){ r.vendasAcoes=0; } r.isentoAcoes=(r.vendasAcoes<=ir.isencaoAcoesMes+0.000001); if(r.isentoAcoes) r.impostoAcoes=0; r.total=Math.round((r.impostoAcoes+r.impostoFii+r.impostoEtf+r.impostoDay)*100)/100; return r; }); return out; }
+/* lucro da venda para o IR: (preço − preço médio do CPF, todas as corretoras) × qtd − taxas da venda */
+function invIrEstimarVenda(contaId,codigo,tipo,data,qtd,preco,taxa){ var ir=invIrSettings(); var pm=0; try{ var p=invPosicaoDe(null,codigo,data,null,null); if(p&&isFinite(Number(p.pm))) pm=Math.round(Number(p.pm)*10000)/10000; }catch(e){ pm=0; } var q=Number(qtd)||0, pr=Number(preco)||0; var lucro=Math.round(((pr-pm)*q-(Number(taxa)||0))*100)/100; pm=Math.round(pm*100)/100; var mes=String(data||"").slice(0,7); var day=false; try{ day=invEhDayTrade(contaId,codigo,data,null); }catch(e){ day=false; } var t=String(tipo||""); if(!(t==="acao"||t==="fii"||t==="etf")) return {lucro:lucro,pm:pm,dayTrade:day,aliquota:0,imposto:0,isento:false,motivo:"sem estimativa (só ação/FII/ETF)",vendasMesAcoes:0}; if(day){ var impD=(lucro>0)?Math.round(lucro*ir.aliqDayTrade)/100:0; return {lucro:lucro,pm:pm,dayTrade:true,aliquota:ir.aliqDayTrade,imposto:impD,isento:false,motivo:"day trade",vendasMesAcoes:0}; } if(t==="acao"){ var vm=0; try{ vm=invIrVendasAcoesMes(mes); }catch(e){ vm=0; } if(vm<=ir.isencaoAcoesMes+0.000001) return {lucro:lucro,pm:pm,dayTrade:false,aliquota:0,imposto:0,isento:true,motivo:"isento",vendasMesAcoes:vm}; var impA=(lucro>0)?Math.round(lucro*ir.aliqAcoes)/100:0; return {lucro:lucro,pm:pm,dayTrade:false,aliquota:ir.aliqAcoes,imposto:impA,isento:false,motivo:"ações",vendasMesAcoes:vm}; } if(t==="fii"){ var impF=(lucro>0)?Math.round(lucro*ir.aliqFii)/100:0; return {lucro:lucro,pm:pm,dayTrade:false,aliquota:ir.aliqFii,imposto:impF,isento:false,motivo:"FII",vendasMesAcoes:0}; } var impE=(lucro>0)?Math.round(lucro*ir.aliqEtf)/100:0; return {lucro:lucro,pm:pm,dayTrade:false,aliquota:ir.aliqEtf,imposto:impE,isento:false,motivo:"ETF",vendasMesAcoes:0}; }
+/* Apuração mensal estimada, como a Receita faz (renda variável):
+   - 3 grupos, cada um com o próprio prejuízo acumulado: COMUM (ações + ETF fora do day trade, alíquota de ações),
+     FII e DAY TRADE. O imposto sai do RESULTADO DO MÊS do grupo (lucros − prejuízos), não venda a venda.
+   - ações com vendas no mês até o limite de isenção: o LUCRO de ações fica isento (não entra), mas o
+     PREJUÍZO de ações continua valendo para compensar depois. ETF nunca é isento.
+   - prejuízo que sobra passa para os meses seguintes (do mesmo grupo).
+   - DARF abaixo de R$ 10 não se paga: acumula até a soma chegar a R$ 10.
+   Campos: lucro* = resultado do mês por tipo; imposto* = imposto do grupo no mês; prej* = prejuízo que fica
+   para compensar depois; imposto = soma do mês; darf = o que vence no mês seguinte (0 se ficou < R$ 10);
+   acumulado = imposto < R$ 10 que passou para o próximo mês. total = darf (compatível com o uso antigo). */
+var INV_DARF_MIN=10;
+function invIrResumoMeses(){ var ir=invIrSettings(); var map={};
+  try{ var l=DB.invMovs||[]; for(var i=0;i<l.length;i++){ var m=l[i]; if(!m||m.op!=="venda") continue; if(!(m.tipo==="acao"||m.tipo==="fii"||m.tipo==="etf")) continue; if(!validISO(m.data)) continue;
+    var mes=String(m.data).slice(0,7); if(!map[mes]) map[mes]={mes:mes,vendasAcoes:0,lucroAcoes:0,lucroFii:0,lucroEtf:0,lucroDay:0,n:0};
+    var e=null; try{ e=invIrEstimarVenda(m.conta,m.codigo,m.tipo,m.data,Number(m.qtd),Number(m.preco),Number(m.taxa)||0); }catch(_e){ e=null; } if(!e) continue; map[mes].n++;
+    var k=e.dayTrade?"lucroDay":(m.tipo==="acao"?"lucroAcoes":(m.tipo==="fii"?"lucroFii":"lucroEtf"));
+    map[mes][k]=Math.round((map[mes][k]+e.lucro)*100)/100; } }catch(e){rmLogErr(e)}
+  var r2=function(x){ return Math.round(x*100)/100; };
+  var prej={comum:0,fii:0,day:0}, acum=0;
+  var aplica=function(g,base,aliq){ /* devolve {imposto,usou} e atualiza o prejuízo do grupo */
+    if(base<0){ prej[g]=r2(prej[g]-base); return {imposto:0,usou:0}; }
+    var usou=Math.min(prej[g],base); prej[g]=r2(prej[g]-usou); return {imposto:r2((base-usou)*aliq/100),usou:r2(usou)}; };
+  return Object.keys(map).sort().map(function(k){ var r=map[k];
+    try{ r.vendasAcoes=invIrVendasAcoesMes(k); }catch(_e){ r.vendasAcoes=0; }
+    r.isentoAcoes=(r.vendasAcoes<=ir.isencaoAcoesMes+0.000001);
+    var baseComum=r2((r.isentoAcoes?Math.min(0,r.lucroAcoes):r.lucroAcoes)+r.lucroEtf);
+    var c1=aplica("comum",baseComum,ir.aliqAcoes), f1=aplica("fii",r.lucroFii,ir.aliqFii), d1=aplica("day",r.lucroDay,ir.aliqDayTrade);
+    r.impostoComum=c1.imposto; r.impostoAcoes=c1.imposto; r.impostoEtf=0; r.impostoFii=f1.imposto; r.impostoDay=d1.imposto;
+    r.compensado=r2(c1.usou+f1.usou+d1.usou);
+    r.prejComum=prej.comum; r.prejFii=prej.fii; r.prejDay=prej.day; r.prejTotal=r2(prej.comum+prej.fii+prej.day);
+    r.imposto=r2(r.impostoComum+r.impostoFii+r.impostoDay);
+    var devido=r2(r.imposto+acum);
+    if(devido>0&&devido<INV_DARF_MIN){ r.darf=0; r.acumulado=devido; acum=devido; } else { r.darf=devido; r.acumulado=0; acum=0; }
+    r.total=r.darf;
+    return r; }); }
+function r2v(x){ return Math.round((Number(x)||0)*100)/100; }
 function invIrImpTxt(e){ try{ if(e.isento) return "isento"; if(!(e.imposto>0)) return BRL(0); return BRL(e.imposto); }catch(_e){ return "—"; } }
-function invIrTabHTML(){ var ir=invIrSettings(); var h='<div class="card"><h3>IR estimado nas vendas (só aviso)<button type="button" class="infoBtn" data-tip="Só aviso: não lança nada, não mexe em saldo, DRE, MEI nem movimentos. Lucro = (preço − PM na data) × qtd. Ações no mês até a isenção = isento; FII/ETF sem isenção; day trade (compra e venda do mesmo código no mesmo dia) sem isenção, separado. Estimativa sem compensação de prejuízo. Não é apuração; confira com quem faz seu imposto. DARF vence no último dia útil do mês seguinte." aria-label="Sobre este bloco">i</button></h3>' +'<div class="kv"><span>Isenção ações/mês</span><b>'+BRL(ir.isencaoAcoesMes)+'</b></div>' +'<div class="kv"><span>Ações</span><b>'+esc(String(ir.aliqAcoes).replace(".",","))+'%</b></div>' +'<div class="kv"><span>Day trade</span><b>'+esc(String(ir.aliqDayTrade).replace(".",","))+'%</b></div>' +'<div class="kv"><span>FII</span><b>'+esc(String(ir.aliqFii).replace(".",","))+'%</b></div>' +'<div class="kv"><span>ETF</span><b>'+esc(String(ir.aliqEtf).replace(".",","))+'%</b></div>'; var rows=[]; try{ rows=invIrResumoMeses(); }catch(e){ rows=[]; } if(!rows.length){ h+='<div class="empty">Sem venda de ação/FII/ETF no período — nenhuma venda tributável.</div>'; } else { var rh=""; for(var i=0;i<rows.length;i++){ var r=rows[i]; var ac=r.isentoAcoes?'<b>isento</b>':('<b>'+BRL(r.impostoAcoes)+'</b>'); rh+='<tr><td>'+esc(String(r.mes).slice(5,7)+"/"+String(r.mes).slice(0,4))+'</td><td style="white-space:nowrap">'+BRL(r.vendasAcoes)+'<br><span style="font-size:12px;color:var(--muted)">lucro '+BRL(r.lucroAcoes)+'</span></td><td>'+ac+'</td><td style="white-space:nowrap">'+BRL(r.lucroFii)+'<br><span style="font-size:12px;color:var(--muted)">'+BRL(r.impostoFii)+'</span></td><td style="white-space:nowrap">'+BRL(r.lucroEtf)+'<br><span style="font-size:12px;color:var(--muted)">'+BRL(r.impostoEtf)+'</span></td><td style="white-space:nowrap">'+BRL(r.lucroDay)+'<br><span style="font-size:12px;color:var(--muted)">'+BRL(r.impostoDay)+'</span></td><td style="white-space:nowrap"><b>'+BRL(r.total)+'</b></td></tr>'; } h+='<div class="tblwrap" style="grid-column:1/-1"><table class="tbl"><thead><tr><th style="text-align:left">Mês</th><th>Vendas ações</th><th>IR ações</th><th>FII l/lR</th><th>ETF l/IR</th><th>Day l/IR</th><th>Total IR</th></tr></thead><tbody>'+rh+'</tbody></table></div>'; } try{ h+=invDarfPendentesHTML(); }catch(_eD){ rmLogErr(_eD,"darf"); } h+='<div class="btnrow"><button class="btn sm green" id="invIrEditBtn">Editar IR</button></div></div>'; return h; }
+function invIrTabHTML(){ var ir=invIrSettings(); var h='<div class="card"><h3>IR estimado nas vendas (só aviso)<button type="button" class="infoBtn" data-tip="Só aviso: não lança nada, não mexe em saldo, DRE, MEI nem movimentos. Lucro = (preço − PM na data) × qtd. Ações no mês até a isenção = isento; FII/ETF sem isenção; day trade (compra e venda do mesmo código no mesmo dia) sem isenção, separado. O imposto é sobre o resultado do mês de cada grupo (comum = ações + ETF; FII; day trade), descontando o prejuízo acumulado do mesmo grupo; mês de ações isento não paga sobre o lucro de ações, mas o prejuízo dele vale. DARF abaixo de R$ 10 acumula. Não é apuração oficial; confira com quem faz seu imposto. DARF vence no último dia útil do mês seguinte." aria-label="Sobre este bloco">i</button></h3>' +'<div class="kv"><span>Isenção ações/mês</span><b>'+BRL(ir.isencaoAcoesMes)+'</b></div>' +'<div class="kv"><span>Ações</span><b>'+esc(String(ir.aliqAcoes).replace(".",","))+'%</b></div>' +'<div class="kv"><span>Day trade</span><b>'+esc(String(ir.aliqDayTrade).replace(".",","))+'%</b></div>' +'<div class="kv"><span>FII</span><b>'+esc(String(ir.aliqFii).replace(".",","))+'%</b></div>' +'<div class="kv"><span>ETF</span><b>'+esc(String(ir.aliqEtf).replace(".",","))+'%</b></div>';  var rows=[]; try{ rows=invIrResumoMeses(); }catch(e){ rows=[]; } if(!rows.length){ h+='<div class="empty">Sem venda de ação/FII/ETF — nenhuma venda tributável.</div>'; } else { var rh=""; var lin=function(res,imp){ return '<td style="white-space:nowrap">'+BRL(res)+'<br><span style="font-size:12px;color:var(--muted)">IR '+BRL(imp)+'</span></td>'; };
+    for(var i=0;i<rows.length;i++){ var r=rows[i];
+      rh+='<tr><td>'+esc(String(r.mes).slice(5,7)+"/"+String(r.mes).slice(0,4))+'</td><td style="white-space:nowrap">'+BRL(r.vendasAcoes)+(r.isentoAcoes?'<br><span style="font-size:12px;color:var(--muted)">ações isentas</span>':'')+'</td>'
+        +lin(r2v(r.lucroAcoes+r.lucroEtf),r.impostoComum)+lin(r.lucroFii,r.impostoFii)+lin(r.lucroDay,r.impostoDay)
+        +'<td style="white-space:nowrap">'+(r.prejTotal>0.004?BRL(r.prejTotal):"—")+'</td>'
+        +'<td style="white-space:nowrap"><b>'+BRL(r.darf)+'</b>'+(r.acumulado>0.004?'<br><span style="font-size:12px;color:var(--muted)">'+BRL(r.acumulado)+' fica para o próximo (menos de R$ 10)</span>':'')+'</td></tr>'; }
+    h+='<div class="tblwrap" style="grid-column:1/-1"><table class="tbl"><thead><tr><th style="text-align:left">Mês</th><th>Vendas de ações</th><th>Ações e ETF: resultado</th><th>FII: resultado</th><th>Day trade: resultado</th><th>Prejuízo a compensar</th><th>DARF</th></tr></thead><tbody>'+rh+'</tbody></table></div>'; } try{ h+=invDarfPendentesHTML(); }catch(_eD){ rmLogErr(_eD,"darf"); } h+='<div class="btnrow"><button class="btn sm green" id="invIrEditBtn">Editar IR</button></div></div>'; return h; }
+/* JANELA ÚNICA dos proventos "dos últimos 12 meses" (Resumo, Proventos, ranking por ativo, Planejamento):
+   do dia 1º do mês, 11 meses atrás, até hoje — os mesmos 12 meses do gráfico "Proventos mês a mês".
+   Média por mês = total ÷ 12, sempre. rotulo = "dez/25 a nov/26", para escrever o período na tela. */
+function provMesAbr(iso){ var n=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"]; return n[+String(iso).slice(5,7)-1]+"/"+String(iso).slice(2,4); }
+function provJanela12(){
+  var hoje=todayISO(), y=+hoje.slice(0,4), m=+hoje.slice(5,7), d0=new Date(y,m-12,1);
+  var ini=d0.getFullYear()+"-"+String(d0.getMonth()+1).padStart(2,"0")+"-01", tot=0, n=0, prim=null;
+  try{ (DB.invProventos||[]).forEach(function(p){ if(!p||!validISO(p.dataPag)||p.dataPag>hoje) return; if(!prim||p.dataPag<prim) prim=p.dataPag; if(p.dataPag<ini) return; tot+=Number(invProvValor(p))||0; n++; }); }catch(e){ rmLogErr(e,"prov-janela"); }
+  tot=Math.round(tot*100)/100;
+  return {ini:ini,fim:hoje,rotulo:provMesAbr(ini)+" a "+provMesAbr(hoje),tot:tot,media:Math.round(tot/12*100)/100,n:n,primeira:prim};
+}
 function invRendaPassiva(){
-  var hoje=todayISO(), rec=[], i;
-  try{ (DB.invProventos||[]).forEach(function(p){ if(!p||!validISO(p.dataPag)) return; if(String(p.dataPag)>String(hoje)) return; rec.push(p); }); }catch(e){rmLogErr(e)}
-  if(!rec.length) return {vazia:true,soma:0,base:0,media:0,meta:0,pct:null,temMeta:false,n:0};
-  var first=rec[0].dataPag;
-  for(i=1;i<rec.length;i++){ if(String(rec[i].dataPag)<String(first)) first=rec[i].dataPag; }
-  var fy=Number(String(first).slice(0,4)), fm=Number(String(first).slice(5,7));
-  var hy=Number(String(hoje).slice(0,4)), hm=Number(String(hoje).slice(5,7));
-  var n=(hy-fy)*12+(hm-fm)+1; if(!(n>=1)) n=1;
-  var base=n>12?12:n;
-  var _d=new Date(hy,hm-1-(base-1),1);
-  var ws=_d.getFullYear()+"-"+String(_d.getMonth()+1).padStart(2,"0")+"-01";
-  var soma=0;
-  for(i=0;i<rec.length;i++){ if(String(rec[i].dataPag)>=ws) soma=Math.round((soma+invProvValor(rec[i]))*100)/100; }
-  var media=Math.round(soma/base*100)/100;
+  var J=provJanela12();
+  if(!J.primeira) return {vazia:true,soma:0,base:0,media:0,meta:0,pct:null,temMeta:false,n:0};
   var st=invAcompSettings(), pct=null;
-  if(st.metaRendaMensal>0) pct=Math.round(media/st.metaRendaMensal*10000)/100;
-  return {vazia:false,soma:soma,base:base,media:media,meta:st.metaRendaMensal,pct:pct,temMeta:st.metaRendaMensal>0,n:rec.length,primeira:first,janela:ws};
+  if(st.metaRendaMensal>0) pct=Math.round(J.media/st.metaRendaMensal*10000)/100;
+  return {vazia:false,soma:J.tot,base:12,media:J.media,meta:st.metaRendaMensal,pct:pct,temMeta:st.metaRendaMensal>0,n:J.n,primeira:J.primeira,janela:J.ini,rotulo:J.rotulo};
 }
 function invDistTipo(contaId,codigo){
   var cod=String(codigo||"").trim().toUpperCase().slice(0,12), best=null, bq=-1;
@@ -10124,6 +10190,7 @@ function invParseCotacoesTexto(txt){
         ["lpa","vpa","graham","dividendo_anual","bazin","pvp","dy"].forEach(function(_f){
           var _nn=Number(_v[_f]); if(isFinite(_nn)) _o[_f]=_nn;
         });
+        var _tp=String(_v.tipo||"").toLowerCase(); if(_tp==="acao"||_tp==="fii"||_tp==="etf") _o.tipo=_tp; /* confere o tipo na Nova operação */
       }
     }catch(_e){rmLogErr(_e)}
     _dados[_code]=_o; _n++;
@@ -10277,24 +10344,6 @@ function drawInvEvolucao(cv,ev){
   ctx.fillStyle="#d79a2b"; ctx.fillRect(padL+214,4,10,10); ctx.fillStyle=T.mut; ctx.fillText("rendimento",padL+228,13);
   return true;
 }
-function invEvolucaoTabHTML(){
-  var ev=null; try{ ev=invEvolucao(); }catch(e){ ev={vazia:true,meses:[]}; }
-  var h='<div class="card"><h3>Evolução do patrimônio<button type="button" class="infoBtn" id="invEvoInfo" aria-label="Sobre este bloco">i</button></h3>';
-  if(ev.vazia||!ev.meses.length) return h+'<div class="empty">Sem movimento de investimento ainda. Registre uma compra na aba Carteira.</div></div>';
-  try{ h+=invVsCdiHTML(ev); }catch(_eC){ rmLogErr(_eC,"inv-vs-cdi"); }
-  var nh=0, hmin="", hmax="";
-  try{ var _hl=(DB.invHist||[]).slice().sort(function(a,b){ return a.data<b.data?-1:(a.data>b.data?1:0); }); nh=_hl.length; if(nh){ hmin=_hl[0].data; hmax=_hl[nh-1].data; } }catch(e){rmLogErr(e)}
-  try{ var _evoTip='Posição no fim de cada mês (o mês corrente vai até hoje e sai marcado). Preço da cotação mais recente até o fim do mês; sem cotação, entra pelo custo. Tesouro usa o preço do hist do mês; CDB usa a mesma conta do CDI até o fim do mês (dias úteis seg-sex, sem feriados — estimativa; bruto, sem IR); sem preço/CDI, pelo custo. Patrimônio = dinheiro nas contas de investimento + valor dos ativos. Aporte acumulado = o que você transferiu para as contas de investimento (com o saldo inicial delas) menos o que tirou; rendimento = patrimônio menos aporte, ou seja, valorização, lucro das vendas, proventos e juros do CDB.'+(nh?(' Histórico: '+nh+' arquivo(s)'+(hmin?(' de '+isoToBR(hmin).slice(0,5)+' a '+isoToBR(hmax).slice(0,5)):'')+'.'):' Sem histórico de cotações: tudo pelo custo.'); h=h.replace('id="invEvoInfo"','id="invEvoInfo" data-tip="'+esc(_evoTip)+'"'); }catch(e){rmLogErr(e)}
-  h+='<canvas class="chart" id="invEvChart" height="250"></canvas><div id="invEvEmpty"></div>';
-  h+='<div class="tblwrap"><table class="tbl" id="invEvTab"><thead><tr><th style="text-align:left">Mês</th><th>Patrimônio</th><th>Aporte acum.</th><th>Rendimento</th><th>Preço</th></tr></thead><tbody id="invEvRows">';
-  ev.meses.forEach(function(m){
-    h+='<tr><td class="l">'+esc(m.rotulo)+'</td><td style="white-space:nowrap"><b>'+BRL(m.patrimonio)+'</b></td><td style="white-space:nowrap">'+BRL(m.aporte)+'</td><td style="white-space:nowrap;color:'+(m.rendimento<0?"#e0695c":"#4caf7d")+'"><b>'+(m.rendimento<0?"-":"+")+BRL(Math.abs(m.rendimento)).slice(3)+'</b></td><td>'+(m.peloCusto?'<span style="font-size:12px;color:var(--muted)">pelo custo</span>':'<span style="font-size:12px;color:var(--muted)">mercado</span>')+'</td></tr>';
-  });
-  h+='</tbody></table></div></div>';
-  return h;
-}
-/* Proventos reinvestidos, por mes: recebido = proventos com dataPag no mes
-   (so ate hoje); reinvestido = menor entre o recebido e as compras do mes. */
 function invReinvest(){
   var hoje=todayISO(), map={};
   try{
@@ -10310,7 +10359,7 @@ function invReinvest(){
       if(!m||m.op!=="compra"||!validISO(m.data)) return;
       var k=String(m.data).slice(0,7);
       if(!map[k]) map[k]={recebido:0,compras:0};
-      var _vv=Math.round(Number(m.qtd)*Number(m.preco)*100)/100;
+      var _vv=invMovCaixa(m);
       if(!(_vv>0)) return;
       map[k].compras=Math.round((map[k].compras+_vv)*100)/100;
     });
@@ -10355,7 +10404,7 @@ function rInvest(){
   if(typeof window.__invTab!=="number") window.__invTab=4;
   var _invTab=(window.__invTab===6)?6:(window.__invTab===5)?5:(window.__invTab===4)?4:((window.__invTab===3)?3:((window.__invTab===1)?1:((window.__invTab===2)?2:0)));
   try{ window.__invTab=_invTab; }catch(e){}
-  var html='<div class="fit-screen inv-screen inv-tab'+_invTab+((_invTab===0||_invTab===2||_invTab===4||_invTab===5||_invTab===6)?" inv-rolar":"")+'"><div class="card inv-bar"><h3>Investimentos<button type="button" class="infoBtn" data-tip="Total investido = dinheiro nas contas de investimento + valor dos ativos (cotação carregada; sem cotação, preço médio; CDB pelo CDI). Aporte é transferência para a conta de investimento; resgate é transferência saindo dela." aria-label="Sobre este bloco">i</button></h3>'
+  var html='<div class="fit-screen inv-screen inv-tab'+_invTab+((_invTab===0||_invTab===2||_invTab===4||_invTab===5||_invTab===6)?" inv-rolar":"")+'"><div class="card inv-bar"><h3>Investimentos<button type="button" class="infoBtn" data-tip="Total na corretora = dinheiro nas contas de investimento + valor dos ativos a preço de hoje (cotação carregada; sem cotação, preço médio; CDB pelo CDI). Aporte é transferência para a conta de investimento; resgate é transferência saindo dela." aria-label="Sobre este bloco">i</button></h3>'
     +'<div class="inv-bar-row"><div class="toolbar seg" id="invTabs"><button type="button" data-t="4" class="'+(_invTab===4?"on":"")+'">📋 Resumo</button><button type="button" data-t="0" class="'+(_invTab===0?"on":"")+'">💼 Carteira</button><button type="button" data-t="5" class="'+(_invTab===5?"on":"")+'">🔁 Movimentos</button><button type="button" data-t="2" class="'+(_invTab===2?"on":"")+'">💰 Proventos</button><button type="button" data-t="1" class="'+(_invTab===1?"on":"")+'">👀 Observação</button><button type="button" data-t="3" class="'+(_invTab===3?"on":"")+'">🧭 Planejamento</button><button type="button" data-t="6" class="'+(_invTab===6?"on":"")+'">🧾 IRPF</button></div>'
     +(_invTab!==5?"":'<div class="toolbar"><span>Período:</span><select id="invPer"><option value="mes">Este mês</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="todos">Todo o período</option></select></div><span class="tip">'+esc(perLabel+perioTxt)+'</span>')
     +'<span class="sub" id="invCotTopo">'+esc((function(){ var _c=invCotacoesGet(); if(!_c) return "sem cotações carregadas"; var _dd=""; try{ _dd=isoToBR(_c.data).slice(0,5); }catch(e){rmLogErr(e)} var _n=0; try{ _n=Object.keys(_c.dados||{}).length; }catch(e){rmLogErr(e)} var _id=invCotIdadeDias(); var _t="cotações de "+_dd+" · "+_n+" ativo(s)"; if(_id!=null&&_id>1) _t+=" · ⚠️ desatualizada ("+_id+" dias)"; return _t; })())+'</span>'
@@ -10652,7 +10701,7 @@ function rInvest(){
   var _totGeral=Math.round((totInv+_atvC.valor)*100)/100;
   if(_invTab===0) html+=(function(){ try{ return resMeusAtivosHTML(); }catch(_eM){ rmLogErr(_eM,"meus-ativos"); return ""; } })();
   html+='<div class="cards c4 inv-stats">'
-    +statCard("💹",BRL(_totGeral),"Total investido",_totGeral<0?"#e0695c":"",BRL(_atvC.valor)+" em ativos + "+BRL(totInv)+" em conta")
+    +statCard("💹",BRL(_totGeral),"Total na corretora",_totGeral<0?"#e0695c":"",BRL(_atvC.valor)+" em ativos (preço de hoje) + "+BRL(totInv)+" em dinheiro")
     +statCard("📥",BRL(totAp),"Total aportado no período","#5a9fd4",ap.length+" aporte(s)")
     +statCard("📤",(totRs>0?"-":"")+BRL(totRs),"Total resgatado no período","#8f96a3",rs.length+" resgate(s)")
     +statCard("🧮",BRL(Math.round((totAp-totRs)*100)/100),"Aportes − resgates no período","#8f96a3",perLabel)
@@ -10664,7 +10713,7 @@ function rInvest(){
     var av=0; try{ av=invAtivosValor(null,c.id).valor; }catch(e){ av=0; }
     html+='<tr><td class="l">'+esc(c.nome)+(c.ativa?"":' <span class="mtag">inativa</span>')+'</td><td data-rot="Dinheiro em conta" style="white-space:nowrap;color:'+(s<0?"#e0695c":"")+'">'+BRL(s)+'</td><td data-rot="Ativos" style="white-space:nowrap">'+BRL(av)+'</td><td data-rot="Total" style="white-space:nowrap;color:#4caf7d"><b>'+BRL(Math.round((s+av)*100)/100)+'</b></td></tr>';
   });
-  html+='</tbody></table></div><div class="kv inv-contas-tot"><span>Total investido (dinheiro em conta + ativos)</span><b>'+BRL(_totGeral)+'</b></div>'+(_atvC.n?'<div class="sub">Ativos pela cotação carregada; sem cotação, pelo preço médio; CDB pelo CDI.</div>':'')+'</div>';
+  html+='</tbody></table></div><div class="kv inv-contas-tot"><span>Total na corretora (dinheiro + ativos a preço de hoje)</span><b>'+BRL(_totGeral)+'</b></div>'+(_atvC.n?'<div class="sub">Ativos pela cotação carregada; sem cotação, pelo preço médio; CDB pelo CDI.</div>':'')+'</div>';
   html+='<div class="inv-cart-main inv-noform">';
   /* FASE 8B — exportar/carregar ficam na barra do topo (inv-bar), sem card no meio (só leitura de mercado). */
   /* FASE 8A — compra/venda de ativos (troca dinheiro↔ativo, sem DRE). */
@@ -10676,10 +10725,10 @@ function rInvest(){
   var _mvList=(DB.invMovs||[]).slice().sort(function(a,b){ if(a.data!==b.data) return a.data<b.data?1:-1; return String(a.id)<String(b.id)?1:-1; });
   var _mvRows="";
   if(!_mvList.length) _mvRows='<tr><td colspan="4" style="color:var(--muted)">Nenhum movimento de investimento.</td></tr>';
-  _mvList.forEach(function(m){ var _vv=Math.round(Number(m.qtd)*Number(m.preco)*100)/100; var _ex=""; try{ if(m.tipo==="cdb"&&m.op==="compra"){ if(m.cdiPct) _ex+=" · "+esc(String(m.cdiPct).replace(".",","))+"% CDI"; else _ex+=" · pelo custo"; if(m.venc) _ex+=" · venc "+esc(isoToBR(m.venc)); } try{ if(m.op==="compra"&&(m.reserva===1||m.reserva===true)) _ex+=" · 🛟 reserva"; }catch(_e8h){rmLogErr(_e8h)} }catch(_e){rmLogErr(_e)} _mvRows+='<tr><td>'+isoToBR(m.data)+'</td><td class="l">'+(m.op==="venda"?"Venda ":"Compra ")+esc(m.codigo)+' · '+esc(invTipoLabel(m.tipo))+'<br><span style="font-size:12px;color:var(--muted)">'+esc(contaNome(m.conta))+' · '+Number(m.qtd)+' × '+BRL(Number(m.preco))+_ex+'</span></td><td style="white-space:nowrap;color:'+(m.op==="venda"?"#4caf7d":"#e0695c")+'"><b>'+(m.op==="venda"?"+":"−")+BRL(_vv).slice(3)+'</b>'+(m.conciliado?' 🔒':"")+'</td><td><button class="btn sm rowdel" data-invdel="'+esc(m.id)+'">🗑</button></td></tr>'; });
+  _mvList.forEach(function(m){ var _vv=invMovCaixa(m); var _ex=""; try{ if((Number(m.taxa)||0)>0) _ex+=" · taxas "+esc(BRL(Number(m.taxa))); }catch(_eTx){} try{ if(m.tipo==="cdb"&&m.op==="compra"){ if(m.cdiPct) _ex+=" · "+esc(String(m.cdiPct).replace(".",","))+"% CDI"; else _ex+=" · pelo custo"; if(m.venc) _ex+=" · venc "+esc(isoToBR(m.venc)); } try{ if(m.op==="compra"&&(m.reserva===1||m.reserva===true)) _ex+=" · 🛟 reserva"; }catch(_e8h){rmLogErr(_e8h)} }catch(_e){rmLogErr(_e)} _mvRows+='<tr><td>'+isoToBR(m.data)+'</td><td class="l">'+(m.op==="venda"?"Venda ":"Compra ")+esc(m.codigo)+' · '+esc(invTipoLabel(m.tipo))+'<br><span style="font-size:12px;color:var(--muted)">'+esc(contaNome(m.conta))+' · '+Number(m.qtd)+' × '+BRL(Number(m.preco))+_ex+'</span></td><td style="white-space:nowrap;color:'+(m.op==="venda"?"#4caf7d":"#e0695c")+'"><b>'+(m.op==="venda"?"+":"−")+BRL(_vv).slice(3)+'</b>'+(m.conciliado?' 🔒':"")+'</td><td><button class="btn sm rowdel" data-invdel="'+esc(m.id)+'">🗑</button></td></tr>'; });
   var _evList=[]; try{ _evList=(DB.invEventos||[]).slice().sort(function(a,b){ if(a.data!==b.data) return a.data<b.data?-1:1; return String(a.id)<String(b.id)?-1:1; }); }catch(e){ _evList=[]; }
   var _evRows="";
-  if(!_evList.length) _evRows='<tr><td colspan="4" style="color:var(--muted)">Nenhum evento. Desdobramento multiplica a qtd e divide o PM; grupamento divide a qtd e multiplica o PM. Total investido não muda.</td></tr>';
+  if(!_evList.length) _evRows='<tr><td colspan="4" style="color:var(--muted)">Nenhum evento. Desdobramento multiplica a qtd e divide o PM; grupamento divide a qtd e multiplica o PM. O total que você pagou não muda.</td></tr>';
   _evList.forEach(function(e){ var _lbl=(e.tipo==="desdobramento"?"Desdobramento ":"Grupamento ")+esc(e.codigo)+" "+e.de+" para "+e.para; _evRows+='<tr><td>'+isoToBR(e.data)+'</td><td class="l"><b>'+_lbl+'</b></td><td><button class="btn sm rowdel" data-invevdel="'+esc(e.id)+'">🗑</button></td></tr>'; });
   html+='<div class="card inv-list-card"><h3>Movimentos ('+_mvList.length+')<button type="button" class="infoBtn" data-tip="Compra abate o saldo; venda credita. Excluir vai para a lixeira (dá para desfazer)." aria-label="Sobre este bloco">i</button></h3>'
     +'<div class="tblwrap"><div id="invMovList" role="region" aria-label="Movimentos de investimento" style="max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r);background:var(--input)"><table class="tbl"><thead><tr><th>Data</th><th style="text-align:left">Movimento</th><th>Valor</th><th></th></tr></thead><tbody>'+_mvRows+'</tbody></table></div></div></div>';
@@ -10716,6 +10765,7 @@ function rInvest(){
       +'<label class="f">Operação *<select id="invOp"><option value="compra">Compra</option><option value="venda">Venda</option></select><span class="tip">ex: compra soma em saídas; venda soma em entradas.</span></label>'
       +'<label class="f">Qtd *<input id="invQtd" inputmode="decimal" placeholder="ex: 10"><span class="tip">ex: 10 (aceita fração, ex: 0,5). Precisa ser maior que zero.</span></label>'
       +'<label class="f">Preço unitário (R$) *<input id="invPreco" inputmode="decimal" placeholder="ex: 40,00"><span class="tip">ex: 40,00 — valor de UMA unidade. Total = qtd × preço.</span></label>'
+      +'<label class="f">Taxas (R$)<input id="invTaxa" inputmode="decimal" placeholder="opcional — ex: 0,85"><span class="tip">Corretagem + taxas da B3 da nota de corretagem. Na compra entram no preço médio; na venda saem do lucro (regra do IR). Vazio = sem taxa.</span></label>'
       +'<label class="f" id="invCdbPctWrap" hidden>% do CDI (compra CDB)<input id="invCdbPct" inputmode="decimal" placeholder="ex: 110"><span class="tip">ex: 110 = 110% do CDI. CDB antigo sem % entra pelo custo.</span></label>'
       +'<label class="f" id="invCdbVencWrap" hidden>Vencimento (opcional)<input id="invCdbVenc" placeholder="DD/MM/AAAA"><span class="tip">Só informativo; não muda o valor.</span></label>'
       +'<label class="f" id="invReservaWrap" hidden><span>🛟 Reserva de emergência <input id="invReserva" type="checkbox" style="width:22px;height:22px;vertical-align:middle"></span><span class="tip">Só na compra: marca este lote como reserva; a reserva fica fora do alvo da distribuição.</span></label>'
@@ -10764,6 +10814,7 @@ function rInvest(){
   var _invTipoEl=document.getElementById("invTipo"), _invOpEl=document.getElementById("invOp");
   var _invTesSync=function(){ try{ var _t=_invTipoEl?_invTipoEl.value:"", _op=_invOpEl?_invOpEl.value:"compra"; var _c=invCotacoesGet(), _keys=[]; try{ if(_c&&_c.dados) _keys=Object.keys(_c.dados).sort(); }catch(e){rmLogErr(e)} var _tw=document.getElementById("invTesouroWrap"), _ts=document.getElementById("invTesouroSel"), _cw=document.getElementById("invCodWrap"); if(_t==="tesouro"&&_keys.length){ if(_tw) _tw.hidden=false; if(_cw) _cw.hidden=true; if(_ts){ var _cur=_ts.value; _ts.innerHTML=_keys.map(function(k){ return '<option value="'+esc(k)+'">'+esc(k)+'</option>'; }).join(""); try{ if(_cur&&_keys.indexOf(_cur)>=0) _ts.value=_cur; }catch(e){rmLogErr(e)} } } else { if(_tw) _tw.hidden=true; if(_cw) _cw.hidden=false; if(_ts) _ts.innerHTML=""; } var _pw=document.getElementById("invCdbPctWrap"), _vw=document.getElementById("invCdbVencWrap"); var _sh=(_t==="cdb"&&_op==="compra"); if(_pw) _pw.hidden=!_sh; if(_vw) _vw.hidden=!_sh; var _rw8h=document.getElementById("invReservaWrap"); if(_rw8h) _rw8h.hidden=!(_op==="compra"); }catch(e){rmLogErr(e)} };
   if(_invTipoEl) _invTipoEl.onchange=_invTesSync;
+  try{ var _codEl=document.getElementById("invCod"); if(_codEl&&_invTipoEl){ _codEl.addEventListener("change",function(){ var e=invTipoEsperado(_codEl.value); if(e&&_invTipoEl.value!==e.tipo&&(_invTipoEl.value==="acao"||_invTipoEl.value==="fii"||_invTipoEl.value==="etf")){ _invTipoEl.value=e.tipo; try{ _invTesSync(); }catch(_e2){} var _mm=document.getElementById("invMsg"); if(_mm){ _mm.style.color=""; _mm.textContent="Tipo ajustado para "+INV_TIPO_NOME[e.tipo]+": "+e.por+"."; } } }); } }catch(e){ rmLogErr(e,"tipo-auto"); }
   if(_invOpEl) _invOpEl.onchange=_invTesSync;
   try{ _invTesSync(); }catch(e){rmLogErr(e)}
   var _invSave=document.getElementById("invSave");
@@ -10779,6 +10830,7 @@ function rInvest(){
       try{ var _tsel=document.getElementById("invTesouroSel"); if(tipo==="tesouro"&&_tsel&&_tsel.options&&_tsel.options.length){ cod=String(_tsel.value||"").trim().toUpperCase().slice(0,12); } else { cod=String(document.getElementById("invCod").value||"").trim().toUpperCase().slice(0,12); } }catch(_e){ cod=String(document.getElementById("invCod").value||"").trim().toUpperCase().slice(0,12); }
       var qtd=parseBR(document.getElementById("invQtd").value);
       var preco=parseBR(document.getElementById("invPreco").value);
+      var _txRaw=String((document.getElementById("invTaxa")||{}).value||"").trim(), taxa=_txRaw===""?0:parseBR(_txRaw);
       var cdiPct=null, venc=null;
       if(tipo==="cdb"&&op==="compra"){ try{ var _praw=document.getElementById("invCdbPct")?document.getElementById("invCdbPct").value:""; if(String(_praw||"").trim()!==""){ var _pn=parseBR(_praw); if(!(isFinite(_pn)&&_pn>0&&_pn<=1000)){ err("% do CDI inválido. Use um número maior que zero (ex: 110) ou deixe vazio para pelo custo."); return; } cdiPct=Math.round(_pn*100)/100; } }catch(_e){ cdiPct=null; } try{ var _vraw=document.getElementById("invCdbVenc")?document.getElementById("invCdbVenc").value:""; if(String(_vraw||"").trim()!==""){ var _vi=brToISO(String(_vraw).trim()); if(!_vi){ err("Vencimento inválido. Use DD/MM/AAAA com dia real ou deixe vazio."); return; } venc=_vi; } }catch(_e){ venc=null; } }
       if(!iso){ err("Data inválida. Use DD/MM/AAAA com dia real."); return; }
@@ -10794,10 +10846,20 @@ function rInvest(){
         return;
       }
       if(!cod){ err("Digite o código do ativo (ex: PETR4)."); return; }
+      var _codN=invCodNormal(cod); if(_codN!==cod){ msg.style.color=""; msg.textContent="Código "+cod+" (lote fracionário) gravado como "+_codN+": é o mesmo ativo."; cod=_codN; try{ document.getElementById("invCod").value=cod; }catch(_eF){} }
+      var _bdr=invCodAviso(cod); if(_bdr){ var _okB=await customProceed(_bdr,"BDR","Salvar mesmo assim"); if(!_okB) return; }
       if(!(tipo==="acao"||tipo==="fii"||tipo==="etf"||tipo==="tesouro"||tipo==="cdb")){ err("Tipo inválido."); return; }
+      { var _te=invTipoEsperado(cod);
+        if(_te&&_te.tipo!==tipo){
+          var _okT=await customConfirm(cod+" foi escolhido como "+INV_TIPO_NOME[tipo]+", mas é "+INV_TIPO_NOME[_te.tipo]+" ("+_te.por+").\n\nSalvar como "+INV_TIPO_NOME[_te.tipo]+"?","Tipo do ativo","Salvar como "+INV_TIPO_NOME[_te.tipo]);
+          if(!_okT){ msg.style.color="var(--red)"; msg.textContent="⚠️ Não salvo: confira o tipo de "+cod+"."; return; }
+          tipo=_te.tipo; try{ document.getElementById("invTipo").value=tipo; }catch(_e3){} } }
       if(!(op==="compra"||op==="venda")){ err("Operação inválida."); return; }
       if(!(qtd>0)){ err("Quantidade precisa ser maior que zero (ex: 10)."); return; }
       if(!(preco>0)){ err("Preço precisa ser maior que zero (ex: 40,00)."); return; }
+      if(!(isFinite(taxa)&&taxa>=0)){ err("Taxas inválidas. Use 0 ou mais (ex: 0,85) ou deixe vazio."); return; }
+      taxa=Math.round(taxa*100)/100;
+      if(taxa>0&&taxa>=Math.round(Number(qtd)*Number(preco)*100)/100){ err("As taxas ("+BRL(taxa)+") não podem ser iguais ou maiores que o valor da operação. Confira a nota de corretagem."); return; }
       var _vv=Math.round(Number(qtd)*Number(preco)*100)/100;
       if(!(_vv>0)){ err("Valor inválido (qtd × preço)."); return; }
       if(!(await confirmIfAbsurd("expense",_vv))) return;
@@ -10818,17 +10880,18 @@ function rInvest(){
       /* FASE 8J — aviso de IR na venda (só aviso; não lança nada, não mexe em saldo/DRE/MEI/invMovs além da venda). */
       var _newId8j=uid();
       (DB.invMovs=DB.invMovs||[]).push({id:_newId8j,data:iso,conta:c.id,codigo:cod,tipo:tipo,op:op,qtd:Number(qtd),preco:Math.round(Number(preco)*100)/100,conciliado:0,cdiPct:cdiPct,venc:venc,reserva:reserva8h});
+      if(taxa>0) DB.invMovs[DB.invMovs.length-1].taxa=taxa;
       if(!save()){ if(!SAVE_RESTAUROU) DB.invMovs.pop(); msg.style.color="var(--red)"; msg.textContent=SAVE_FAIL_MSG; return; }
     invOpPanel=false;
       if(op==="venda"&&(tipo==="acao"||tipo==="fii"||tipo==="etf")){
         try{
-          var _est8j=invIrEstimarVenda(c.id,cod,tipo,iso,Number(qtd),Math.round(Number(preco)*100)/100);
+          var _est8j=invIrEstimarVenda(c.id,cod,tipo,iso,Number(qtd),Math.round(Number(preco)*100)/100,taxa);
           var _vv8j=Math.round(Number(qtd)*Number(preco)*100)/100;
           var _tx8j="Venda de "+Number(qtd)+" "+cod+" por "+BRL(_vv8j)+" em "+isoToBR(iso)+"\nLucro estimado: "+BRL(_est8j.lucro)+" (PM "+BRL(_est8j.pm)+")\n";
           if(_est8j.dayTrade) _tx8j+="Imposto estimado: "+BRL(_est8j.imposto)+" (day trade "+String(_est8j.aliquota).replace(".",",")+"% sobre "+BRL(_est8j.lucro)+")";
           else if(_est8j.isento) _tx8j+="Imposto estimado: isento (vendas de ações no mês "+BRL(_est8j.vendasMesAcoes)+" ≤ "+BRL(invIrSettings().isencaoAcoesMes)+"). Ainda cabem "+BRL(Math.max(0,invIrSettings().isencaoAcoesMes-_est8j.vendasMesAcoes))+" em vendas de ações este mês sem imposto.";
           else if(!(_est8j.lucro>0)) _tx8j+="Imposto estimado: "+BRL(0)+" (sem lucro tributável)";
-          else { _tx8j+="Imposto estimado: "+BRL(_est8j.imposto)+" ("+String(_est8j.aliquota).replace(".",",")+"% sobre "+BRL(_est8j.lucro)+")"; if(_est8j.motivo==="ações"){ try{ var _rm8=(invIrResumoMeses()||[]).filter(function(x){ return x.mes===String(iso).slice(0,7); })[0]; if(_rm8&&_rm8.impostoAcoes>_est8j.imposto+0.004) _tx8j+="\nComo o mês passou do limite de isenção, o lucro de todas as vendas de ações do mês paga: total de "+BRL(_rm8.impostoAcoes)+" em DARF até "+isoToBR(invDarfVenc(String(iso).slice(0,7)))+"."; }catch(_eM8){} } }
+          else { _tx8j+="Imposto estimado: "+BRL(_est8j.imposto)+" ("+String(_est8j.aliquota).replace(".",",")+"% sobre "+BRL(_est8j.lucro)+")"; } try{ var _rm8=(invIrResumoMeses()||[]).filter(function(x){ return x.mes===String(iso).slice(0,7); })[0]; if(_rm8){ _tx8j+="\n\nNo mês ("+String(iso).slice(5,7)+"/"+String(iso).slice(0,4)+"), somando as outras vendas e descontando prejuízos: imposto estimado de "+BRL(_rm8.imposto)+(_rm8.compensado>0.004?" (já descontou "+BRL(_rm8.compensado)+" de prejuízo)":"")+(_rm8.darf>0.004?" — DARF de "+BRL(_rm8.darf)+" até "+isoToBR(invDarfVenc(String(iso).slice(0,7))):(_rm8.acumulado>0.004?" — menos de R$ 10: não paga agora, acumula para o próximo mês":" — sem DARF"))+"."+(_rm8.prejTotal>0.004?"\nPrejuízo que fica para compensar depois: "+BRL(_rm8.prejTotal)+".":""); } }catch(_eM8){ rmLogErr(_eM8,"ir-mes"); }
           _tx8j+="\n\n"+invIrTextoFixo();
           try{ await customAlert(_tx8j,"Investimentos"); }catch(_e8j){rmLogErr(_e8j)}
         }catch(_e8j){rmLogErr(_e8j)}
@@ -10848,7 +10911,7 @@ function rInvest(){
       customAlert("Excluir esta compra de "+Number(rec.qtd)+" "+String(rec.codigo||"")+" deixaria a posição negativa: há venda(s) que depende(m) dela. Venda depende da compra — exclua antes a(s) venda(s) correspondente(s), ou a posição ficaria vendendo o que não foi comprado.","Investimentos");
       return;
     }
-    var _vv=Math.round(Number(rec.qtd)*Number(rec.preco)*100)/100;
+    var _vv=invMovCaixa(rec);
     var ok=await customConfirm("Excluir "+(rec.op==="venda"?"a venda de ":"a compra de ")+Number(rec.qtd)+" "+rec.codigo+" ("+BRL(_vv)+", "+isoToBR(rec.data)+")? Vai para a lixeira.","Investimentos","Excluir");
     if(!ok) return;
     var trashId=null;
@@ -10874,7 +10937,7 @@ function concEntradasAte(c,ate){
   var _tl=DB.titulos||[]; for(var _j=0;_j<_tl.length;_j++){ if(_tl[_j]&&_tl[_j].tipo==="receber"){ var _bb=tituloBaixas(_tl[_j]); for(var _k=0;_k<_bb.length;_k++){ var _b=_bb[_k]; if(_b.conta===c.id&&_b.data>=c.dataSaldoInicial&&_b.data<=ate) s+=baixaEntrada(_b); } } }
   try{ var _aj=DB.concAjustes||[]; for(var _a=0;_a<_aj.length;_a++){ var _x=_aj[_a]; if(_x&&_x.conta===c.id&&_x.data>=c.dataSaldoInicial&&_x.data<=ate&&(Number(_x.valor)||0)>0) s+=Number(_x.valor); } }catch(e){rmLogErr(e)}
   /* FASE 8A — investimento: venda soma em entradas, mesmo critério do saldo. */
-  try{ var _iv=DB.invMovs||[]; for(var _vi=0;_vi<_iv.length;_vi++){ var _m=_iv[_vi]; if(_m&&_m.conta===c.id&&_m.op==="venda"&&_m.data>=c.dataSaldoInicial&&_m.data<=ate) s+=Math.round(Number(_m.qtd)*Number(_m.preco)*100)/100; } }catch(e){rmLogErr(e)}
+  try{ var _iv=DB.invMovs||[]; for(var _vi=0;_vi<_iv.length;_vi++){ var _m=_iv[_vi]; if(_m&&_m.conta===c.id&&_m.op==="venda"&&_m.data>=c.dataSaldoInicial&&_m.data<=ate) s+=invMovCaixa(_m); } }catch(e){rmLogErr(e)}
   /* FASE 8D — proventos: líquido na data de pagamento, mesmo critério do saldo (<=hoje e >=dataSaldoInicial, limitado a ate). */
   try{ var _hoje8Dc=todayISO(); var _pv=DB.invProventos||[]; for(var _vpi=0;_vpi<_pv.length;_vpi++){ var _pm=_pv[_vpi]; if(_pm&&_pm.conta===c.id&&_pm.dataPag>=c.dataSaldoInicial&&_pm.dataPag<=ate&&_pm.dataPag<=_hoje8Dc) s+=invProvValor(_pm); } }catch(e){rmLogErr(e)}
   try{ if(c.id===carteiraCreditoContaId()){ for(var _r=0;_r<(DB.rides||[]).length;_r++){ var _rd=DB.rides[_r]; if(isCashRide(_rd)&&_rd.date>=c.dataSaldoInicial&&_rd.date<=ate) s+=creditoDinheiroDe(_rd); } } }catch(e){rmLogErr(e)}
@@ -10887,7 +10950,7 @@ function concSaidasAte(c,ate){
   var _tl=DB.titulos||[]; for(var _j=0;_j<_tl.length;_j++){ if(_tl[_j]&&_tl[_j].tipo==="receber") continue; var _bb=tituloBaixas(_tl[_j]); for(var _k=0;_k<_bb.length;_k++){ var _b=_bb[_k]; if(_b.conta===c.id&&_b.data>=c.dataSaldoInicial&&_b.data<=ate) s+=baixaSaida(_b); } }
   try{ var _aj=DB.concAjustes||[]; for(var _a=0;_a<_aj.length;_a++){ var _x=_aj[_a]; if(_x&&_x.conta===c.id&&_x.data>=c.dataSaldoInicial&&_x.data<=ate&&(Number(_x.valor)||0)<0) s+=Math.abs(Number(_x.valor)); } }catch(e){rmLogErr(e)}
   /* FASE 8A — investimento: compra soma em saídas, mesmo critério do saldo. */
-  try{ var _iv=DB.invMovs||[]; for(var _vi=0;_vi<_iv.length;_vi++){ var _m=_iv[_vi]; if(_m&&_m.conta===c.id&&_m.op==="compra"&&_m.data>=c.dataSaldoInicial&&_m.data<=ate) s+=Math.round(Number(_m.qtd)*Number(_m.preco)*100)/100; } }catch(e){rmLogErr(e)}
+  try{ var _iv=DB.invMovs||[]; for(var _vi=0;_vi<_iv.length;_vi++){ var _m=_iv[_vi]; if(_m&&_m.conta===c.id&&_m.op==="compra"&&_m.data>=c.dataSaldoInicial&&_m.data<=ate) s+=invMovCaixa(_m); } }catch(e){rmLogErr(e)}
   s+=loteDifSoma(c,-1,ate);
   return Math.round(s*100)/100;
 }
@@ -10938,9 +11001,9 @@ function concListar(contaId,de,ate){
        critério do saldo; sem essas linhas, extrato e saldo divergem. */
     var _iv=DB.invMovs||[];
     for(var _vi=0;_vi<_iv.length;_vi++){ var _m=_iv[_vi]; if(!_m||_m.conta!==contaId||_m.data<de||_m.data>ate) continue;
-      var _vv=Math.round(Number(_m.qtd)*Number(_m.preco)*100)/100;
+      var _vv=invMovCaixa(_m);
       var _isV=(_m.op==="venda");
-      out.push({kind:"invMov",key:_m.id,data:_m.data,efeito:_isV?_vv:-_vv,dir:_isV?1:-1,titulo:(_isV?"Venda ":"Compra ")+String(_m.codigo||"")+" · "+invTipoLabel(_m.tipo),sub:Number(_m.qtd)+" × "+BRL(Number(_m.preco))+" = "+BRL(_vv),conciliado:isConciliado(_m)?1:0,marcavel:true});
+      out.push({kind:"invMov",key:_m.id,data:_m.data,efeito:_isV?_vv:-_vv,dir:_isV?1:-1,titulo:(_isV?"Venda ":"Compra ")+String(_m.codigo||"")+" · "+invTipoLabel(_m.tipo),sub:Number(_m.qtd)+" × "+BRL(Number(_m.preco))+((Number(_m.taxa)||0)>0?(_isV?" − ":" + ")+BRL(Number(_m.taxa))+" de taxas":"")+" = "+BRL(_vv),conciliado:isConciliado(_m)?1:0,marcavel:true});
     }
     /* FASE 8D — proventos: crédito na data de pagamento, mesmo critério do saldo (futuro fora). */
     try{ var _hoje8Dl=todayISO(); var _pvl=DB.invProventos||[]; for(var _vpl=0;_vpl<_pvl.length;_vpl++){ var _pl=_pvl[_vpl]; if(!_pl||_pl.conta!==contaId||_pl.dataPag<de||_pl.dataPag>ate) continue; if(String(_pl.dataPag)>String(_hoje8Dl)) continue; var _pvV=invProvValor(_pl); var _q8d=invProvQtd(_pl); out.push({kind:"invProv",key:_pl.id,data:_pl.dataPag,efeito:_pvV,dir:1,titulo:invProvTipoLabel(_pl.tipo)+" "+String(_pl.codigo||""),sub:"data-com "+isoToBR(_pl.dataCom)+" · "+_q8d+" × "+BRL(Number(_pl.valorPorCota))+(_pl.tipo==="jcp"?" · IR "+invProvIrPct(_pl)+"%" :""),conciliado:isConciliado(_pl)?1:0,marcavel:true}); } }catch(e){rmLogErr(e)}
@@ -12466,7 +12529,7 @@ window.RM.dashVencer7=dashVencer7; window.RM.dashLotesAbertos=dashLotesAbertos; 
 window.RM.isConciliado=isConciliado;
 window.RM.limDeleteCounts=limDeleteCounts; window.RM.limKeepCounts=limKeepCounts; window.RM.limBaixasTotal=limBaixasTotal; window.RM.limRepAdjTotal=limRepAdjTotal; window.RM.limDoIt=limDoIt;
 window.RM.invContas=invContas; window.RM.invRange=function(){ return invRange(); };
-window.RM.invMovValor=invMovValor; window.RM.invPosQtd=invPosQtd; window.RM.invPosQtdTotal=invPosQtdTotal; window.RM.invPosicaoDe=invPosicaoDe; window.RM.invPosicoes=invPosicoes; window.RM.invFicariaNegativo=invFicariaNegativo; window.RM.invEventosDo=invEventosDo; window.RM.invEventoValidar=invEventoValidar; window.RM.invEventoAdd=invEventoAdd; window.RM.invEventoPodeExcluir=invEventoPodeExcluir; window.RM.invEventoFracaoAlerta=invEventoFracaoAlerta; window.RM.invTipoLabel=invTipoLabel; window.RM.invCotacoesGet=invCotacoesGet; window.RM.invCotPreco=invCotPreco; window.RM.invPosVariacao=invPosVariacao; window.RM.invCdiGet=invCdiGet; window.RM.invDiasUteis=invDiasUteis; window.RM.invCdbFator=invCdbFator; window.RM.invCdbLotes=invCdbLotes; window.RM.invCdbValorAte=invCdbValorAte; window.RM.invPosValorAtual=invPosValorAtual; window.RM.invCdiValidar=invCdiValidar; window.RM.invExportarPayload=invExportarPayload; window.RM.invParseCotacoesTexto=invParseCotacoesTexto; window.RM.invCotIdadeDias=invCotIdadeDias; window.RM.invWatchList=invWatchList; window.RM.invWatchAdd=invWatchAdd; window.RM.invWatchInfo=invWatchInfo; window.RM.invWatchMargem=invWatchMargem; window.RM.invWatchFmtMargem=invWatchFmtMargem; window.RM.invWatchTabHTML=invWatchTabHTML; window.RM.concEntradasAte=concEntradasAte; window.RM.concSaidasAte=concSaidasAte; window.RM.invProvTipoLabel=invProvTipoLabel; window.RM.invProvQtd=invProvQtd; window.RM.invProvBruto=invProvBruto; window.RM.invProvRetido=invProvRetido; window.RM.invProvLiquido=invProvLiquido; window.RM.invProvValor=invProvValor; window.RM.invProvList=invProvList; window.RM.invProvValidar=invProvValidar; window.RM.invProvAdd=invProvAdd; window.RM.invProvTabHTML=invProvTabHTML; window.RM.invProvIrPct=invProvIrPct; window.RM.invAcompSettings=invAcompSettings; window.RM.invAcompValidarAlvos=invAcompValidarAlvos; window.RM.invSelicValidar=invSelicValidar; window.RM.invSelicGet=invSelicGet; window.RM.invSelicLinhaHTML=invSelicLinhaHTML; window.RM.invSimPrazo=invSimPrazo; window.RM.invSimular=invSimular; window.RM.invSimTabHTML=invSimTabHTML; window.RM.invIrPadrao=invIrPadrao; window.RM.invIrSettings=invIrSettings; window.RM.invIrValidar=invIrValidar; window.RM.invIrTextoFixo=invIrTextoFixo; window.RM.invEhDayTrade=invEhDayTrade; window.RM.invIrVendasAcoesMes=invIrVendasAcoesMes; window.RM.invIrEstimarVenda=invIrEstimarVenda; window.RM.invIrResumoMeses=invIrResumoMeses; window.RM.invIrTabHTML=invIrTabHTML; window.RM.invRendaPassiva=invRendaPassiva; window.RM.invDistTipo=invDistTipo; window.RM.invDistribuicao=invDistribuicao; window.RM.invRebalance=invRebalance; window.RM.invReservaFracao=invReservaFracao; window.RM.invReservaAtual=invReservaAtual; window.RM.invCustoVida=invCustoVida; window.RM.invReservaInfo=invReservaInfo; window.RM.invReservaTabHTML=invReservaTabHTML; window.RM.invAcompTabHTML=invAcompTabHTML; window.RM.invHistUpsert=invHistUpsert; window.RM.invCotacoesAplicar=invCotacoesAplicar; window.RM.invHistPreco=invHistPreco; window.RM.invEvolucao=invEvolucao; window.RM.invReinvest=invReinvest; window.RM.invEvolucaoTabHTML=invEvolucaoTabHTML; window.RM.invReinvestTabHTML=invReinvestTabHTML;
+window.RM.invMovValor=invMovValor; window.RM.invPosQtd=invPosQtd; window.RM.invPosQtdTotal=invPosQtdTotal; window.RM.invPosicaoDe=invPosicaoDe; window.RM.invPosicoes=invPosicoes; window.RM.invFicariaNegativo=invFicariaNegativo; window.RM.invEventosDo=invEventosDo; window.RM.invEventoValidar=invEventoValidar; window.RM.invEventoAdd=invEventoAdd; window.RM.invEventoPodeExcluir=invEventoPodeExcluir; window.RM.invEventoFracaoAlerta=invEventoFracaoAlerta; window.RM.invTipoLabel=invTipoLabel; window.RM.invCotacoesGet=invCotacoesGet; window.RM.invCotPreco=invCotPreco; window.RM.invPosVariacao=invPosVariacao; window.RM.invCdiGet=invCdiGet; window.RM.invDiasUteis=invDiasUteis; window.RM.invCdbFator=invCdbFator; window.RM.invCdbLotes=invCdbLotes; window.RM.invCdbValorAte=invCdbValorAte; window.RM.invPosValorAtual=invPosValorAtual; window.RM.invCdiValidar=invCdiValidar; window.RM.invExportarPayload=invExportarPayload; window.RM.invParseCotacoesTexto=invParseCotacoesTexto; window.RM.invCotIdadeDias=invCotIdadeDias; window.RM.invWatchList=invWatchList; window.RM.invWatchAdd=invWatchAdd; window.RM.invWatchInfo=invWatchInfo; window.RM.invWatchMargem=invWatchMargem; window.RM.invWatchFmtMargem=invWatchFmtMargem; window.RM.invWatchTabHTML=invWatchTabHTML; window.RM.concEntradasAte=concEntradasAte; window.RM.concSaidasAte=concSaidasAte; window.RM.invProvTipoLabel=invProvTipoLabel; window.RM.invProvQtd=invProvQtd; window.RM.invProvBruto=invProvBruto; window.RM.invProvRetido=invProvRetido; window.RM.invProvLiquido=invProvLiquido; window.RM.invProvValor=invProvValor; window.RM.invProvList=invProvList; window.RM.invProvValidar=invProvValidar; window.RM.invProvAdd=invProvAdd; window.RM.invProvTabHTML=invProvTabHTML; window.RM.invProvIrPct=invProvIrPct; window.RM.invAcompSettings=invAcompSettings; window.RM.invAcompValidarAlvos=invAcompValidarAlvos; window.RM.invSelicValidar=invSelicValidar; window.RM.invSelicGet=invSelicGet; window.RM.invSelicLinhaHTML=invSelicLinhaHTML; window.RM.invSimPrazo=invSimPrazo; window.RM.invSimular=invSimular; window.RM.invSimTabHTML=invSimTabHTML; window.RM.invIrPadrao=invIrPadrao; window.RM.invIrSettings=invIrSettings; window.RM.invIrValidar=invIrValidar; window.RM.invIrTextoFixo=invIrTextoFixo; window.RM.invEhDayTrade=invEhDayTrade; window.RM.invIrVendasAcoesMes=invIrVendasAcoesMes; window.RM.invIrEstimarVenda=invIrEstimarVenda; window.RM.invIrResumoMeses=invIrResumoMeses; window.RM.invIrTabHTML=invIrTabHTML; window.RM.invRendaPassiva=invRendaPassiva; window.RM.invDistTipo=invDistTipo; window.RM.invDistribuicao=invDistribuicao; window.RM.invRebalance=invRebalance; window.RM.invReservaFracao=invReservaFracao; window.RM.invReservaAtual=invReservaAtual; window.RM.invCustoVida=invCustoVida; window.RM.invReservaInfo=invReservaInfo; window.RM.invReservaTabHTML=invReservaTabHTML; window.RM.invAcompTabHTML=invAcompTabHTML; window.RM.invHistUpsert=invHistUpsert; window.RM.invCotacoesAplicar=invCotacoesAplicar; window.RM.invHistPreco=invHistPreco; window.RM.invEvolucao=invEvolucao; window.RM.invReinvest=invReinvest; window.RM.invReinvestTabHTML=invReinvestTabHTML;
 window.RM.tituloById=tituloById; window.RM.tituloPago=tituloPago; window.RM.tituloFalta=tituloFalta;
 window.RM.isTituloUber=isTituloUber; window.RM.tituloDoDespesa=tituloDoDespesa; window.RM.despesaDoTitulo=despesaDoTitulo; window.RM.uberCentroId=uberCentroId; window.RM.criarTituloDeDespesa=criarTituloDeDespesa;
 window.RM.criarTituloVinculado=criarTituloVinculado; window.RM.tituloDaCorrida=tituloDaCorrida; window.RM.corridaDoTitulo=corridaDoTitulo; window.RM.isTituloCorrida=isTituloCorrida; window.RM.criarTituloDeCorrida=criarTituloDeCorrida; window.RM.carteiraCreditoContaId=carteiraCreditoContaId; window.RM.creditoDinheiroDe=creditoDinheiroDe; window.RM.taxaADescontarTotal=taxaADescontarTotal; window.RM.recebiveisAbertosPorPlataforma=recebiveisAbertosPorPlataforma; window.RM.baixaEntrada=baixaEntrada; window.RM.criarTituloDeRecarga=criarTituloDeRecarga; window.RM.tituloDaRecarga=tituloDaRecarga; window.RM.recargaDoTitulo=recargaDoTitulo; window.RM.isTituloRecarga=isTituloRecarga; window.RM.energiaCatId=energiaCatId; window.RM.periodoAberto=periodoAberto; window.RM.garantirPeriodoAberto=garantirPeriodoAberto; window.RM.recalcPeriodo=recalcPeriodo; window.RM.retirarRecargaDoPeriodo=retirarRecargaDoPeriodo; window.RM.reporRecargaNoPeriodo=reporRecargaNoPeriodo; window.RM.medAbertoKwh=medAbertoKwh; window.RM.pessoalCentroId=pessoalCentroId; window.RM.isTituloContaLuz=isTituloContaLuz; window.RM.luzApurarTitulo=luzApurarTitulo; window.RM.luzDesapurarPorTitulo=luzDesapurarPorTitulo; window.RM.luzPeriodoDoTitulo=luzPeriodoDoTitulo; window.RM.luzPeriodoDaRecarga=luzPeriodoDaRecarga; window.RM.luzRecargaApurada=luzRecargaApurada;
@@ -13318,7 +13381,9 @@ function irDados(ano,regime){
     var porAt={};
     invProvList().forEach(function(pv){
       if(!pv||!validISO(pv.dataPag)||pv.dataPag.slice(0,4)!==String(ano)) return;
-      var t=(pv.tipo==="jcp"||pv.tipo==="rendimento")?pv.tipo:"dividendo", k=t+"|"+pv.codigo;
+      /* mesma regra da aba IRPF (irpfCalc): JCP pelo tipo do provento; o resto pelo tipo do ATIVO (FII, Tesouro e CDB não são "dividendo", mesmo se lançados assim) */
+      var _ta=null; try{ _ta=invDistTipo(pv.conta,String(pv.codigo||"").trim().toUpperCase()); }catch(_eT){}
+      var t=(pv.tipo==="jcp")?"jcp":((_ta==="fii"||_ta==="tesouro"||_ta==="cdb"||pv.tipo==="rendimento")?"rendimento":"dividendo"), k=t+"|"+pv.codigo;
       if(!porAt[k]) porAt[k]={tipo:t,codigo:pv.codigo,bruto:0,retido:0,liquido:0,n:0};
       porAt[k].bruto+=invProvBruto(pv); porAt[k].retido+=invProvRetido(pv); porAt[k].liquido+=invProvLiquido(pv); porAt[k].n++;
     });
@@ -13415,8 +13480,8 @@ function irGerarPdf(ano,regime){
   sub("Vendas em bolsa (Renda variável)");
   if(R.vendas.length){
     tabela([{t:"Mês",x:X0+6},{t:"Vendas de ações",x:X0+160,d:1},{t:"Lucro ações",x:X0+255,d:1},{t:"Lucro FII/ETF",x:X0+345,d:1},{t:"Day trade",x:X0+420,d:1},{t:"IR estimado",x:X1-6,d:1}],
-      R.vendas.map(function(v){ var mm=Number(String(v.mes).slice(5,7))-1; return [CR_MESES[mm].charAt(0).toUpperCase()+CR_MESES[mm].slice(1)+(v.isentoAcoes&&v.lucroAcoes>0?" (isento)":""),crValor(v.vendasAcoes),crValor(v.lucroAcoes),crValor((v.lucroFii||0)+(v.lucroEtf||0)),crValor(v.lucroDay||0),crValor(v.total||0)]; }));
-    par("Estimativa do app, sem compensar prejuízos de meses anteriores. Lucro de ações em mês com vendas até o limite de isenção vai em Rendimentos Isentos; o resto, na ficha Renda Variável, mês a mês, com os DARFs pagos.",{tam:8.5,cor:CZ});
+      R.vendas.map(function(v){ var mm=Number(String(v.mes).slice(5,7))-1; return [CR_MESES[mm].charAt(0).toUpperCase()+CR_MESES[mm].slice(1)+(v.isentoAcoes&&v.lucroAcoes>0?" (isento)":""),crValor(v.vendasAcoes),crValor(v.lucroAcoes),crValor((v.lucroFii||0)+(v.lucroEtf||0)),crValor(v.lucroDay||0),crValor(v.imposto||0)]; }));
+    par("Estimativa do app: imposto sobre o resultado do mês, já descontando prejuízos de meses anteriores do mesmo grupo. Lucro de ações em mês com vendas até o limite de isenção vai em Rendimentos Isentos; o resto, na ficha Renda Variável, mês a mês, com os DARFs pagos.",{tam:8.5,cor:CZ});
   } else par("Nenhuma venda lançada neste ano.",{cor:CZ});
 
   /* 3 — conferência */
@@ -15524,7 +15589,7 @@ function invObsCard(w,info,soAvaliar){
     var pvp=d?Number(d.pvp):NaN, dy=d?Number(d.dy):NaN;
     if(isFinite(pvp)&&pvp>0){ tem++; curto.push("P/VP "+brDec(pvp,2)); if(pvp<=1){ ok++; crit.push('<li class="ok"><b>P/VP '+esc(brDec(pvp,2))+'</b>: você paga R$ '+esc(brDec(pvp,2))+' por R$ 1,00 de patrimônio do fundo'+(pvp<0.995?' — '+Math.round((1-pvp)*100)+'% de desconto':'')+'.</li>'); } else crit.push('<li class="no"><b>P/VP '+esc(brDec(pvp,2))+'</b>: você paga '+Math.round((pvp-1)*100)+'% a mais que o patrimônio do fundo.</li>'); }
     else crit.push('<li class="na">P/VP: sem dado no arquivo.</li>');
-    if(info.bazin!=null){ tem++; curto.push((isFinite(dy)&&dy>0)?("rende "+brDec(dy,1)+"% ao ano"):("Bazin "+invObsRel(info.bazin,preco))); var rendeTxt=(isFinite(dy)&&dy>0)?'<b>Rende '+esc(brDec(dy,1))+'% ao ano</b> em dividendos':'<b>Dividendos dos últimos 12 meses</b>'; if(preco<=info.bazin){ ok++; crit.push('<li class="ok">'+rendeTxt+' — acima dos 6% do método Bazin (preço teto '+esc(BRL(info.bazin))+'; hoje '+esc(invObsRel(info.bazin,preco))+').</li>'); } else crit.push('<li class="no">'+rendeTxt+' — abaixo dos 6% do método Bazin (preço teto '+esc(BRL(info.bazin))+'; hoje '+esc(invObsRel(info.bazin,preco))+').</li>'); }
+    if(info.bazin!=null){ tem++; curto.push((isFinite(dy)&&dy>0)?("rende "+brDec(dy,1)+"% ao ano"):("Bazin "+invObsRel(info.bazin,preco))); var rendeTxt=(isFinite(dy)&&dy>0)?'<b>Rende '+esc(brDec(dy,1))+'% ao ano no preço de hoje</b> em dividendos':'<b>Dividendos dos últimos 12 meses</b>'; if(preco<=info.bazin){ ok++; crit.push('<li class="ok">'+rendeTxt+' — acima dos 6% do método Bazin (preço teto '+esc(BRL(info.bazin))+'; hoje '+esc(invObsRel(info.bazin,preco))+').</li>'); } else crit.push('<li class="no">'+rendeTxt+' — abaixo dos 6% do método Bazin (preço teto '+esc(BRL(info.bazin))+'; hoje '+esc(invObsRel(info.bazin,preco))+').</li>'); }
     else crit.push('<li class="na">Dividendos: sem dado no arquivo.</li>');
     try{ var cdi=invCdiGet(); if(cdi&&isFinite(dy)&&dy>0){ extra.push('<li class="info">CDI hoje: '+esc(brDec(cdi.pct,2))+'% ao ano — o fundo rende '+(dy>=cdi.pct?'mais':'menos')+' que o CDI (dividendo de FII é isento de IR para pessoa física; o CDI tem IR).</li>'); } }catch(e){}
   } else {
@@ -15577,16 +15642,31 @@ function planoMes(ym){
   return {ym:ym,ganhos:Math.round(g*100)/100,despesas:Math.round(e*100)/100,energia:Math.round(en*100)/100,sobra:sobra,sugerido:sug,aportado:Math.round(ap*100)/100,falta:Math.max(0,Math.round((sug-ap)*100)/100)};
 }
 function planoYm(desloc){ var h=todayISO(), d=new Date(+h.slice(0,4),+h.slice(5,7)-1+desloc,1); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
+/* valor de hoje das AÇÕES e FIIs (os que pagam provento): total e sem a parte marcada como reserva */
+function planoValorAcoesFii(){
+  var tot=0, sem=0;
+  try{ var map=invPosicoes(null); Object.keys(map).forEach(function(k){ var q=map[k]; if(!q||!(q.qtd>0.0000001)) return; var t=null; try{ t=invDistTipo(q.conta,q.codigo); }catch(e){} if(t!=="acao"&&t!=="fii") return;
+    var cot=null; try{ cot=invCotPreco(q.codigo); }catch(e){} var v=(cot>0)?Math.round(q.qtd*cot*100)/100:Number(q.total)||0;
+    var res=0; try{ var fr=invReservaFracao(q.conta,q.codigo); if(fr&&fr.marcada>0.0000001) res=Math.round(v*Math.min(1,fr.marcada/q.qtd)*100)/100; }catch(e){}
+    tot+=v; sem+=v-res; }); }catch(e){ rmLogErr(e,"plano-valor"); }
+  return {total:Math.round(tot*100)/100,semReserva:Math.round(sem*100)/100};
+}
 function planoRenda(aporte){
   var st=invAcompSettings(), meta=Number(st.metaRendaMensal)||0;
-  var cx=0; invContas().forEach(function(c){ if(c.ativa) cx+=saldoConta(c); });
-  var atv=invAtivosValor(null).valor, P0=Math.round((cx+atv)*100)/100;
-  var y=0.08, base="estimativa de 8% ao ano";
+  /* base da renda = ações e FIIs (quem paga provento). Renda fixa, ETF, dinheiro parado e reserva ficam fora:
+     misturar diluía o % e inflava o valor necessário. "Você tem" = ações e FIIs fora da reserva. */
+  var VA=planoValorAcoesFii(), atv=VA.total, P0=VA.semReserva;
+  /* UMA conta só para o rendimento (a mesma da linha "Hoje sua carteira deve render"):
+     1º a renda estimada da carteira de HOJE (quantidade × provento anual por cota, ver Carteira);
+     2º sem estimativa: o que foi pago nos últimos meses (subestima se a carteira cresceu nesse tempo);
+     3º sem nada: 8% ao ano. "conta" explica de onde veio, para você conferir. */
+  var y=0.08, base="referência de 8% ao ano", conta="Sem ações/FIIs com estimativa nem proventos recebidos: usa 8% ao ano só como referência.", fonte="padrao";
   var _achou=false;
-  try{ var rp=invRendaPassiva(); if(rp&&!rp.vazia&&rp.media>0&&atv>0){ var yy=rp.media*12/atv; if(yy>=0.02&&yy<=0.25){ y=yy; _achou=true; base="o que a sua carteira pagou nos últimos "+(rp.base||12)+" mes(es)"; } } }catch(e){}
-  /* sem proventos registrados: usa a renda estimada da carteira (cotações) */
-  try{ if(!_achou&&atv>0){ var re=rendaCarteira(); if(re.anual>0){ var y2=re.anual/atv; if(y2>=0.02&&y2<=0.25){ y=y2; base="a renda estimada da sua carteira hoje"; } } } }catch(e){ rmLogErr(e,"plano-renda-est"); }
-  var r={meta:meta,P0:P0,y:y,base:base,alvo:meta>0?Math.round(meta*12/y*100)/100:0,meses:null};
+  try{ if(atv>0){ var re=rendaCarteira(); if(re.anual>0){ var y2=re.anual/atv; if(!(y2>=0.02&&y2<=0.25)) conta="A estimativa da carteira deu "+brDec(y2*100,1)+"% ao ano, fora do razoável (2% a 25%): provável dado errado no arquivo de cotações. "; if(y2>=0.02&&y2<=0.25){ y=y2; _achou=true; fonte="carteira"; base="renda estimada da carteira de hoje";
+    conta="Proventos esperados por ano com as ações e FIIs de hoje: <b>"+BRL(re.anual)+"</b> (≈ "+BRL(re.mensal)+"/mês; soma de quantidade × provento anual por cota — o detalhe está em Carteira, embaixo de cada código) ÷ valor de hoje dessas ações e FIIs: <b>"+BRL(atv)+"</b> = <b>"+brDec(y2*100,1)+"% ao ano</b>."; } } } }catch(e){ rmLogErr(e,"plano-renda-est"); }
+  try{ if(!_achou){ var rp=invRendaPassiva(); if(rp&&!rp.vazia&&rp.media>0&&atv>0){ var yy=rp.media*12/atv; if(yy>=0.02&&yy<=0.25){ y=yy; _achou=true; fonte="pago"; base="o que a carteira pagou nos últimos "+(rp.base||12)+" mes(es)";
+    conta="Proventos recebidos nos últimos "+(rp.base||12)+" mes(es): <b>"+BRL(rp.soma)+"</b> ÷ "+(rp.base||12)+" = "+BRL(rp.media)+"/mês × 12 = <b>"+BRL(Math.round(rp.media*12*100)/100)+"/ano</b> ÷ valor de hoje das ações e FIIs: <b>"+BRL(atv)+"</b> = <b>"+brDec(yy*100,1)+"% ao ano</b>. Se a carteira cresceu nesses meses, este número fica abaixo do real."; } } } }catch(e){ rmLogErr(e,"plano-renda-pago"); }
+  var r={meta:meta,P0:P0,y:y,base:base,conta:conta,fonte:fonte,alvo:meta>0?Math.round(meta*12/y*100)/100:0,meses:null};
   if(meta>0&&P0<r.alvo&&aporte>0){ var i=Math.pow(1+y,1/12)-1; var n=Math.log((r.alvo*i+aporte)/(P0*i+aporte))/Math.log(1+i); if(isFinite(n)&&n>0) r.meses=Math.ceil(n); }
   return r;
 }
@@ -15623,10 +15703,11 @@ function planoCardHTML(){
   try{ var _rc=rendaCarteira(); if(_rc.anual>0) h+='<div>Hoje sua carteira deve render <b>~'+esc(BRL(_rc.mensal))+'/mês</b> em proventos <span class="sub" style="display:inline">(estimativa bruta, ver Carteira)</span>.</div>'; }catch(e){ rmLogErr(e,"plano-renda-hoje"); }
   if(!(R.meta>0)) h+='<div class="sub">Defina a <b>meta de renda mensal</b> em Metas e alvos (Editar metas) para ver quanto falta.</div>';
   else{
-    h+='<div>Para receber <b>'+esc(BRL(R.meta))+'/mês</b> em dividendos, precisa de uns <b>'+esc(BRL(R.alvo))+'</b> investidos <span class="sub" style="display:inline">(rendendo '+esc(brDec(R.y*100,1))+'% ao ano — '+esc(R.base)+')</span>.</div>';
+    h+='<div>Para receber <b>'+esc(BRL(R.meta))+'/mês</b> em dividendos, precisa de uns <b>'+esc(BRL(R.alvo))+'</b> investidos <span class="sub" style="display:inline">em ações e FIIs (rendendo '+esc(brDec(R.y*100,1))+'% ao ano em proventos no preço de hoje — '+esc(R.base)+')</span>.</div>';
+    h+='<details class="plano-conta"><summary>De onde vem o '+esc(brDec(R.y*100,1))+'%? (conferir)</summary><div class="sub" style="margin:4px 0">'+R.conta+' É só provento (dividendo, JCP, rendimento de FII); a valorização das cotas está em Resumo › Rentabilidade.</div><div class="btnrow"><button type="button" class="btn sm" data-plano-ver="0">Ver Carteira</button><button type="button" class="btn sm" data-plano-ver="2">Ver Proventos</button></div></details>';
     var pc=R.alvo>0?Math.min(100,R.P0/R.alvo*100):0;
     h+='<div class="dh-bar" style="margin:6px 0" role="progressbar" aria-valuenow="'+Math.round(pc)+'"><i style="width:'+pc.toFixed(1)+'%"></i></div>';
-    h+='<div class="sub">Você tem '+esc(BRL(R.P0))+' ('+(pc>0&&pc<1?"menos de 1":Math.round(pc))+'%).</div>';
+    h+='<div class="sub">Você já tem '+esc(BRL(R.P0))+' em ações e FIIs, fora da reserva ('+(pc>0&&pc<1?"menos de 1":Math.round(pc))+'%).</div>';
     if(R.P0>=R.alvo) h+='<div style="color:#4caf7d"><b>Já chegou!</b> O patrimônio de hoje já cobre a renda desejada.</div>';
     else if(R.meses!=null){ var dt=new Date(); dt.setMonth(dt.getMonth()+R.meses); h+='<div>Aportando <b>'+esc(BRL(aporte))+'/mês</b> e reinvestindo os dividendos, chega lá em <b>~'+esc(planoMeses(R.meses))+'</b> ('+esc(PLANO_MES[dt.getMonth()])+' de '+dt.getFullYear()+').</div>'; }
     else h+='<div class="sub">Sem sobra para aportar, não dá para estimar o prazo.</div>';
@@ -15636,6 +15717,7 @@ function planoCardHTML(){
 }
 try{
   document.addEventListener("change",function(ev){ var t=ev.target; if(!t||t.id!=="planoPct") return; var v=parseBR(t.value); if(!(isFinite(v)&&v>=0&&v<=100)){ customAlert("Use uma porcentagem de 0 a 100 (ex.: 20).","Do Uber para a renda"); t.value=brDec(planoPct(),0); return; } DB.settings.planoAporte={pct:Math.round(v*10)/10}; if(!save()){ customAlert(SAVE_FAIL_MSG,"Do Uber para a renda"); return; } try{ rInvest(); }catch(e){} });
+  document.addEventListener("click",function(ev){ var v=ev.target&&ev.target.closest?ev.target.closest("[data-plano-ver]"):null; if(!v) return; window.__invTab=Number(v.dataset.planoVer)||0; show("investimentos"); });
   document.addEventListener("click",function(ev){ var b=ev.target&&ev.target.closest?ev.target.closest("[data-plano-aportar]"):null; if(!b) return; var c=invContas().filter(function(x){ return x.ativa; })[0]; window.__trPrefill={dest:c?c.id:null,valor:Number(b.dataset.planoAportar)||0,desc:"aporte do mês (Uber)"}; show("transferencias"); });
 }catch(e){ rmLogErr(e,"plano-init"); }
 try{ window.RM.planoMes=planoMes; window.RM.planoRenda=planoRenda; }catch(e){ rmLogErr(e); }
@@ -15654,47 +15736,20 @@ function invPosLeituraHTML(codigo,tipo){
   return '<span class="pos-leit '+A.cls+'">'+t+(A.curto.length?' · '+esc(A.curto.join(" · ")):'')+'</span>';
 }
 
-/* ---------- CARTEIRA × CDI ----------
-   Rendimento da carteira mês a mês descontando os aportes (aporte entra no começo do mês):
-   r = (patrimônio no fim − no começo − aporte do mês) ÷ (no começo + aporte), encadeado.
-   CDI no mesmo período: (1 + CDI anual)^(dias úteis ÷ 252) − 1, com o CDI informado em Planejamento. */
-function invVsCdi(ev){
-  var ms=(ev&&ev.meses)||[]; if(!ms.length) return null;
-  var fat=1, Pant=0, Aant=0, n=0;
-  for(var i=0;i<ms.length;i++){ var m=ms[i], F=(Number(m.aporte)||0)-Aant, base=Pant+F; if(base>0.01){ var r=(Number(m.patrimonio)-Pant-F)/base; if(isFinite(r)&&r>-0.99){ fat*=1+r; n++; } } Pant=Number(m.patrimonio)||0; Aant=Number(m.aporte)||0; }
-  var ini=ms[0].key+"-01", hoje=todayISO();
-  var cdi=null; try{ cdi=invCdiGet(); }catch(e){}
-  var du=invDiasUteis(ini,hoje), cdiP=null;
-  if(cdi&&cdi.pct>0) cdiP=(Math.pow(1+cdi.pct/100,du/252)-1)*100;
-  return {carteira:(fat-1)*100,cdi:cdiP,ini:ini,du:du,cdiAnual:cdi?cdi.pct:null,meses:n};
-}
-function invVsCdiHTML(ev){
-  var c=invVsCdi(ev); if(!c||!c.meses) return "";
-  var mesIni=PLANO_MES[+c.ini.slice(5,7)-1]+"/"+c.ini.slice(2,4);
-  var h='<div class="plano-mes" style="margin-bottom:10px"><div class="pm-tit">Sua carteira × CDI <span class="sub" style="display:inline">(desde '+esc(mesIni)+', descontando os aportes)</span></div>';
-  h+='<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:baseline"><div>Carteira <span class="plano-big" style="color:'+(c.carteira>=0?"#4caf7d":"#e0695c")+'">'+(c.carteira>=0?"+":"")+esc(brDec(c.carteira,1))+'%</span></div>';
-  if(c.cdi!=null){ h+='<div>CDI <span class="plano-big">+'+esc(brDec(c.cdi,1))+'%</span></div></div>';
-    var d=c.carteira-c.cdi;
-    h+='<div class="sub" style="margin-top:4px">'+(Math.abs(d)<0.1?'Empatou com o CDI no período.':(d>0?'✓ Rendeu <b>'+esc(brDec(d,1))+' ponto(s) a mais</b> que o CDI no período.':'Rendeu <b>'+esc(brDec(-d,1))+' ponto(s) a menos</b> que o CDI no período — um CDB de 100% do CDI teria rendido mais.'))+' Inclui valorização, lucro das vendas, proventos e juros; o CDI é bruto, antes do IR.</div>';
-  } else h+='</div><div class="sub" style="margin-top:4px">Informe o <b>CDI anual</b> em Metas e alvos (Editar metas) para comparar.</div>';
-  if(c.meses<2) h+='<div class="sub">Período curto: com poucos meses a comparação ainda oscila muito.</div>';
-  return h+'</div>';
-}
-try{ window.RM.invVsCdi=invVsCdi; }catch(e){ rmLogErr(e); }
 
 /* ---------- IMPOSTO: limite de isenção e DARF ---------- */
 /* DARF de renda variável: último dia útil do mês seguinte ao da venda */
 function invDarfVenc(ym){ var y=+ym.slice(0,4), m=+ym.slice(5,7); var d=new Date(y,m+1,0); while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()-1); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
-function invDarfPendentes(){ var hoje=todayISO(), out=[]; try{ (invIrResumoMeses()||[]).forEach(function(r){ if(!(r&&r.total>0.004)) return; var v=invDarfVenc(r.mes); if(v<hoje) return; out.push({mes:r.mes,rot:r.mes.slice(5,7)+"/"+r.mes.slice(0,4),total:r.total,venc:v}); }); }catch(e){ rmLogErr(e,"darf-pend"); } return out; }
-function invDarfPendentesHTML(){ var p=invDarfPendentes(); if(!p.length) return ""; return '<div class="plano-mes" style="grid-column:1/-1">'+p.map(function(d){ return '💸 <b>DARF de '+esc(d.rot)+': '+esc(BRL(d.total))+'</b> — pagar até <b>'+esc(isoToBR(d.venc))+'</b> <span class="sub" style="display:inline">(código 6015; estimativa, sem compensar prejuízo)</span>'; }).join("<br>")+'</div>'; }
+function invDarfPendentes(){ var hoje=todayISO(), out=[]; try{ (invIrResumoMeses()||[]).forEach(function(r){ if(!(r&&r.darf>0.004)) return; var v=invDarfVenc(r.mes); if(v<hoje) return; out.push({mes:r.mes,rot:r.mes.slice(5,7)+"/"+r.mes.slice(0,4),total:r.darf,venc:v}); }); }catch(e){ rmLogErr(e,"darf-pend"); } return out; }
+function invDarfPendentesHTML(){ var p=invDarfPendentes(); if(!p.length) return ""; return '<div class="plano-mes" style="grid-column:1/-1">'+p.map(function(d){ return '💸 <b>DARF de '+esc(d.rot)+': '+esc(BRL(d.total))+'</b> — pagar até <b>'+esc(isoToBR(d.venc))+'</b> <span class="sub" style="display:inline">(código 6015; estimativa já descontando prejuízos)</span>'; }).join("<br>")+'</div>'; }
 /* antes de salvar uma venda de ação (não day trade): passa do limite de isenção do mês? */
 function invIrAvisoLimite(contaId,cod,data,qtd,preco){
   if(invEhDayTrade(contaId,cod,data,null)) return null;
   var ir=invIrSettings(), lim=Number(ir.isencaoAcoesMes)||0, mes=String(data).slice(0,7);
   var antes=invIrVendasAcoesMes(mes), valor=Math.round(qtd*preco*100)/100, depois=antes+valor;
   if(!(lim>0)||antes>lim+0.000001||depois<=lim+0.000001) return null;
-  var lucroMes=0; try{ var r=(invIrResumoMeses()||[]).filter(function(x){ return x.mes===mes; })[0]; if(r) lucroMes=Number(r.lucroAcoes)||0; }catch(e){}
-  var pm=0; try{ pm=Number(invPosicaoDe(contaId,cod,data,null).pm)||0; }catch(e){}
+  var lucroMes=0; try{ var r=(invIrResumoMeses()||[]).filter(function(x){ return x.mes===mes; })[0]; if(r) lucroMes=Number(r.lucroAcoes)||0; /* resultado de ações do mês (lucros − prejuízos) */ }catch(e){}
+  var pm=0; try{ pm=Number(invPosicaoDe(null,cod,data,null).pm)||0; }catch(e){} /* preço médio do CPF, como no IR */
   var lucroEsta=Math.round((preco-pm)*qtd*100)/100, base=Math.max(0,lucroMes+lucroEsta), imp=Math.round(base*ir.aliqAcoes)/100;
   var cabe=Math.max(0,Math.round((lim-antes)*100)/100), qMax=Math.floor(cabe/preco+1e-9);
   return "Com esta venda, as vendas de ações de "+mes.slice(5,7)+"/"+mes.slice(0,4)+" vão de "+BRL(antes)+" para "+BRL(depois)+" e passam do limite de isenção de "+BRL(lim)+".\n\nAí o lucro de TODAS as vendas de ações do mês paga "+String(ir.aliqAcoes).replace(".",",")+"%: imposto estimado de "+BRL(imp)+" (lucro do mês "+BRL(base)+"), em DARF até "+isoToBR(invDarfVenc(mes))+"."+(base<=0?" (Sem lucro no mês, o imposto fica zero.)":"")+"\n\nPara continuar isento, venda até "+BRL(cabe)+" este mês"+(qMax>0?" ("+qMax+" ações a "+BRL(preco)+")":"")+" e o resto a partir do mês que vem.\n\nEstimativa, sem compensar prejuízo; confira com quem faz seu imposto.";
@@ -15920,7 +15975,7 @@ var FECH_CAMPOS={
   transferencias:["transferência","data",["data","valor","contaOrigem","contaDestino"]],
   repasses:["repasse","date",["date","amount","platform_id","start","end","adjustments"]],
   dre_manual:["lançamento do DRE","date",["date","amount","gid","signal","rateio"]],
-  invMovs:["investimento","data",["data","conta","codigo","op","qtd","preco"]],
+  invMovs:["investimento","data",["data","conta","codigo","op","qtd","preco","taxa"]],
   concAjustes:["ajuste de conciliação","data",["data","conta","valor"]],
   /* também mexem no saldo do mês: provento pago, desdobramento/grupamento (muda a quantidade) e lote de repasse creditado */
   invProventos:["provento","dataPag",["dataPag","dataCom","conta","codigo","tipo","valorPorCota","ir"]],
@@ -16224,7 +16279,7 @@ function resLeitura(cod,tipo){
 }
 function resCalc(){
   var R={pos:[],cls:{},valor:0,custo:0,semCot:0,realizado:0,custoVend:0,provTotal:0,prov12:0,caixa:0};
-  RES_ORDEM.forEach(function(k){ R.cls[k]={k:k,nome:RES_CLS[k].nome,ic:RES_CLS[k].ic,pos:[],valor:0,custo:0,prov:0,alvo:null,pctAtual:null,diff:null}; });
+  RES_ORDEM.forEach(function(k){ R.cls[k]={k:k,nome:RES_CLS[k].nome,ic:RES_CLS[k].ic,pos:[],valor:0,valorCart:0,valorRes:0,custo:0,prov:0,alvo:null,pctAtual:null,diff:null}; });
   var prov=resProvPorPos(), map={};
   try{ map=invPosicoes(null); }catch(e){ rmLogErr(e,"res-pos"); }
   Object.keys(map).sort().forEach(function(k){
@@ -16237,12 +16292,14 @@ function resCalc(){
     x.varR=sem?null:Math.round((x.valor-x.custo)*100)/100; x.varP=sem?null:resPct(x.valor-x.custo,x.custo);
     x.rentP=sem?null:resPct(x.valor-x.custo+pv,x.custo);
     try{ x.leit=resLeitura(x.codigo,t); }catch(e){ x.leit=null; }
-    try{ var fr=invReservaFracao(p.conta,p.codigo); x.reserva=fr.marcada>0.0000001; }catch(e){ x.reserva=false; }
-    R.pos.push(x); var C=R.cls[x.cls]; C.pos.push(x); C.valor+=x.valor; C.custo+=x.custo; C.prov+=pv;
-    R.valor+=x.valor; R.custo+=x.custo; if(sem) R.semCot++;
+    /* reserva: a parte marcada fica FORA de tudo o que se compara com o alvo (mesma regra do Planejamento) */
+    x.valorRes=0; try{ var fr=invReservaFracao(p.conta,p.codigo); x.reserva=fr.marcada>0.0000001; if(x.reserva) x.valorRes=Math.round(x.valor*Math.min(1,fr.marcada/p.qtd)*100)/100; }catch(e){ x.reserva=false; }
+    x.valorCart=Math.round((x.valor-x.valorRes)*100)/100;
+    R.pos.push(x); var C=R.cls[x.cls]; C.pos.push(x); C.valor+=x.valor; C.valorCart+=x.valorCart; C.valorRes+=x.valorRes; C.custo+=x.custo; C.prov+=pv;
+    R.valor+=x.valor; R.valorCart=(R.valorCart||0)+x.valorCart; R.custo+=x.custo; if(sem) R.semCot++;
   });
-  try{ (DB.invMovs||[]).forEach(function(m){ if(!m||m.op!=="venda") return; var e=invIrEstimarVenda(m.conta,m.codigo,m.tipo,m.data,Number(m.qtd),Number(m.preco)); var vend=Math.round(Number(m.qtd)*Number(m.preco)*100)/100; R.realizado+=Number(e.lucro)||0; R.custoVend+=vend-(Number(e.lucro)||0); }); }catch(e){ rmLogErr(e,"res-vendas"); }
-  try{ var hoje=todayISO(), ini=somaDiasISO(hoje,-365); (DB.invProventos||[]).forEach(function(p){ if(!p||!p.dataPag||p.dataPag>hoje) return; var v=Number(invProvValor(p))||0; R.provTotal+=v; if(p.dataPag>ini) R.prov12+=v; }); }catch(e){ rmLogErr(e,"res-prov12"); }
+  try{ (DB.invMovs||[]).forEach(function(m){ if(!m||m.op!=="venda") return; var e=invIrEstimarVenda(m.conta,m.codigo,m.tipo,m.data,Number(m.qtd),Number(m.preco),Number(m.taxa)||0); var vend=invMovCaixa(m); R.realizado+=Number(e.lucro)||0; R.custoVend+=vend-(Number(e.lucro)||0); }); }catch(e){ rmLogErr(e,"res-vendas"); }
+  try{ var hoje=todayISO(), J=provJanela12(); R.provRot=J.rotulo; R.prov12=J.tot; (DB.invProventos||[]).forEach(function(p){ if(!p||!p.dataPag||p.dataPag>hoje) return; R.provTotal+=Number(invProvValor(p))||0; }); }catch(e){ rmLogErr(e,"res-prov12"); }
   try{ invContas().forEach(function(c){ if(c.ativa) R.caixa+=saldoConta(c); }); }catch(e){}
   ["valor","custo","realizado","custoVend","provTotal","prov12","caixa"].forEach(function(f){ R[f]=Math.round(R[f]*100)/100; });
   R.varR=Math.round((R.valor-R.custo)*100)/100; R.varP=resPct(R.varR,R.custo);
@@ -16251,11 +16308,12 @@ function resCalc(){
   /* alvo: a mesma distribuição do Planejamento (sem a reserva) */
   var D=null; try{ D=invDistribuicao(); }catch(e){ D=null; }
   if(D&&D.classes) D.classes.forEach(function(c){ var C=R.cls[c.k]; if(!C) return; C.alvo=c.alvoPct; C.pctAtual=c.pct; C.diff=c.diff; });
-  else if(D&&!D.vazia&&D.total>0){ RES_ORDEM.forEach(function(k){ var C=R.cls[k]; C.pctAtual=k==="fixa"?D.fixa.pct:Math.round(C.valor/D.total*10000)/100; }); }
+  else if(D&&!D.vazia&&D.total>0){ RES_ORDEM.forEach(function(k){ var C=R.cls[k]; C.pctAtual=k==="fixa"?D.fixa.pct:Math.round(C.valorCart/D.total*10000)/100; }); }
   R.temAlvo=!!(D&&D.classes); R.dist=D;
-  RES_ORDEM.forEach(function(k){ var C=R.cls[k]; C.valor=Math.round(C.valor*100)/100; C.custo=Math.round(C.custo*100)/100;
+  R.valorCart=Math.round((R.valorCart||0)*100)/100;
+  RES_ORDEM.forEach(function(k){ var C=R.cls[k]; C.valor=Math.round(C.valor*100)/100; C.valorCart=Math.round(C.valorCart*100)/100; C.valorRes=Math.round(C.valorRes*100)/100; C.custo=Math.round(C.custo*100)/100;
     var sem=C.pos.some(function(x){ return x.semCot; }); C.varP=sem?null:resPct(C.valor-C.custo,C.custo); C.rentP=sem?null:resPct(C.valor-C.custo+C.prov,C.custo);
-    var tot=C.valor; C.pos.forEach(function(x){ x.pctClasse=tot>0?x.valor/tot*100:0; x.pctCart=R.valor>0?x.valor/R.valor*100:0; }); resPesosAplicar(C); C.pos.forEach(function(x){ x.comprar=resComprar(x,C,R); }); });
+    var tot=C.valorCart; C.pos.forEach(function(x){ x.pctClasse=tot>0?x.valorCart/tot*100:0; x.pctCart=R.valorCart>0?x.valorCart/R.valorCart*100:0; }); resPesosAplicar(C); C.pos.forEach(function(x){ x.comprar=resComprar(x,C,R); }); });
   return R;
 }
 /* "Comprar?": a classe está abaixo do alvo, o ativo não está entre os maiores da classe e a leitura não é vermelha */
@@ -16284,9 +16342,9 @@ function resGrupoHTML(C,R){
   var pctTxt=(C.pctAtual!=null?brDec(C.pctAtual,0)+"%":"0%")+(C.alvo!=null?' / '+brDec(C.alvo,0)+'%':'');
   var difTxt=""; if(C.alvo!=null&&C.diff!=null){ difTxt=C.diff>0.004?'<span style="color:#e0695c">faltam '+esc(BRL(C.diff))+'</span>':(C.diff<-0.004?'<span style="color:#5a9fd4">'+esc(BRL(-C.diff))+' acima</span>':'<span style="color:#4caf7d">no alvo</span>'); }
   var h='<section class="card cls-grupo" data-cls="'+C.k+'"><div class="cls-cab"><div class="cls-nome"><span class="cls-ic">'+C.ic+'</span><b>'+esc(C.nome)+'</b><span class="sub">'+n+(n===1?" ativo":" ativos")+'</span>'+(n>=2?'<button type="button" class="btn sm accent cls-pesos-btn" data-pesos="'+C.k+'" aria-expanded="false">⚖️ Pesos'+(C.pesosProprios?" (seus)":"")+'</button>':"")+'</div><div class="cls-kpis">'
-    +resKpi("Valor total",esc(BRL(C.valor)))
+    +resKpi("Valor total",esc(BRL(C.valor)),"",C.valorRes>0.004?"🛟 "+esc(BRL(C.valorRes))+" na reserva (fora do %)":"")
     +resKpi("Variação",esc(resPctTxt(C.varP)),resCor(C.varP))
-    +resKpi("Rentabilidade",esc(resPctTxt(C.rentP)),resCor(C.rentP),C.prov>0.004?"com "+esc(BRL(C.prov))+" de proventos":"")
+    +resKpi("Resultado c/ proventos",esc(resPctTxt(C.rentP)),resCor(C.rentP),C.prov>0.004?"variação + "+esc(BRL(C.prov))+" de proventos":"variação + proventos")
     +resKpi("% na carteira",esc(pctTxt),"",C.alvo!=null?"atual / alvo"+(difTxt?" · "+difTxt:""):"")
     +'</div></div>';
   if(!n) return h+'<div class="sub cls-vazio">Nenhum ativo desta classe ainda.</div></section>';
@@ -16294,7 +16352,7 @@ function resGrupoHTML(C,R){
     h+='<div class="cls-pesos" data-pesosed="'+C.k+'" hidden><div class="sub">Quanto cada ativo deve pesar <b>dentro de '+esc(C.nome)+'</b> (%). Os pesos somam 100. Em branco em todos = partes iguais ('+igual+'% cada). Usado no Comprar? e na divisão do Próximo aporte.</div><div class="cls-pesos-lin">'
       +cods.map(function(c){ var v=P[c]; return '<label class="f"><span>'+esc(c)+'</span><input inputmode="decimal" data-peso="'+esc(c)+'" placeholder="'+igual+'" value="'+(C.pesosProprios&&v!=null?esc(brDec(v,v%1?2:0)):"")+'"></label>'; }).join("")
       +'</div><div class="sub" data-pesosoma="'+C.k+'"></div><div class="btnrow"><button type="button" class="btn sm green" data-pesosalva="'+C.k+'">Salvar pesos</button><button type="button" class="btn sm accent" data-pesoiguais="'+C.k+'">Partes iguais</button></div></div>'; }
-  h+='<div class="pos-tab" role="table"><div class="pos-lin pos-head" role="row"><span class="c-ativo">Ativo</span><span class="c-qtd">Qtd</span><span class="c-pm">Preço médio</span><span class="c-preco">Preço atual</span><span class="c-var">Variação</span><span class="c-rent">Rentab.</span><span class="c-saldo">Saldo</span><span class="c-pct">% carteira</span><span class="c-ideal" title="Peso ideal deste ativo na carteira = alvo da classe × peso do ativo na classe">% ideal</span><span class="c-leit">Leitura</span><span class="c-comp">Comprar?</span></div>';
+  h+='<div class="pos-tab" role="table"><div class="pos-lin pos-head" role="row"><span class="c-ativo">Ativo</span><span class="c-qtd">Qtd</span><span class="c-pm">Preço médio</span><span class="c-preco">Preço atual</span><span class="c-var">Variação</span><span class="c-rent" title="Variação + proventos recebidos">Resultado</span><span class="c-saldo">Saldo</span><span class="c-pct">% carteira</span><span class="c-ideal" title="Peso ideal deste ativo na carteira = alvo da classe × peso do ativo na classe">% ideal</span><span class="c-leit">Leitura</span><span class="c-comp">Comprar?</span></div>';
   C.pos.slice().sort(function(a,b){ return b.valor-a.valor; }).forEach(function(x){
     var al=""; try{ var _al=invEventoFracaoAlerta(x.conta,x.codigo); if(_al) al='<small style="color:var(--yellow)">'+esc(_al.msg)+'</small>'; }catch(e){}
     var pr=x.semCot?'<span class="sub">sem cotação</span>':(x.peloCusto?'<span class="sub">pelo custo</span>':esc(BRL(x.preco)));
@@ -16305,7 +16363,7 @@ function resGrupoHTML(C,R){
       +'<span class="c-pm" data-rot="PM">'+esc(BRL(x.pm))+'</span>'
       +'<span class="c-preco" data-rot="Preço">'+pr+'</span>'
       +'<span class="c-var" data-rot="Variação"><i class="pill" style="color:'+resCor(x.varP)+'">'+esc(resPctTxt(x.varP))+'</i></span>'
-      +'<span class="c-rent" data-rot="Rentab." title="Variação + proventos recebidos deste ativo ('+esc(BRL(x.prov))+')"><i class="pill" style="color:'+resCor(x.rentP)+'">'+esc(resPctTxt(x.rentP))+'</i></span>'
+      +'<span class="c-rent" data-rot="Resultado" title="Variação + proventos recebidos deste ativo ('+esc(BRL(x.prov))+')"><i class="pill" style="color:'+resCor(x.rentP)+'">'+esc(resPctTxt(x.rentP))+'</i></span>'
       +'<span class="c-saldo"><b>'+esc(BRL(x.valor))+'</b></span>'
       +'<span class="c-pct" data-rot="% carteira">'+esc(brDec(x.pctCart,2))+'%</span>'
       +'<span class="c-ideal" data-rot="% ideal">'+(x.idealCart!=null?esc(brDec(x.idealCart,2))+"%":"—")+'</span>'
@@ -16371,9 +16429,11 @@ function resResumoHTML(){
     +'<div class="rk-sub">Valor aplicado <b>'+esc(BRL(R.custo))+'</b>'+(Math.abs(R.caixa)>0.004?' · + '+esc(BRL(R.caixa))+' parado na corretora':'')+(R.semCot?' · '+R.semCot+' sem cotação (pelo custo)':'')+'</div></div>';
   var luc='<div class="card res-kpi"><div class="rk-tit">💹 Lucro total</div><div class="rk-val" style="color:'+resCor(R.lucro)+'">'+esc((R.lucro<-0.004?"−":"")+BRL(Math.abs(R.lucro)))+'</div>'
     +'<div class="rk-sub">Variação '+esc((R.varR<-0.004?"−":"")+BRL(Math.abs(R.varR)))+' · vendas '+esc((R.realizado<-0.004?"−":"")+BRL(Math.abs(R.realizado)))+' · proventos '+esc(BRL(R.provTotal))+'</div></div>';
-  var pro='<div class="card res-kpi"><div class="rk-tit">💰 Proventos (12 meses)</div><div class="rk-val">'+esc(BRL(R.prov12))+'</div>'
-    +'<div class="rk-sub">Total recebido '+esc(BRL(R.provTotal))+(REN&&REN.itens.length?' · <span class="renda-tot-in">estimado <b>~'+esc(BRL(REN.mensal))+'/mês</b></span>':'')
-    +(function(){ try{ var rp=invRendaPassiva(); if(rp.vazia) return ""; return '<br><span class="renda-pass">Média recebida: <b>'+esc(BRL(rp.media))+'/mês</b>'+(rp.temMeta?' · '+esc(brDec(rp.pct,0))+'% da meta de '+esc(BRL(rp.meta)):'')+'</span>'; }catch(e){ return ""; } })()+'</div></div>';
+  /* um recebido (com o período escrito) e um estimado; a meta compara com o estimado, como no Planejamento */
+  var _st=null; try{ _st=invAcompSettings(); }catch(e){}
+  var pro='<div class="card res-kpi"><div class="rk-tit">💰 Proventos recebidos</div><div class="rk-val">'+esc(BRL(R.prov12))+'</div>'
+    +'<div class="rk-sub">de '+esc(R.provRot||"")+' (média '+esc(BRL(Math.round(R.prov12/12*100)/100))+'/mês) · desde o início '+esc(BRL(R.provTotal))
+    +(REN&&REN.itens.length?'<br><span class="renda-tot-in">Deve pagar <b>~'+esc(BRL(REN.mensal))+'/mês</b> com a carteira de hoje</span>'+((_st&&_st.metaRendaMensal>0)?' · '+esc(brDec(REN.mensal/_st.metaRendaMensal*100,0))+'% da meta de '+esc(BRL(_st.metaRendaMensal)):''):'')+'</div></div>';
   var ren='<div class="card res-kpi"><div class="rk-tit">📊 Lucro sobre o que comprou</div><div class="rk-val" style="color:'+resCor(R.rentP)+'">'+esc(resPctTxt(R.rentP))+'</div>'
     +'<div class="rk-sub">Lucro total ÷ tudo o que já foi comprado ('+esc(BRL(R.base))+'). Só variação: '+esc(resPctTxt(R.varP))+'</div></div>';
   var _simC=R.pos.filter(function(x){ return x.comprar&&x.comprar.v==="Sim"; }).map(function(x){ return x.codigo; });
@@ -16382,10 +16442,10 @@ function resResumoHTML(){
   RES_EVO=resEvolucao(); RES_EVO_SEL=-1;
   h+=resFiltrosHTML();
   h+='<div class="res-graficos"><div class="card res-evo"><h3>Evolução do patrimônio'+(window.__resCls?' · '+esc(RES_CLS[window.__resCls].nome):'')+'<button type="button" class="infoBtn" data-tip="Fim de cada mês (o mês atual vai até hoje): valor aplicado = custo das posições; ganho = valor de mercado − custo (preço do histórico de cotação daquele dia; sem histórico, pelo custo). Não inclui o dinheiro parado na corretora." aria-label="Sobre este gráfico">i</button></h3>'
-    +(RES_EVO.length?'<div class="res-leg"><span><i style="background:#2e9e64"></i>Valor aplicado</span><span><i style="background:#8fe0b4"></i>Ganho</span><span><i style="background:#e0695c"></i>Perda</span></div><canvas id="resEvoCv" class="chart" height="230" aria-label="Evolução do patrimônio"></canvas><div class="piedet res-evo-det" id="resEvoDet">Toque numa coluna para ver os valores do mês.</div>':'<div class="empty">Sem movimento ainda.</div>')+'</div>';
+    +(RES_EVO.length?'<div class="res-leg"><span><i style="background:#2e9e64"></i>Valor aplicado</span><span><i style="background:#8fe0b4"></i>Valorização</span><span><i style="background:#e0695c"></i>Desvalorização</span></div><canvas id="resEvoCv" class="chart" height="230" aria-label="Evolução do patrimônio"></canvas><div class="piedet res-evo-det" id="resEvoDet">Toque numa coluna para ver os valores do mês.</div>':'<div class="empty">Sem movimento ainda.</div>')+'</div>';
   /* distribuição */
   var D=R.dist, itens=[];
-  RES_ORDEM.forEach(function(k){ var C=R.cls[k]; if(C.valor>0.004||C.alvo>0) itens.push({k:k,nome:C.nome,valor:C.valor,pct:C.pctAtual||0,alvo:C.alvo}); });
+  RES_ORDEM.forEach(function(k){ var C=R.cls[k]; if(C.valorCart>0.004||C.alvo>0) itens.push({k:k,nome:C.nome,valor:C.valorCart,pct:C.pctAtual||0,alvo:C.alvo}); /* sem a reserva: fatia = % da legenda */ });
   var cores=resCoresClasses();
   RES_DON={itens:itens,cores:cores,res:D?D.reserva.valor:0,sel:-1};
   h+='<div class="card res-don"><h3>Distribuição'+(R.temAlvo?' atual × alvo':'')+'<button type="button" class="infoBtn" data-tip="Quanto cada classe pesa na carteira (sem a reserva de emergência). O alvo vem de Planejamento › Metas e alvos." aria-label="Sobre a distribuição">i</button></h3>'
@@ -16434,7 +16494,7 @@ function resEvoDetalhe(i){
   var el=document.getElementById("resEvoDet"); if(!el||!RES_EVO) return;
   var e=RES_EVO[i]; if(!e){ el.textContent="Toque numa coluna para ver os valores do mês."; return; }
   var mes=PLANO_MES[+e.key.slice(5,7)-1]+"/"+e.key.slice(0,4)+(e.emCurso?" (até hoje)":"");
-  var g=e.ganho, gTxt=g>0.004?'<span style="color:var(--green)">Ganho '+BRL(g)+'</span>':(g<-0.004?'<span style="color:var(--red)">Perda '+BRL(-g)+'</span>':'Sem ganho nem perda');
+  var g=e.ganho, gTxt=g>0.004?'<span style="color:var(--green)">Valorização '+BRL(g)+'</span>':(g<-0.004?'<span style="color:var(--red)">Desvalorização '+BRL(-g)+'</span>':'Sem ganho nem perda');
   el.innerHTML='<b>'+esc(mes)+'</b> · Valor aplicado <b>'+BRL(e.custo)+'</b> · '+gTxt+' · Total <b>'+BRL(e.custo+g)+'</b>';
 }
 function resEvoLigar(){
@@ -16494,17 +16554,18 @@ function fabCompra(){
   invOpPanel=true; invEvPanel=false; rInvest();
   try{ var op=document.getElementById("invOp"); if(op&&op.value!=="compra"){ op.value="compra"; op.dispatchEvent(new Event("change",{bubbles:true})); } var d=document.getElementById("invData"); if(d) d.focus(); }catch(e){ rmLogErr(e,"fab-compra-foco"); }
 }
+try{ window.RM.provJanela12=provJanela12; window.RM.planoRenda=planoRenda; }catch(e){ rmLogErr(e); }
 try{ window.RM.resCalc=resCalc; window.RM.resEvolucao=resEvolucao; }catch(e){ rmLogErr(e); }
 /* ---------- RELATÓRIO PARA O IRPF (declaração anual) ----------
    Aba Investimentos › IRPF. Monta, para o ano escolhido, o que vai em cada ficha da declaração:
    · Bens e Direitos: cada posição em 31/12 do ano anterior e do ano, pelo CUSTO (preço médio), nunca pela cotação.
-     Códigos (guias das corretoras para IRPF 2025/2026): Ações 03/01 · FII 07/03 · ETF 07/06 · Tesouro e CDB 04/02.
+     Códigos (guias das corretoras para IRPF 2025/2026): Ações 03/01 · FII 07/03 · ETF 07/09 (maioria dos guias de 2026; antes 07/06) · Tesouro e CDB 04/02 (04/01 é poupança).
    · Rendimentos isentos: dividendos (linha 09), rendimentos de FII (linha 99 – Outros),
      lucro em vendas de ações no mês com vendas até a isenção (linha 20).
    · Tributação exclusiva: JCP (linha 10), rendimentos de Tesouro/CDB registrados (linha 06).
    · Renda variável: resumo mês a mês das vendas (mesma conta do IR estimado).
    Só leitura. Não é apuração oficial: confira com os informes da corretora e no programa da Receita. */
-var IRPF_COD={acao:{g:"03",c:"01",nome:"Ações (inclusive as listadas em bolsa)",tipo:"ações"},fii:{g:"07",c:"03",nome:"Fundos Imobiliários (FII)",tipo:"cotas do FII"},etf:{g:"07",c:"06",nome:"Fundos de índice (ETF)",tipo:"cotas do ETF"},tesouro:{g:"04",c:"02",nome:"Títulos públicos e privados sujeitos à tributação (Tesouro Direto, CDB…)",tipo:"títulos do Tesouro Direto"},cdb:{g:"04",c:"02",nome:"Títulos públicos e privados sujeitos à tributação (Tesouro Direto, CDB…)",tipo:"CDB"}};
+var IRPF_COD={acao:{g:"03",c:"01",nome:"Ações (inclusive as listadas em bolsa)",tipo:"ações"},fii:{g:"07",c:"03",nome:"Fundos Imobiliários (FII)",tipo:"cotas do FII"},etf:{g:"07",c:"09",nome:"Demais fundos de índice (ETF de ações, como BOVA11 e IVVB11)",tipo:"cotas do ETF"},tesouro:{g:"04",c:"02",nome:"Títulos públicos e privados sujeitos à tributação (Tesouro Direto, CDB…)",tipo:"títulos do Tesouro Direto"},cdb:{g:"04",c:"02",nome:"Títulos públicos e privados sujeitos à tributação (Tesouro Direto, CDB…)",tipo:"CDB"}};
 if(typeof window.__irpfAno!=="number") window.__irpfAno=0;
 function irpfAnos(){
   var a={}, hoje=+todayISO().slice(0,4);
@@ -16572,10 +16633,10 @@ function irpfTabHTML(){
     +irpfListaHTML("Rendimentos de Tesouro/CDB registrados","Linha 06",R.aplic,"Nenhum rendimento de Tesouro/CDB registrado em "+ano+".")
     +'<div class="sub">O JCP já vem com 15% de IR retido; informe o valor do informe de rendimentos da empresa (normalmente o líquido).</div></div></div>';
   /* Renda variável */
-  h+='<div class="card"><h3>📊 Renda variável (ganhos de capital, mês a mês)<button type="button" class="infoBtn" data-tip="Mesma conta do IR estimado: lucro = (preço de venda − preço médio na data) × quantidade, sem compensar prejuízo de meses anteriores. Na declaração: ficha Renda Variável › Operações comuns/day trade (ações e ETF) e Operações de fundos de investimento imobiliário (FII), mês a mês." aria-label="Sobre renda variável">i</button></h3>';
+  h+='<div class="card"><h3>📊 Renda variável (ganhos de capital, mês a mês)<button type="button" class="infoBtn" data-tip="Mesma conta do IR estimado: lucro = (preço de venda − preço médio na data) × quantidade, imposto sobre o resultado do mês de cada grupo, descontando prejuízos de meses anteriores do mesmo grupo (estimativa). Na declaração: ficha Renda Variável › Operações comuns/day trade (ações e ETF) e Operações de fundos de investimento imobiliário (FII), mês a mês." aria-label="Sobre renda variável">i</button></h3>';
   if(!R.meses.length) h+='<div class="empty">Nenhuma venda de ação, FII ou ETF em '+ano+'.</div>';
-  else h+='<div class="tblwrap"><table class="tbl"><thead><tr><th style="text-align:left">Mês</th><th>Vendas ações</th><th>Lucro ações</th><th>Lucro FII</th><th>Lucro ETF</th><th>Day trade</th><th>IR estimado</th></tr></thead><tbody>'
-    +R.meses.map(function(m){ return '<tr><td class="l">'+esc(m.mes.slice(5,7)+"/"+m.mes.slice(0,4))+'</td><td>'+esc(BRL(m.vendasAcoes))+'</td><td>'+esc(BRL(m.lucroAcoes))+(m.isentoAcoes?' <span class="sub" style="display:inline">isento</span>':'')+'</td><td>'+esc(BRL(m.lucroFii))+'</td><td>'+esc(BRL(m.lucroEtf))+'</td><td>'+esc(BRL(m.lucroDay))+'</td><td><b>'+esc(BRL(m.total))+'</b></td></tr>'; }).join("")+'</tbody></table></div>';
+  else h+='<div class="tblwrap"><table class="tbl"><thead><tr><th style="text-align:left">Mês</th><th>Vendas ações</th><th>Lucro ações</th><th>Lucro FII</th><th>Lucro ETF</th><th>Day trade</th><th>Prejuízo a compensar</th><th>IR do mês</th></tr></thead><tbody>'
+    +R.meses.map(function(m){ return '<tr><td class="l">'+esc(m.mes.slice(5,7)+"/"+m.mes.slice(0,4))+'</td><td>'+esc(BRL(m.vendasAcoes))+'</td><td>'+esc(BRL(m.lucroAcoes))+(m.isentoAcoes?' <span class="sub" style="display:inline">isento</span>':'')+'</td><td>'+esc(BRL(m.lucroFii))+'</td><td>'+esc(BRL(m.lucroEtf))+'</td><td>'+esc(BRL(m.lucroDay))+'</td><td>'+(m.prejTotal>0.004?esc(BRL(m.prejTotal)):"—")+'</td><td><b>'+esc(BRL(m.imposto))+'</b></td></tr>'; }).join("")+'</tbody></table></div>';
   h+='</div></div>';
   return h;
 }
@@ -16600,15 +16661,18 @@ function provMesesCalc(){
   var ult=meses.filter(function(x){ return !x.futuro; }), tot=ult.reduce(function(s,x){ return s+x.rec; },0);
   var melhor=ult.reduce(function(a,x){ return (!a||x.rec>a.rec)?x:a; },null);
   var comRec=ult.filter(function(x){ return x.rec>0.004; }).length;
-  return {meses:meses,tot:Math.round(tot*100)/100,media:Math.round(tot/12*100)/100,melhor:melhor,comRec:comRec};
+  var J=provJanela12(); /* mesmos números do Resumo e do Planejamento */
+  return {meses:meses,tot:J.tot,media:J.media,rotulo:J.rotulo,melhor:melhor,comRec:comRec};
 }
 function provAtivosCalc(){
-  var hoje=todayISO(), ini=somaDiasISO(hoje,-365), por={};
-  var pega=function(cod){ if(!por[cod]) por[cod]={codigo:cod,r12:0,tot:0,custo:0,qtd:0,tipo:null,est:null}; return por[cod]; };
-  (DB.invProventos||[]).forEach(function(p){ if(!p||!validISO(p.dataPag)||p.dataPag>hoje) return; var x=pega(String(p.codigo||"").trim().toUpperCase()); var v=Number(invProvValor(p))||0; x.tot+=v; if(p.dataPag>ini) x.r12+=v; });
+  var hoje=todayISO(), ini=provJanela12().ini, por={};
+  var pega=function(cod){ if(!por[cod]) por[cod]={codigo:cod,r12:0,pc12:0,tot:0,custo:0,qtd:0,tipo:null,est:null}; return por[cod]; };
+  (DB.invProventos||[]).forEach(function(p){ if(!p||!validISO(p.dataPag)||p.dataPag>hoje) return; var x=pega(String(p.codigo||"").trim().toUpperCase()); var v=Number(invProvValor(p))||0; x.tot+=v;
+    if(p.dataPag>=ini){ x.r12+=v; var q=0; try{ q=Number(invProvQtd(p))||0; }catch(e){} if(q>0) x.pc12+=v/q; } });
   try{ var map=invPosicoes(null); Object.keys(map).forEach(function(k){ var p=map[k]; if(!p||!(p.qtd>0.0000001)) return; var t=null; try{ t=invDistTipo(p.conta,p.codigo); }catch(e){} if(t!=="acao"&&t!=="fii"&&t!=="etf"&&!por[p.codigo]) return; var x=pega(p.codigo); x.custo+=p.total; x.qtd+=p.qtd; x.tipo=t; }); }catch(e){ rmLogErr(e,"prov-ativos"); }
   var l=Object.keys(por).map(function(c){ var x=por[c]; x.r12=Math.round(x.r12*100)/100; x.tot=Math.round(x.tot*100)/100; x.custo=Math.round(x.custo*100)/100;
-    x.yoc=x.custo>0.004?x.r12/x.custo*100:null;
+    /* rendeu sobre o que você pagou = recebido POR COTA em 12 meses ÷ preço médio (não distorce se a quantidade mudou no ano) */
+    x.yoc=(x.qtd>0&&x.custo>0.004&&x.pc12>0)?x.pc12/(x.custo/x.qtd)*100:null;
     if(x.qtd>0&&(x.tipo==="acao"||x.tipo==="fii")){ var r=null; try{ r=rendaPorCota(c); }catch(e){} if(r){ x.est=Math.round(x.qtd*r.v*100)/100; x.yocEst=x.custo>0.004?x.est/x.custo*100:null; } }
     return x; });
   l.sort(function(a,b){ return (b.r12-a.r12)||((b.est||0)-(a.est||0)); });
@@ -16618,13 +16682,13 @@ function provMaisHTML(){
   var M=provMesesCalc(), A=provAtivosCalc(); PROVM=M;
   if(!M.tot&&!A.some(function(x){ return x.tot>0||x.est>0; })&&!M.meses.some(function(x){ return x.fut>0; })) return "";
   var h='<div class="prov-mais"><div class="card prov-mes"><h3>📅 Proventos mês a mês<button type="button" class="infoBtn" data-tip="Líquido recebido em cada mês (pela data de pagamento). Os dois últimos meses, mais claros, são o que já está registrado como a receber." aria-label="Sobre o gráfico">i</button></h3>'
-    +'<div class="prov-kpis"><div><small>Últimos 12 meses</small><b>'+esc(BRL(M.tot))+'</b></div><div><small>Média por mês</small><b>'+esc(BRL(M.media))+'</b></div><div><small>Melhor mês</small><b>'+(M.melhor&&M.melhor.rec>0?esc(PLANO_MES[+M.melhor.key.slice(5,7)-1].slice(0,3)+"/"+M.melhor.key.slice(2,4)+" · "+BRL(M.melhor.rec)):"—")+'</b></div><div><small>Meses com provento</small><b>'+M.comRec+' de 12</b></div></div>'
+    +'<div class="prov-kpis"><div><small>Recebido de '+esc(M.rotulo)+'</small><b>'+esc(BRL(M.tot))+'</b></div><div><small>Média por mês (÷ 12)</small><b>'+esc(BRL(M.media))+'</b></div><div><small>Melhor mês</small><b>'+(M.melhor&&M.melhor.rec>0?esc(PLANO_MES[+M.melhor.key.slice(5,7)-1].slice(0,3)+"/"+M.melhor.key.slice(2,4)+" · "+BRL(M.melhor.rec)):"—")+'</b></div><div><small>Meses com provento</small><b>'+M.comRec+' de 12</b></div></div>'
     +'<canvas id="provMesCv" class="chart" height="200" aria-label="Proventos mês a mês"></canvas><div class="res-leg"><span><i style="background:#4caf7d"></i>Recebido</span><span><i style="background:rgba(76,175,125,.35)"></i>Previsto</span></div></div>';
   var linhas=A.filter(function(x){ return x.tot>0||x.est>0||x.qtd>0; });
-  h+='<div class="card prov-ativos"><h3>🏅 Por ativo<button type="button" class="infoBtn" data-tip="Yield on cost = quanto o ativo pagou nos últimos 12 meses ÷ quanto você pagou nele (custo da posição de hoje). Estimado/ano = quantidade × proventos por cota em 12 meses (do arquivo de cotações ou dos seus registros). Ordem: quem mais pagou em 12 meses." aria-label="Sobre o ranking">i</button></h3>';
+  h+='<div class="card prov-ativos"><h3>🏅 Por ativo<button type="button" class="infoBtn" data-tip="Rendeu sobre o que você pagou = proventos recebidos por cota nos 12 meses ÷ seu preço médio. Deve render = quantidade × provento anual por cota (arquivo de cotações ou seus registros) ÷ o que você pagou. Para comparar com o preço de hoje, veja a Observação. Ordem: quem mais pagou em 12 meses." aria-label="Sobre o ranking">i</button></h3>';
   if(!linhas.length) h+='<div class="empty">Sem ativos com proventos ainda.</div>';
-  else h+='<div class="tblwrap"><table class="tbl prov-rank"><thead><tr><th style="text-align:left">Ativo</th><th>Recebido 12m</th><th>Total recebido</th><th>Custo hoje</th><th title="Recebido em 12 meses ÷ custo da posição">Yield on cost</th><th>Estimado/ano</th><th title="Estimado por ano ÷ custo da posição">Yield estimado</th></tr></thead><tbody>'
-    +linhas.map(function(x){ return '<tr><td class="l"><b>'+esc(x.codigo)+'</b>'+(x.qtd>0?'':'<br><span class="sub" style="display:inline">vendido</span>')+'</td><td data-rot="Recebido 12m">'+esc(BRL(x.r12))+'</td><td data-rot="Total">'+esc(BRL(x.tot))+'</td><td data-rot="Custo">'+(x.custo>0?esc(BRL(x.custo)):"—")+'</td><td data-rot="Yield on cost"><b>'+(x.yoc!=null?esc(brDec(x.yoc,2))+"%":"—")+'</b></td><td data-rot="Estimado/ano">'+(x.est!=null?esc(BRL(x.est)):"—")+'</td><td data-rot="Yield estimado">'+(x.yocEst!=null?esc(brDec(x.yocEst,2))+"%":"—")+'</td></tr>'; }).join("")+'</tbody></table></div>';
+  else h+='<div class="tblwrap"><table class="tbl prov-rank"><thead><tr><th style="text-align:left">Ativo</th><th>Recebido (12 meses)</th><th>Total recebido</th><th>Quanto você pagou</th><th title="Proventos por cota nos 12 meses ÷ seu preço médio">Rendeu sobre o que você pagou</th><th>Deve pagar por ano</th><th title="Deve pagar por ano ÷ quanto você pagou">Deve render sobre o que você pagou</th></tr></thead><tbody>'
+    +linhas.map(function(x){ return '<tr><td class="l"><b>'+esc(x.codigo)+'</b>'+(x.qtd>0?'':'<br><span class="sub" style="display:inline">vendido</span>')+'</td><td data-rot="Recebido (12 meses)">'+esc(BRL(x.r12))+'</td><td data-rot="Total">'+esc(BRL(x.tot))+'</td><td data-rot="Você pagou">'+(x.custo>0?esc(BRL(x.custo)):"—")+'</td><td data-rot="Rendeu s/ o que pagou"><b>'+(x.yoc!=null?esc(brDec(x.yoc,2))+"%":"—")+'</b></td><td data-rot="Deve pagar/ano">'+(x.est!=null?esc(BRL(x.est)):"—")+'</td><td data-rot="Deve render s/ o que pagou">'+(x.yocEst!=null?esc(brDec(x.yocEst,2))+"%":"—")+'</td></tr>'; }).join("")+'</tbody></table></div>';
   return h+'</div></div>';
 }
 function provMesDesenhar(){
@@ -16682,7 +16746,7 @@ function resValorEm(fim,cls,cache){
 function resFluxosMes(key,cls){
   var f={compras:0,vendas:0,prov:0}, hoje=todayISO();
   (DB.invMovs||[]).forEach(function(m){ if(!m||!validISO(m.data)||m.data.slice(0,7)!==key) return; if(cls&&resTipoCls(m.conta,String(m.codigo||"").trim().toUpperCase())!==cls) return;
-    var v=(Number(m.qtd)||0)*(Number(m.preco)||0); if(m.op==="compra") f.compras+=v; else if(m.op==="venda") f.vendas+=v; });
+    var v=invMovCaixa(m); if(m.op==="compra") f.compras+=v; else if(m.op==="venda") f.vendas+=v; });
   (DB.invProventos||[]).forEach(function(p){ if(!p||!validISO(p.dataPag)||p.dataPag.slice(0,7)!==key||p.dataPag>hoje) return; if(cls&&resTipoCls(p.conta,String(p.codigo||"").trim().toUpperCase())!==cls) return; f.prov+=Number(invProvValor(p))||0; });
   return f;
 }
