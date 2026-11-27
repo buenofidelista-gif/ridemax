@@ -2029,6 +2029,21 @@ body[data-sol="1"] #viewCtn th.stk-th{background:#fff!important;box-shadow:0 -8p
 }
 /* itens do menu lateral nunca encolhem: com os grupos abertos o menu rola, em vez de amassar Sincronizar/Instalar */
 #sidebar>*{flex-shrink:0}
+
+/* ---------- FLUXO DE CAIXA: a página rola; cada quadro de detalhe tem altura fixa e rola por dentro ----------
+   (os 3 quadros quebram linha quando não cabem lado a lado; com a tela travada o 3º ficava por cima/cortado) */
+@media(min-width:1100px){
+  body.fit-lock #viewCtn:has(.fin-flx){display:block!important;overflow-y:auto!important;overflow-x:hidden!important}
+  #viewCtn .fin-flx{display:block!important;overflow:visible!important;height:auto!important}
+  #viewCtn .fin-flx>*+*{margin-top:var(--s3)!important}
+  #viewCtn .fin-flx-bot{overflow:visible!important;align-items:start!important}
+  #viewCtn .fin-flx-bot>.card:not(.is-empty){height:380px!important;min-height:0!important}
+  #viewCtn .fin-flx-bot #flxPrevList,#viewCtn .fin-flx-bot #flxRealList,#viewCtn .fin-flx-bot #flxProjList{min-height:0!important}
+}
+/* com um painel lateral aberto (lote, DRE, operação…) o botão "+" sai: ele cobria os botões do rodapé do painel */
+body:has(.tit-panel-bk) #qrFab{display:none!important}
+/* painel lateral: campos lado a lado alinhados pelo topo (a dica embaixo de um deles não empurra o outro) */
+.tit-panel .shortgrid{align-items:start}
 </style>
 </head>
 <body>
@@ -6348,7 +6363,7 @@ function rRec(){
     var pages=Math.max(1,Math.ceil(rows.length/PER_PAGE));
     rPage=Math.min(Math.max(1,rPage),pages);
     var slice=rows.slice((rPage-1)*PER_PAGE,rPage*PER_PAGE);
-    var html=""; slice.forEach(function(r){ var ru=(r.unit||"kwh")==="L"?"L":"kWh"; var _rf=0; try{ _rf=isFuturo(r.date)?1:0; }catch(_e4){ _rf=0; } html+='<tr data-id="'+esc(r.id)+'" style="cursor:pointer'+(rsel===r.id?';background:var(--accent)':'')+'"><td>'+isoToBR(r.date)+(_rf?'<br><span class="conf media">⚠️ data futura — confira a data</span>':"")+'</td><td>'+esc(r.time)+'</td><td class="l">'+esc(r.location||"–")+(r.resetVehicle?" 🔁":"")+(r.local==="casa"?'<br><span class="mtag">🏠 em casa</span>':(r.local==="rua"?'<br><span class="mtag">🛣️ na rua</span>':""))+'</td><td>'+brDec(Number(r.kwh),2)+" "+ru+'</td><td>'+BRL(r.cost)+'</td><td>'+(r.kwh>0?brDec(Number(r.cost)/Number(r.kwh),3):"–")+'</td><td>'+(r.odometer!=null?Number(r.odometer).toLocaleString("pt-BR",{maximumFractionDigits:0})+" km":"–")+'</td></tr>'; });
+    var html=""; slice.forEach(function(r){ var ru=(r.unit||"kwh")==="L"?"L":"kWh"; var _rf=0; try{ _rf=isFuturo(r.date)?1:0; }catch(_e4){ _rf=0; } html+='<tr data-id="'+esc(r.id)+'" style="cursor:pointer'+(rsel===r.id?';background:var(--accent)':'')+'"><td>'+isoToBR(r.date)+(_rf?'<br><span class="conf media">⚠️ data futura — confira a data</span>':"")+'</td><td>'+esc(r.time)+'</td><td class="l"'+(r.local==="casa"?' title="Recarga em casa"':(r.local==="rua"?' title="Recarga na rua"':""))+'>'+esc(r.location||"–")+(r.resetVehicle?" 🔁":"")+'</td><td>'+brDec(Number(r.kwh),2)+" "+ru+'</td><td>'+BRL(r.cost)+'</td><td>'+(r.kwh>0?brDec(Number(r.cost)/Number(r.kwh),3):"–")+'</td><td>'+(r.odometer!=null?Number(r.odometer).toLocaleString("pt-BR",{maximumFractionDigits:0})+" km":"–")+'</td></tr>'; });
     document.getElementById("rBody").innerHTML=html||'<tr><td colspan="7" style="color:var(--muted)">Nada aqui.</td></tr>';
     document.getElementById("rPager").innerHTML=pagerHTML(rPage,pages,rows.length);
     wirePager(document.getElementById("rPager"),function(d){ rPage+=d; refresh(); });
@@ -7056,7 +7071,7 @@ function rLotes(){
     var p=platObj(L.plataforma), pn=p?p.name:"—";
     html+='<tr><td class="l">'+esc(pn)+'</td>'
       +'<td style="white-space:nowrap">'+isoToBR(L.periodoDe)+' a '+isoToBR(L.periodoAte)+'</td>'
-      +'<td style="white-space:nowrap">'+(L.status==="conciliado"?"conciliado":"aberto")+(L.repasseId?' <span title="feito pelo Repasse">🔗</span>':"")+'</td>'
+      +'<td style="white-space:nowrap"'+(L.repasseId?' title="Lote criado pelo Registrar e conferir (Repasses)"':' title="Lote criado à mão (Novo lote)"')+'>'+(L.status==="conciliado"?"conciliado":"aberto")+'</td>'
       +'<td style="white-space:nowrap">'+L.titulos.length+'</td>'
       +'<td style="white-space:nowrap">'+L.taxas.length+'</td>'
       +'<td style="white-space:nowrap"><b>'+BRL(L.esperado)+'</b></td>'
@@ -7079,6 +7094,7 @@ function rLotes(){
   }
   html+='</div>';
   box.innerHTML=html;
+  try{ var _stL=document.querySelector('[data-repsub="4"]'); if(_stL) _stL.textContent="Lotes ("+lotes.length+")"; }catch(_eSt){} /* contagem da aba acompanha lote criado/excluído */
   var _nb=document.getElementById("loteNovoBtn");
   if(_nb){ _nb.onclick=function(){ loteNovoOpen=true; loteOpenId=null; rLotes(); }; }
   var _plat=document.getElementById("loteF_Plat");
@@ -7145,7 +7161,7 @@ function loteSideHTML(L,p){
       +((L.ajustes||[]).length?'<div class="kv"><span>Ajustes ('+L.ajustes.length+')</span><b>'+BRL(aj)+'</b></div><div class="kv"><span>Diferença após ajustes</span><b>'+esc(repDifTxt(dif-aj))+'</b></div>':"")
 
   } else {
-    h+='<div class="shortgrid"><label class="f">Valor que caiu (R$) *<input id="loteC_Val" inputmode="decimal" placeholder="ex: 110,00"></label><label class="f">Data do crédito * (DD/MM/AAAA)<input id="loteC_Data" value="'+esc(new Date().toLocaleDateString("pt-BR"))+'"><span class="tip">data do movimento (caixa): não aceita futuro.</span></label></div>'
+    h+='<div class="shortgrid"><label class="f">Valor que caiu (R$) *<input id="loteC_Val" inputmode="decimal" placeholder="ex: 110,00"></label><label class="f">Data do crédito *<input id="loteC_Data" value="'+esc(new Date().toLocaleDateString("pt-BR"))+'"><span class="tip">DD/MM/AAAA · data do movimento (caixa): não aceita futuro.</span></label></div>'
       +'<div class="msg-ok" id="loteC_Msg"></div>';
   }
   h+='<h3 style="margin-top:10px">Ajustes manuais</h3><div id="loteAjList">';
@@ -7158,7 +7174,7 @@ function loteSideHTML(L,p){
 }
 function loteTabelasHTML(L){
   var h='';
-  h+='<div class="tblwrap"><table class="tbl"><thead><tr><th>Título a receber</th><th>Vencimento</th><th>Valor</th><th>Falta</th><th>Idade</th></tr></thead><tbody id="loteTitBody">';
+  h+='<div class="card lote-tab"><h3>Títulos a receber ('+L.titulos.length+')</h3><div class="tblwrap"><table class="tbl"><thead><tr><th>Título</th><th>Vencimento</th><th>Valor</th><th>Falta</th><th>Idade</th></tr></thead><tbody id="loteTitBody">';
   if(!L.titulos.length) h+='<tr><td colspan="5" style="color:var(--muted)">Nenhum título neste lote.</td></tr>';
   L.titulos.forEach(function(tid){
     var t=tituloById(tid);
@@ -7170,15 +7186,15 @@ function loteTabelasHTML(L){
         if(bb) h+='<tr><td colspan="5" style="text-align:left;font-size:12px;color:var(--muted)">⬇ '+isoToBR(bb.data)+' · '+esc(contaNome(bb.conta))+' · '+BRL(bb.valor)+'</td></tr>'; }
     }
   });
-  h+='</tbody></table></div>';
-  h+='<div class="tblwrap"><table class="tbl"><thead><tr><th>Corrida em dinheiro</th><th>Preço (fare)</th><th>Ganho</th><th>Taxa a descontar</th></tr></thead><tbody id="loteTaxBody">';
+  h+='</tbody></table></div></div>';
+  h+='<div class="card lote-tab"><h3>Corridas em dinheiro ('+L.taxas.length+')</h3><div class="tblwrap"><table class="tbl"><thead><tr><th>Corrida</th><th>Preço (fare)</th><th>Ganho</th><th>Taxa a descontar</th></tr></thead><tbody id="loteTaxBody">';
   if(!L.taxas.length) h+='<tr><td colspan="4" style="color:var(--muted)">Nenhuma taxa neste lote.</td></tr>';
   L.taxas.forEach(function(tx){
     var r=null; for(var _ri=0;_ri<DB.rides.length;_ri++){ if(String(DB.rides[_ri].id)===String(tx.ride)){ r=DB.rides[_ri]; break; } }
     if(!r){ h+='<tr><td class="l" style="color:var(--muted)">corrida excluída</td><td>–</td><td>–</td><td style="white-space:nowrap">'+BRL(tx.valor)+'</td></tr>'; return; }
     h+='<tr><td class="l">'+isoToBR(r.date)+' '+(r.start_time||"")+'</td><td style="white-space:nowrap">'+BRL(Number(r.fare)||0)+'</td><td style="white-space:nowrap">'+BRL(rideTotal(r))+'</td><td style="white-space:nowrap"><b>'+BRL(tx.valor)+'</b></td></tr>';
   });
-  h+='</tbody></table></div>';
+  h+='</tbody></table></div></div>';
   try{
     var foraN=0, foraV=0;
     for(var _fi=0;_fi<(DB.titulos||[]).length;_fi++){ var _ft=DB.titulos[_fi]; if(!_ft||_ft.tipo!=="receber"||!titAberto(_ft)) continue; if(!(tituloFalta(_ft)>0.004)) continue; var _fr=corridaDoTitulo(_ft); if(!_fr||String(_fr.platform_id)!==String(L.plataforma)) continue; var _in=false; for(var _fj=0;_fj<L.titulos.length;_fj++){ if(L.titulos[_fj]===_ft.id){ _in=true; break; } } if(!_in){ foraN++; foraV=Math.round((foraV+tituloFalta(_ft))*100)/100; } }
