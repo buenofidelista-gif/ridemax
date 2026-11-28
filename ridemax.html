@@ -11645,7 +11645,7 @@ function relcatCompute(ini,fim,regime,filtro){
     return rows[key];
   };
   (DB.expense_categories||[]).slice().sort(function(a,b){ var x=String(a.name||""), y=String(b.name||""); return x<y?-1:(x>y?1:0); }).forEach(function(c){ ensure(c.id); });
-  ensure(null);
+  /* "Sem categoria" não é uma categoria: só aparece se algo ficou sem (lançamento antigo), como alerta para corrigir */
   var ignored=0;
   var addItem=function(catId,valor,item){
     valor=Math.round(Number(valor)*100)/100;
