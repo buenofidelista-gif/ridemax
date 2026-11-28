@@ -771,7 +771,7 @@ table.dtbl td.nn.warn{color:var(--yellow);font-weight:700}
 .serie-prev{font-size:var(--f-sm);color:var(--muted);margin-top:var(--s2)}
 @media(max-width:700px){.serie-grid{grid-template-columns:1fr}}
 /* ---------- APARÊNCIA (temas) ---------- */
-body[data-theme="light"]{--bg:#f4f5f7;--panel:#fff;--card:#fff;--input:#f0f2f5;--accent:#2f6499;--text:#1a1d23;--muted:#5b6170;--border:#dfe3ea;--red:#b23b2e;--green:#1f7a4d;--yellow:#8a6412;--blue:#2f6499;--orange:#a05a1e;--purple:#6b4fa0;--teal:#1b7a70}
+body[data-theme="light"]{--bg:#efeae2;--panel:#f7f3ec;--card:#fbf9f5;--input:#f3eee5;--accent:#2f6499;--text:#1a1d23;--muted:#5c574e;--border:#e1d9cc;--red:#b23b2e;--green:#1f7a4d;--yellow:#8a6412;--blue:#2f6499;--orange:#a05a1e;--purple:#6b4fa0;--teal:#1b7a70}
 body[data-theme="light"] .navbtn.active{color:#fff}
 body[data-theme="light"] .seg button.on{color:#fff}
 body[data-theme="light"] .daycol h4{color:#fff}
@@ -1398,29 +1398,29 @@ body.pin-aberto{overflow:hidden}
 /* impressão: travado, só sai a tela do PIN (antes ela sumia e os dados saíam no papel/PDF); destravado, o PIN não aparece */
 @media print{ body:not(.pin-aberto) #pinTela{display:none!important} body.pin-aberto>*:not(#pinTela){display:none!important} }
 /* ---------- MODO SOL (alto contraste) — por cima do tema claro ---------- */
-body[data-sol="1"]{--bg:#ffffff;--panel:#ffffff;--card:#ffffff;--input:#ffffff;--accent:#0b4a8a;--text:#000000;--muted:#25292f;--border:#5b6472;--red:#a3170b;--green:#0a6a35;--yellow:#7a5200;--blue:#0b4a8a;--orange:#8a3f0a;--purple:#4b2f86;--teal:#0b5c54;--neg-solid:#a3170b}
+body[data-sol="1"]{--bg:#ede6da;--panel:#f6f1e8;--card:#fbf8f2;--input:#fffdf8;--accent:#0b4a8a;--text:#000000;--muted:#2b2721;--border:#8a7f6e;--red:#a3170b;--green:#0a6a35;--yellow:#7a5200;--blue:#0b4a8a;--orange:#8a3f0a;--purple:#4b2f86;--teal:#0b5c54;--neg-solid:#a3170b}
 body[data-sol="1"]{font-weight:500}
 body[data-sol="1"] b,body[data-sol="1"] strong,body[data-sol="1"] h1,body[data-sol="1"] h2,body[data-sol="1"] h3{font-weight:800}
-body[data-sol="1"] .card,body[data-sol="1"] .stat,body[data-sol="1"] .hc,body[data-sol="1"] table.f4-cartoes tr,body[data-sol="1"] .dh-mini div{border:2px solid #5b6472!important;box-shadow:none!important}
-body[data-sol="1"] input,body[data-sol="1"] select,body[data-sol="1"] textarea{border:2px solid #3d444f!important;color:#000!important;background:#fff!important}
-body[data-sol="1"] input::placeholder{color:#5b6472}
+body[data-sol="1"] .card,body[data-sol="1"] .stat,body[data-sol="1"] .hc,body[data-sol="1"] table.f4-cartoes tr,body[data-sol="1"] .dh-mini div{border:2px solid #8a7f6e!important;box-shadow:none!important}
+body[data-sol="1"] input,body[data-sol="1"] select,body[data-sol="1"] textarea{border:2px solid #8a7f6e!important;color:#000!important;background:var(--input)!important}
+body[data-sol="1"] input::placeholder{color:#6b6155}
 body[data-sol="1"] .sub,body[data-sol="1"] .tip,body[data-sol="1"] .kv span{color:#25292f}
-body[data-sol="1"] .btn,body[data-sol="1"] .btn.sm{border:2px solid #000}
+body[data-sol="1"] .btn,body[data-sol="1"] .btn.sm{border:2px solid #6b6155}
 body[data-sol="1"] .btn.accent,body[data-sol="1"] .btn.teal{color:#fff}
 body[data-sol="1"] .navbtn.active,body[data-sol="1"] .seg button.on,body[data-sol="1"] .f3-chip.on,body[data-sol="1"] .qr-chip.on{background:#0b4a8a!important;color:#fff!important;border-color:#000!important}
-body[data-sol="1"] .seg{border:2px solid #3d444f}
+body[data-sol="1"] .seg{border:2px solid #8a7f6e}
 body[data-sol="1"] .seg button,body[data-sol="1"] .f3-chip,body[data-sol="1"] .qr-chip{color:#000}
-body[data-sol="1"] #mbar{border-top:2px solid #000}
+body[data-sol="1"] #mbar{border-top:2px solid #6b6155}
 body[data-sol="1"] #mbar button{color:#25292f}
 body[data-sol="1"] #mbar button.on{color:#000}
 body[data-sol="1"] #mbar button.on .pill{background:#cfe0f5;outline:2px solid #0b4a8a}
 body[data-sol="1"] #qrFab,body[data-sol="1"] .qr-btns .ok,body[data-sol="1"] #mbar .mplus .fab,body[data-sol="1"] .cron-hero,body[data-sol="1"] .turno-btn.ret,body[data-sol="1"] .pin-ok{color:#fff!important}
-body[data-sol="1"] .dash-hero{background:#fff!important;border:3px solid #000!important}
-body[data-sol="1"] .dh-bar{background:#e6e9ef;border:2px solid #000}
+body[data-sol="1"] .dash-hero{background:var(--card)!important;border:2px solid #6b6155!important}
+body[data-sol="1"] .dh-bar{background:#e6dfd2;border:2px solid #6b6155}
 body[data-sol="1"] #cronBar{background:#e9f6ee;border:3px solid #0a6a35;color:#000}
 body[data-sol="1"] #cronBar.fim{background:#fff4dc;border-color:#7a5200}
 body[data-sol="1"] .card.warn{border-color:#7a5200!important;background:#fff8e6}
-body[data-sol="1"] #sidebar{background:#fff!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border-right:2px solid #000}
+body[data-sol="1"] #sidebar{background:var(--panel)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border-right:2px solid #8a7f6e}
 body[data-sol="1"]::before{display:none}
 body[data-sol="1"] #mTelaBtn.on{color:#000}
 /* ---------- FOTO DO RECIBO ---------- */
@@ -1474,7 +1474,7 @@ body.rv-aberto{overflow:hidden}
   #maisSheet .ms-it.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
   #maisSheet .ms-it:active{transform:scale(.97)}
   #maisSheet .ms-rodape{margin-top:16px;font-size:12px;color:var(--muted);text-align:center}
-  body[data-sol="1"] #maisSheet .ms-it{background:#fff!important;color:#000!important;border:2px solid #000!important}
+  body[data-sol="1"] #maisSheet .ms-it{background:var(--card)!important;color:#000!important;border:2px solid #6b6155!important}
 }
 /* ---------- CELULAR: Observação mostra a lista antes do formulário de adicionar ---------- */
 @media(max-width:860px){
@@ -1513,7 +1513,7 @@ label.f[hidden],.tit-panel [hidden]{display:none}
 .orc-ok>i{background:#4caf7d}.orc-yel>i{background:#e3b341}.orc-red>i{background:#e0695c}
 .orc-cfg{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px 14px}
 .orc-cfg-it{margin:4px 0}
-body[data-sol="1"] .orc-bar{border:2px solid #000!important;background:#fff!important}
+body[data-sol="1"] .orc-bar{border:2px solid #6b6155!important;background:var(--card)!important}
 /* ---------- FECHAMENTO DO MÊS ---------- */
 .fech-pend{margin:4px 0 0;padding-left:18px;font-size:13.5px;color:var(--yellow)}
 .fech-pend li{margin:2px 0}
@@ -1522,7 +1522,7 @@ body[data-sol="1"] .fech-pend{color:#7a4a00!important}
 .pos-renda{display:block;font-size:12px;color:#4caf7d;margin-top:2px;font-weight:600}
 .renda-tot{margin:0 0 8px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--input)}
 body[data-sol="1"] .pos-renda{color:#0a6b2e!important}
-body[data-sol="1"] .renda-tot{background:#fff!important;border:2px solid #000!important;color:#000!important}
+body[data-sol="1"] .renda-tot{background:var(--card)!important;border:2px solid #6b6155!important;color:#000!important}
 /* ---------- CARTEIRA: leitura "vale comprar mais?" ---------- */
 .pos-leit{display:block;font-size:12px;margin-top:3px;line-height:1.35;white-space:normal}
 .pos-leit.v-verde b{color:#4caf7d}
@@ -1556,7 +1556,7 @@ body[data-sol="1"] .renda-tot{background:#fff!important;border:2px solid #000!im
 .obs-como{margin-top:12px}
 .obs-como summary{cursor:pointer;font-weight:700;padding:6px 0}
 .obs-como p{font-size:13px;line-height:1.5;margin:6px 0}
-body[data-sol="1"] .obs-card{background:#fff!important;color:#000!important;border-color:#000!important}
+body[data-sol="1"] .obs-card{background:var(--card)!important;color:#000!important;border-color:#000!important}
 /* ---------- BAIXAR VÁRIAS (Contas a pagar) ---------- */
 @media(max-width:860px){
   .tit-list-head{flex-wrap:wrap!important;gap:8px!important;overflow:visible!important}
@@ -1604,7 +1604,7 @@ body[data-sol="1"] .mm-dias button.on{background:#000!important;color:#fff!impor
 .tres-nota{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4}
 .tres-meta{margin:8px 0;padding:8px 10px;border-radius:var(--r-sm);background:var(--input);border:1px solid var(--border);font-size:14px}
 .dh-tres{display:block;width:100%;margin-top:8px;text-align:left;background:transparent;border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);padding:8px 10px;font:inherit;font-size:var(--f-sm);cursor:pointer;min-height:40px}
-body[data-sol="1"] .tres-g>div,body[data-sol="1"] .tres-meta{background:#fff!important;border:2px solid #000!important;color:#000!important}
+body[data-sol="1"] .tres-g>div,body[data-sol="1"] .tres-meta{background:var(--card)!important;border:2px solid #6b6155!important;color:#000!important}
 @media(min-width:861px){ #mbar,#navBk,#mSyncBtn{display:none!important} }
 @media print{ #mbar,#navBk,#mSyncBtn{display:none!important} }
 /* gráfico de cotação (aba Observação) */
@@ -1679,8 +1679,8 @@ body.fit-lock #viewCtn:has(.inv-rolar){display:block;overflow-y:auto;overflow-x:
 .pos-det{padding:10px 14px 14px;border-bottom:1px solid var(--border);background:var(--input)}
 .pos-det-in{display:flex;flex-direction:column;gap:6px}
 .pos-det #grafCard{margin-top:6px}
-body[data-sol="1"] .cmp-sim{background:#fff!important;color:#0a6b2e!important;border:1px solid #0a6b2e}
-body[data-sol="1"] .cmp-nao{background:#fff!important;color:#a01d0f!important;border:1px solid #a01d0f}
+body[data-sol="1"] .cmp-sim{background:var(--card)!important;color:#0a6b2e!important;border:1px solid #0a6b2e}
+body[data-sol="1"] .cmp-nao{background:var(--card)!important;color:#a01d0f!important;border:1px solid #a01d0f}
 @media (max-width:1099.98px){
   .res-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .res-graficos,.res-dest{grid-template-columns:minmax(0,1fr)}
@@ -1735,7 +1735,7 @@ body[data-sol="1"] .cmp-nao{background:#fff!important;color:#a01d0f!important;bo
 .irpf-tot{margin-left:auto}
 .irpf-tbl td{padding:4px 6px!important;font-size:13px}
 @media (max-width:1099.98px){ .irpf-cols{grid-template-columns:minmax(0,1fr)} }
-body[data-sol="1"] .irpf-gc{background:#fff!important;color:#000!important;border:1px solid #000}
+body[data-sol="1"] .irpf-gc{background:var(--card)!important;color:#000!important;border:1px solid #6b6155}
 /* Proventos mês a mês + por ativo */
 .prov-mais{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s3);margin-top:var(--s3)}
 .prov-mais>.card{margin:0!important;min-width:0}
@@ -1793,7 +1793,7 @@ body[data-sol="1"] .irpf-gc{background:#fff!important;color:#000!important;borde
 .fiscal-aviso .btnrow{margin-top:8px}
 /* ===== Avaliação de design (24/11/2026) ===== */
 /* 1. Modo sol: botões de contorno (Editar, Desativar, Inativar, ✏️) ficavam com texto branco sobre fundo branco */
-body[data-sol="1"] .btn.yellow:hover,body[data-sol="1"] .btn.orange:hover{background:#e6e9ef}
+body[data-sol="1"] .btn.yellow:hover,body[data-sol="1"] .btn.orange:hover{background:#e6dfd2}
 /* 2. Painel do dia: os 3 quadrinhos cortavam o valor ("R$ 46...") — letra um pouco menor e mais justa */
 .dh-mini div{padding:8px 3px}
 .dh-mini b{font-size:15px;letter-spacing:-0.3px}
@@ -1826,7 +1826,7 @@ body[data-sol="1"] [style*="#4aa89b"]{color:#0b5c54!important}
 /* Nova corrida: Salvar é a ação principal (verde, largo); Histórico vira link discreto */
 #fSave{background:#1f7a46!important;border-color:#1f7a46!important;color:#fff!important;flex:1 1 auto;font-size:17px}
 #fHist{background:transparent!important;border:0!important;color:var(--blue)!important;text-decoration:underline;flex:0 0 auto;font-weight:500}
-body[data-sol="1"] #fSave{background:#0a6a35!important;border:2px solid #000!important}
+body[data-sol="1"] #fSave{background:#0a6a35!important;border:2px solid #6b6155!important}
 /* Investimentos › Resumo: "Para comprar agora" logo depois dos números do topo */
 .res-comprar{margin-top:var(--s3)}
 @media (max-width:700px){
@@ -1969,7 +1969,7 @@ body[data-density="compact"] #viewCtn::before{height:var(--s2)}
 #viewCtn table.tbl{border-collapse:separate;border-spacing:0}
 #viewCtn th.stk-th{background:var(--card)!important;box-shadow:0 -8px 0 0 var(--card),inset 0 -1px 0 var(--border);padding-top:6px!important;padding-bottom:6px!important}
 #viewCtn .stk-cap{box-shadow:0 -8px 0 0 var(--card)}
-body[data-sol="1"] #viewCtn th.stk-th{background:#fff!important;box-shadow:0 -8px 0 0 #fff,inset 0 -1px 0 var(--border)}
+body[data-sol="1"] #viewCtn th.stk-th{background:var(--card)!important;box-shadow:0 -8px 0 0 #fff,inset 0 -1px 0 var(--border)}
 /* ---------- MENU LATERAL RECOLHÍVEL (trilho só com ícones; js/42-menu-recolhido.js) ---------- */
 .grphead .nav-ic{flex-shrink:0;opacity:.85}
 #sidebar .logo{position:relative}
@@ -2183,6 +2183,7 @@ body:has(.tit-panel-bk) #qrFab{display:none!important}
 /* Clima × ganhos no PC: largura toda abaixo das colunas; a tela rola inteira */
 @media(min-width:1100px){ .clima-main.com-cg{overflow-y:auto;grid-template-rows:auto auto;align-content:start} .clima-main.com-cg>.clima-left,.clima-main.com-cg>.clima-right{overflow:visible} .clima-main>.cg-tab{grid-column:1/-1;margin:0} .clima-main>.cg-tab .tblwrap{max-height:none} }
 .cg-t td.cg-base,.cg-t td.cg-base *,.cg-t td.l b{white-space:nowrap}
+body[data-theme="light"] .fin-rotina button.on,body[data-sol="1"] .fin-rotina button.on{color:#fff}
 </style>
 </head>
 <body>
@@ -2719,7 +2720,6 @@ function defaultSettings(){
       {id:uid()+"m4",name:"Revisão geral",interval:20000,lastDone:null,scope:"both",cost:null},
       {id:uid()+"m5",name:"Freios (pastilhas)",interval:40000,lastDone:null,scope:"both",cost:null}
     ],
-   annual:[],
    mei:{enabled:0,teto:81000,abertura:null,dasnDoneYear:null},
    irpfDoneYear:null,
    titJurosCat:null,
@@ -2757,12 +2757,6 @@ function sanitizeSettings(s){
     var hasMotorAir=d.maint.some(function(m){return m.name.trim().toLowerCase()==="filtro de ar do motor";});
     if(s.maint.length&&!hasMotorAir&&_rm.indexOf("filtro de ar do motor")<0) d.maint.push({id:uid(),name:"Filtro de ar do motor",interval:15000,lastDone:null,scope:"fuel",cost:null});
   }
-  if(Array.isArray(s.annual)){
-    d.annual=s.annual.filter(function(a){ if(!a||typeof a.name!=="string"||!a.name.trim()) return false; var _av=parseBR(a.annual); if(!(isFinite(_av)&&_av>0)) _av=Number(a.annual); return isFinite(_av)&&_av>0; }).map(function(a){
-      var _av=parseBR(a.annual); if(!(isFinite(_av)&&_av>0)) _av=Number(a.annual);
-      return {id:String(a.id||uid()),name:String(a.name).slice(0,40),annual:Math.round(_av*100)/100};
-    }).slice(0,100);
-  } else d.annual=[];
   var _mei=s.mei||{};
   var _teto=parseBR(_mei.teto);
   if(!(isFinite(_teto)&&_teto>0)) _teto=Number(String(_mei.teto).replace(/\s/g,"").replace(/\./g,"").replace(",","."));
@@ -3201,6 +3195,7 @@ function sanitizeDB(d, rawBackup){
         if(Array.isArray(x.baixas)){ for(var _bi=0;_bi<x.baixas.length;_bi++){ var _b=x.baixas[_bi]; if(_b&&validISO(_b.data)&&typeof _b.conta==="string"&&_b.conta&&isFinite(Number(_b.valor))&&Number(_b.valor)>0){ var _ju=Number(_b.juros); if(!isFinite(_ju)||_ju<0) _ju=0; var _de=Number(_b.desconto); if(!isFinite(_de)||_de<0) _de=0; var _jc=null, _dc=null; try{ if(typeof _b.jurosCat==="string"&&_b.jurosCat.trim()) _jc=_b.jurosCat.trim().slice(0,64); }catch(_e1){ _jc=null; } try{ if(typeof _b.descCat==="string"&&_b.descCat.trim()) _dc=_b.descCat.trim().slice(0,64); }catch(_e2){ _dc=null; } var _er=[]; try{ if(Array.isArray(_b.encRateio)){ for(var _ei=0;_ei<_b.encRateio.length;_ei++){ var _ee=_b.encRateio[_ei]; if(_ee&&typeof _ee.centro==="string"&&isFinite(Number(_ee.valor))&&Number(_ee.valor)>0){ _er.push({centro:_ee.centro,valor:Math.round(Number(_ee.valor)*100)/100}); } } } }catch(_e3){ _er=[]; } _bx.push({id:String(_b.id||uid()),data:_b.data,conta:String(_b.conta),valor:Math.round(Number(_b.valor)*100)/100,juros:Math.round(_ju*100)/100,desconto:Math.round(_de*100)/100,jurosCat:_jc,descCat:_dc,encRateio:_er,conciliado:(_b.conciliado===1||_b.conciliado===true)?1:0,observacao:String(_b.observacao||"").slice(0,300)}); if(_b.auto) _bx[_bx.length-1].auto=1; } } }
        var _st=(x.status==="aberto"||x.status==="parcial"||x.status==="baixado"||x.status==="cancelado")?x.status:"aberto";
        var _t={id:String(x.id||uid()),tipo:(x.tipo==="receber"?"receber":"pagar"),descricao:String(x.descricao).trim().slice(0,80),competencia:x.competencia,vencimento:x.vencimento,valor:Math.round(Number(x.valor)*100)/100,categoria:String(x.categoria||"").slice(0,64),rateio:_rt,origem:String(x.origem||"").slice(0,40),vinculo:String(x.vinculo||"").slice(0,90),serie:serieSanity(x.serie),lote:String(x.lote||"").slice(0,40),status:_st,baixas:_bx};
+       if(Number(x.diluir)===12&&_t.tipo==="pagar") _t.diluir=12; /* despesa anual: DRE em 12 meses */
         /* FASE 3B — conta de luz: marcador + kWh + leitura. Compat: antigo sem contaLuz continua válido. */
         var _cl=null;
         try{
@@ -4858,7 +4853,7 @@ historico:"As corridas e os turnos já registrados. É daqui que saem os número
 recarga:"Onde a recarga é registrada, com odômetro e kWh. Na rua, gera um título a pagar; com \"Já paga com\" marcado, ele já nasce pago pela conta escolhida. Em casa, NÃO gera título: acumula os kWh num período de medição, sem custo, porque essa energia já está dentro da conta de luz da casa — lançar os dois contaria o mesmo gasto duas vezes. O custo real de cada recarga de casa aparece quando a conta de luz é lançada. Até lá, o app mostra quantos kWh estão sem custo apurado, em vez de inventar uma estimativa.",
 luz:"Marcar um título como conta de luz abre dois campos: o total de kWh e o período de leitura, que estão impressos na fatura. Com eles o app mede a tarifa — o valor dividido pelos kWh — e separa a parte do Uber: os kWh das recargas feitas em casa dentro daquele período, vezes a tarifa. Todo o resto é Pessoal. O rateio é medido, nunca estimado.",
 metas:"Quanto você quer ganhar e quanto falta para chegar lá. Olha a receita do Uber, não o resultado do mês: meta é sobre o que entra, não sobre o que sobra.",
-plataformas:"Todos os cadastros ficam aqui: Plataformas, Categorias (cada categoria com seu grupo no DRE), Contas, Centros de custo, MEI e DAS, Veículo e energia (carros, manutenção, gastos anuais e tipo de energia) e Segurança e backup (PIN, backup, armazenamento, sincronizar e lembretes). Botões de outras telas que levam a Contas ou Centros de custo abrem a aba certa daqui.",
+plataformas:"Todos os cadastros ficam aqui: Plataformas, Categorias (cada categoria com seu grupo no DRE), Contas, Centros de custo, MEI e DAS, Veículo e energia (carros, manutenção, custo do carro e tipo de energia) e Segurança e backup (PIN, backup, armazenamento, sincronizar e lembretes). Botões de outras telas que levam a Contas ou Centros de custo abrem a aba certa daqui.",
 analise:"Os números operacionais por plataforma e por km. Custo total por km (com o carro) soma energia, todas as despesas e o custo do carro; o gráfico mensal mostra o custo variável por km (energia e despesas variáveis). Bruta × líquido mês a mês está na DRE › Mês a mês; despesas por categoria, na tela Despesas. A energia recarregada em casa só entra no custo depois que a conta de luz é lançada e apurada. Até isso acontecer, o custo por km fica sem ela, e o app mostra quantos kWh estão de fora em vez de chutar um valor. Deduções manuais (taxas) não entram no rateio do card por plataforma.",
 repasses:"A conferência do repasse: agrupa as corridas de uma plataforma por janela e mostra o que era esperado. O repasse se lança só aqui: com “Dar baixa no Financeiro” marcado, o app cria o lote do período e já concilia — o dinheiro entra na conta da plataforma e os valores a receber saem do Pagar & Receber. Desmarcado, a tela só confere. O que restar após os ajustes costuma ser virada de fechamento: confira no próximo repasse.",
 investimentos:"As contas de tipo investimento, com os aportes e os resgates. O aporte é uma transferência comum: dinheiro saindo de uma conta e entrando na de investimento. Total na corretora = dinheiro nas contas de investimento + valor dos ativos a preço de hoje (cotação carregada; sem cotação, preço médio; CDB pelo CDI). Comprar um ativo troca dinheiro por ativo: o patrimônio não cai. Desdobramento/grupamento: excluir evento que deixaria venda acima da posição é bloqueado. Abas: Resumo (como você está indo), Carteira (seus ativos por classe, com o alvo), Movimentos (contas, compras e vendas, aportes e resgates no período), Proventos, Observação e Planejamento (plano do Uber para a renda, reserva, metas e alvos, próximo aporte, IR e simulador). O aporte é feito na tela de Transferência: escolha a conta de origem e a conta de investimento como destino. Em Planejamento › Metas e alvos, os pesos por classe têm de somar 100.",
@@ -5325,7 +5320,7 @@ function dashLotesAbertos(){
      Energia de casa sem custo apurado: medAbertoKwh (mesmo da Recarga 3A/3B);
      o custo NÃO estima — mostra o kWh em aberto ao lado.
    - R$ por hora: shiftAgg(ini,fim).perHour (mesma estatística de turno).
-   - Reserva recomendada: maintCostPerKm + annualMonthlyTotal + reservaKmInfo
+   - Reserva recomendada: maintCostPerKm + anuaisProvNoPeriodo + reservaKmInfo
      (mesma conta do Resumo); separada de fato: reservaSeparadaInfo (soma do
      saldoConta das contas com marca reserva, mesma função da tela de Saldos).
    - MEI: meiSettings/meiLimiteAtual/meiFaturamentoAno/meiProjInfo (+ lembretes
@@ -5400,19 +5395,19 @@ function dashMesHTML(){
     else h+='<div class="kv"><span>R$/hora (turno, mês)</span><b>Sem turno encerrado no mês.</b></div>';
   }catch(e){rmLogErr(e)}
   try{
-    var cp=maintCostPerKm(), mens=annualMonthlyTotal();
-    h+='<h3 style="margin:12px 0 4px">Reserva no mês<button type="button" class="infoBtn" data-tip="Recomendada: km do mês vezes custo de manutenção por km, mais gastos anuais pró-rata. Separada de fato: soma do saldo das contas marcadas como reserva." aria-label="Sobre este bloco">i</button></h3>';
+    var cp=maintCostPerKm(), mens=anuaisProvNoPeriodo(ini,fim);
+    h+='<h3 style="margin:12px 0 4px">Reserva no mês<button type="button" class="infoBtn" data-tip="Recomendada: km do mês vezes custo de manutenção por km, mais 1/12 das despesas anuais lançadas em Pagar & Receber (seguro, IPVA… marcadas como despesa anual). Separada de fato: soma do saldo das contas marcadas como reserva." aria-label="Sobre este bloco">i</button></h3>';
     var recTot=null, provM=0, provA=0;
     if(cp.any||mens>0){
       var ki=reservaKmInfo(ini,fim);
       var km=(ki&&ki.km)||0;
       provM=(km>0&&cp.any)?km*cp.total:0;
-      provA=annualProvNoPeriodo(ini,fim);
+      provA=mens;
       recTot=Math.round((provM+provA)*100)/100;
       if(cp.any) h+='<div class="kv"><span>Provisão manutenção</span><b>'+BRL(provM)+'</b></div>';
-      if(mens>0) h+='<div class="kv"><span>Provisão gastos anuais</span><b>'+BRL(provA)+'</b></div>';
+      if(mens>0) h+='<div class="kv"><span>Despesas anuais (1/12)</span><b>'+BRL(provA)+'</b></div>';
     } else {
-      h+='<div class="empty">Nenhuma provisão cadastrada.<br>Informe o custo estimado dos itens em Configurações › Veículo e energia › Manutenção e gastos anuais<br>ou cadastre gastos anuais (IPVA, seguro…) em Configurações › Veículo e energia › Manutenção e gastos anuais.</div>';
+      h+='<div class="empty">Nenhuma provisão ainda.<br>Informe o custo estimado dos itens em Configurações › Veículo e energia › Manutenção e custo do carro,<br>ou lance seguro, IPVA… em Pagar & Receber marcando “Despesa anual”.</div>';
     }
     var sep=reservaSeparadaInfo();
     if(!sep.n){
@@ -6411,7 +6406,7 @@ function maintCard(){
   var hc=maintHiddenCount();
   var h='<div class="card"><h3>Manutenção — pelo odômetro'+(mo!=null?(' <span style="font-weight:400">· atual: '+Number(mo).toLocaleString("pt-BR",{maximumFractionDigits:0})+' km</span>'):"")+'</h3>';
   if(mo==null){ h+='<div class="empty">Registre o odômetro em uma recarga/abastecimento para ativar os alertas.</div>'; }
-  else if(!items.length){ h+='<div class="empty">Nenhum item configurado. <a href="#" id="mGoCfg" style="color:var(--blue)">Configurar em Configurações › Veículo e energia › Manutenção e gastos anuais</a>.</div>'; }
+  else if(!items.length){ h+='<div class="empty">Nenhum item configurado. <a href="#" id="mGoCfg" style="color:var(--blue)">Configurar em Configurações › Veículo e energia › Manutenção e custo do carro</a>.</div>'; }
   else{
     var any=false;
     items.forEach(function(m){
@@ -6421,7 +6416,7 @@ function maintCard(){
     });
     if(!any) h+='<div class="msg-ok">Tudo em dia — nenhum item vence nos próximos 1.000 km.</div>';
     if(hc>0) h+='<div class="sub">'+hc+' item(ns) oculto(s) — só valem para '+(curUnit()==="L"?"veículo elétrico":"combustão")+'. Troque o tipo de energia para vê-los.</div>';
-    h+='<div class="sub">Gerencie itens e intervalos em Configurações › Veículo e energia › Manutenção e gastos anuais.</div>';
+    h+='<div class="sub">Gerencie itens e intervalos em Configurações › Veículo e energia › Manutenção e custo do carro.</div>';
   }
   h+='</div>';
   return h;
@@ -7903,29 +7898,12 @@ function maintCostPerKm(){
   }catch(e){rmLogErr(e)}
   return {total:t,any:any};
 }
-function annualMonthlyTotal(){
-  var t=0; try{ (DB.settings.annual||[]).forEach(function(a){ t+=Number(a.annual)/12; }); }catch(e){rmLogErr(e)}
-  return t;
-}
-/* Provisão de gasto anual no intervalo [ini,fim] (ISO): mesma conta das telas
-   (dashMesHTML) — mensal/12 pró-rata pelos dias reais de cada mês. */
-function annualProvNoPeriodo(ini,fim){
-  var mens=annualMonthlyTotal(), provA=0;
-  if(!(mens>0)) return 0;
-  try{
-    var _d1=new Date(Number(String(ini).slice(0,4)),Number(String(ini).slice(5,7))-1,Number(String(ini).slice(8,10)));
-    var _d2=new Date(Number(String(fim).slice(0,4)),Number(String(fim).slice(5,7))-1,Number(String(fim).slice(8,10)));
-    var _dm=new Date(_d1.getFullYear(),_d1.getMonth(),1);
-    while(_dm<=_d2){
-      var _dy=_dm.getFullYear(), _mn=_dm.getMonth();
-      var _dim=new Date(_dy,_mn+1,0).getDate();
-      var _mIni=new Date(_dy,_mn,1), _mFim=new Date(_dy,_mn+1,0);
-      var _a=_mIni<_d1?_d1:_mIni, _b=_mFim>_d2?_d2:_mFim;
-      if(_b>=_a){ provA+=mens*(Math.round((_b-_a)/86400000)+1)/_dim; }
-      _dm=new Date(_dy,_mn+1,1);
-    }
-  }catch(_e){ provA=0; }
-  return provA;
+/* Reserva: despesas anuais lançadas em Pagar & Receber com "diluir na DRE em 12 meses" (seguro, IPVA…).
+   Soma a parte do trabalho (centro de papel trabalho) que cai em [ini,fim] — a mesma 1/12 que entra na DRE. */
+function anuaisProvNoPeriodo(ini,fim){
+  var ids=null, s=0; try{ ids=dreCentroIds(); }catch(e){ ids={}; }
+  (DB.titulos||[]).forEach(function(t){ if(!t||t.tipo!=="pagar"||t.status==="cancelado"||!(Number(t.diluir)>1)) return; s+=dreDiluidoParte(t,dreTituloSlice(t,"__uber",ids),ini,fim); });
+  return Math.round(s*100)/100;
 }
 function reservaKmInfo(ini,fim){
   var kmR=0, earnKm=0, ridesKm=0, ridesTotal=0, earnAll=0;
@@ -8061,22 +8039,8 @@ function cfgSecVeiculo(){
   h+='<div class="sub">Isto é custo gerencial: não entra no DRE, no saldo nem no MEI.</div>';
   return h;
 }
-function cfgSecAnnual(){
-  var st=DB.settings;
-  var h='';
-  h+='<div class="sub">Gastos anuais — provisão mensal</div><div class="tblwrap"><table class="tbl"><tr><th style="text-align:left">Nome</th><th>Valor anual</th><th>Provisão mensal</th><th></th></tr><tbody>';
-  var _ann=(st.annual||[]);
-  if(!_ann.length) h+='<tr><td colspan="4" style="color:var(--muted)">Nenhum gasto anual cadastrado. Ex.: IPVA, seguro, licenciamento.</td></tr>';
-  _ann.forEach(function(a){
-    h+='<tr><td class="l">'+esc(a.name)+'</td><td>'+BRL(a.annual)+'</td><td>'+BRL(Number(a.annual)/12)+'/mês</td><td><button class="btn sm rowdel" data-anndel="'+esc(a.id)+'">🗑</button></td></tr>';
-  });
-  h+='</tbody></table></div>';
-  h+='<div class="toolbar"><input id="sAnnName" placeholder="nome (ex: IPVA)" maxlength="40" style="flex:2;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px"><input id="sAnnVal" inputmode="decimal" placeholder="valor anual (ex: 1.200,00)" style="flex:1;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px"><button class="btn sm green" id="sAnnAdd">Adicionar</button></div>';
-  h+='<div class="sub">Isto é provisão — o gasto real continua sendo lançado normalmente em Despesas quando acontecer.</div>';
-  return h;
-}
 function settingsCard(){
-  return '<div class="card"><h3>Configurações</h3>'+cfgSecEnergia()+cfgSecPin()+cfgSecBackup()+cfgSecBkpAuto()+cfgSecRecibos()+cfgSecSync()+cfgSecLembretes()+cfgSecMeiDas()+cfgEncargosHTML()+cfgSecManut()+cfgSecVeiculo()+cfgSecAnnual()+'<div class="sub">Veículos</div>'+cfgSecVeiculos()+'</div>';
+  return '<div class="card"><h3>Configurações</h3>'+cfgSecEnergia()+cfgSecPin()+cfgSecBackup()+cfgSecBkpAuto()+cfgSecRecibos()+cfgSecSync()+cfgSecLembretes()+cfgSecMeiDas()+cfgEncargosHTML()+cfgSecManut()+cfgSecVeiculo()+'<div class="sub">Veículos</div>'+cfgSecVeiculos()+'</div>';
 }
 function wireSettings(){
   try{
@@ -8165,19 +8129,6 @@ function wireSettings(){
     var sc=document.getElementById("sMaintScope").value;
     var _oldM2=st.maint.slice(), _oldR2=(st.maintRemoved||[]).slice();
     st.maint.push({id:uid(),name:n.slice(0,40),interval:iv,lastDone:null,scope:(sc==="ev"||sc==="fuel")?sc:"both",cost:null}); if(st.maintRemoved){ var _k2=n.slice(0,40).trim().toLowerCase(); st.maintRemoved=st.maintRemoved.filter(function(k){return k!==_k2;}); } if(!save()){ st.maint=_oldM2; st.maintRemoved=_oldR2; } show("plataformas");
-  };
-  document.querySelectorAll("[data-anndel]").forEach(function(b){ b.onclick=async function(){
-    var _aR=(st.annual||[]).filter(function(x){return x.id===b.dataset.anndel;})[0]; if(!_aR) return;
-    var _okA=false; try{ _okA=await customConfirm("Remover o gasto anual '"+_aR.name+"' ("+BRL(_aR.annual)+"/ano)? A provisão mensal dele deixa de contar. Não vai para a Lixeira: para voltar, cadastre de novo.","Gastos anuais","Remover"); }catch(_e){ _okA=false; } if(!_okA) return;
-    var _oldAn=(st.annual||[]).slice(); st.annual=(st.annual||[]).filter(function(x){return x.id!==b.dataset.anndel;}); if(!save()){ st.annual=_oldAn; } show("plataformas");
-  }; });
-  var _annAdd=document.getElementById("sAnnAdd");
-  if(_annAdd) _annAdd.onclick=function(){
-    var n=document.getElementById("sAnnName").value.trim(), v=parseBR(document.getElementById("sAnnVal").value.trim());
-    if(!n){ customAlert("Digite o nome do gasto anual.","Gastos anuais"); return; }
-    if(!(v>0)){ customAlert("Digite o valor do ano em reais (ex.: 1.200,00).","Gastos anuais"); return; }
-    st.annual=st.annual||[];
-    st.annual.push({id:uid(),name:n.slice(0,40),annual:Math.round(v*100)/100}); if(!save()){ st.annual.pop(); } show("plataformas");
   };
 }
 function catCard(){
@@ -8294,7 +8245,7 @@ function renderCfg(){
   if(cfgTab==="mei"){ box.innerHTML='<div class="card"><h3>MEI e DAS</h3>'+cfgSecMeiDas()+'</div><div class="card"><h3>Comprovante de renda</h3><div class="sub">PDF com a receita mês a mês (3, 6 ou 12 meses), para aluguel, financiamento ou crédito.</div><div class="toolbar"><button type="button" class="btn sm green" id="crBtn2">Gerar comprovante de renda (PDF)</button></div></div><div class="card"><h3>Imposto de renda (IRPF)</h3><div class="sub">Relatório de apoio para a declaração: corridas mês a mês com a parte tributável, bens em 31/12, proventos e vendas. Não calcula o imposto nem substitui o contador.</div><div class="toolbar"><button type="button" class="btn sm green" id="irBtn2">Gerar relatório para o IRPF (PDF)</button></div></div>'; wireSettings(); return; }
   var _g=cfgGrupo(cfgTab);
   if(_g==="seguranca"){ box.innerHTML='<div class="card"><h3>Segurança</h3>'+cfgSecPin()+'</div>'+'<div class="card" id="cfgCardBackup"><h3>Backup, armazenamento e lembretes</h3>'+cfgSecBackup()+cfgSecBkpAuto()+cfgSecRecibos()+cfgSecSync()+cfgSecLembretes()+'</div>'; wireSettings(); cfgRolarCartao(); return; }
-  if(_g==="veiculo"){ box.innerHTML='<div class="card" id="cfgCardVeiculos"><h3>Veículos</h3>'+cfgSecVeiculos()+'</div>'+'<div class="card" id="cfgCardManut"><h3>Manutenção e gastos anuais</h3><div class="toolbar"><span>Carro atual: <b>'+esc(veicNome(veicAtual()))+'</b></span><button type="button" class="btn sm accent" id="veicIrBtn">Trocar ou ver carros</button></div>'+cfgSecManut()+cfgSecVeiculo()+cfgSecAnnual()+'</div>'+'<div class="card" id="cfgCardEnergia"><h3>Tipo de energia</h3>'+cfgSecEnergia()+'</div>'; wireSettings(); cfgRolarCartao(); return; }
+  if(_g==="veiculo"){ box.innerHTML='<div class="card" id="cfgCardVeiculos"><h3>Veículos</h3>'+cfgSecVeiculos()+'</div>'+'<div class="card" id="cfgCardManut"><h3>Manutenção e custo do carro</h3><div class="toolbar"><span>Carro atual: <b>'+esc(veicNome(veicAtual()))+'</b></span><button type="button" class="btn sm accent" id="veicIrBtn">Trocar ou ver carros</button></div>'+cfgSecManut()+cfgSecVeiculo()+'</div>'+'<div class="card" id="cfgCardEnergia"><h3>Tipo de energia</h3>'+cfgSecEnergia()+'</div>'; wireSettings(); cfgRolarCartao(); return; }
   renderCfgPlat(box);
 }
 function cfgRolarCartao(){ var id=CFG_CARTAO[cfgTab]; if(!id) return; setTimeout(function(){ var e=document.getElementById(id); if(e&&e.scrollIntoView) e.scrollIntoView({block:"start"}); },60); }
@@ -8757,6 +8708,17 @@ function drePeriodRange(key){
   return {ini:now.getFullYear()+"-"+p(now.getMonth()+1)+"-01",fim:t,label:"Este mês"};
 }
 function inRange(d,a,b){ return d>=a&&d<=b; }
+/* Despesa anual diluída (título com diluir=n): na competência entra 1/n por mês, a partir do mês da
+   competência. Devolve a parte de "valor" que cai em [ini,fim]; o último mês leva a sobra dos centavos.
+   Título sem diluir: tudo no mês da competência (como sempre). */
+function dreDiluidoParte(t,valor,ini,fim){
+  var n=Number(t&&t.diluir)||0, c=String((t&&t.competencia)||"");
+  if(!(n>1)) return (c&&inRange(c,ini,fim))?valor:0;
+  var y=Number(c.slice(0,4)), m=Number(c.slice(5,7))-1, d=Number(c.slice(8,10))||1;
+  var cent=Math.round(Number(valor)*100), base=Math.floor(cent/n), soma=0;
+  for(var k=0;k<n;k++){ var dim=new Date(Date.UTC(y,m+k+1,0)).getUTCDate(); var iso=new Date(Date.UTC(y,m+k,1)).toISOString().slice(0,7)+"-"+String(Math.min(d,dim)).padStart(2,"0"); if(inRange(iso,ini,fim)) soma+=(k===n-1)?cent-base*(n-1):base; }
+  return soma/100;
+}
 /* ---------- FASE 2D — DRE POR COMPETÊNCIA, COM TÍTULOS E FILTRO POR CENTRO ---------- */
 function dreCentroIds(){
   var out={uber:null,pessoal:null,invest:null};
@@ -8988,10 +8950,11 @@ function computeDRECustom(ini,fim,label,filtro,regime){
     if(t.tipo==="receber") return;
     if(t.origem==="loteTurno") return; /* a acertar com a plataforma: não é despesa (etapa 4) */
     if(!isCaixa){
-    var comp=t.competencia;
-    if(comp&&inRange(comp,r.ini,r.fim)){
+    var comp=t.competencia, _dil=Number(t.diluir)>1;
+    if(comp&&(inRange(comp,r.ini,r.fim)||(_dil&&dreDiluidoParte(t,1,r.ini,r.fim)>0))){
       var sl=dreTituloSlice(t,f,ids);
       sl=Math.round(Number(sl)*100)/100;
+      if(_dil) sl=dreDiluidoParte(t,sl,r.ini,r.fim); /* despesa anual: só a parte (1/12) dos meses do período */
       if(sl>0.004){
         /* Conta de luz: categoria Energia cai em "off" para não duplicar a parte
            Uber (já está nas recargas). Só a parte NÃO-Uber do rateio entra aqui,
@@ -9013,7 +8976,7 @@ function computeDRECustom(ini,fim,label,filtro,regime){
         }
         titPrincipal=Math.round((titPrincipal+sl)*100)/100;
       }
-      var fsl=dreFaltaSlice(t,f,ids);
+      var fsl=inRange(comp,r.ini,r.fim)?dreFaltaSlice(t,f,ids):0;
       if(fsl>0.004) emAberto=Math.round((emAberto+fsl)*100)/100;
     }
     } else {
@@ -11713,8 +11676,8 @@ function relcatCompute(ini,fim,regime,filtro){
   if(!isCaixa){
     for(i=0;i<T.length;i++){ var t=T[i];
       if(!t||t.tipo==="receber"||t.status==="cancelado"||t.origem==="loteTurno") continue;
-      if(t.competencia&&inRange(t.competencia,ini,fim)){
-        var sl=dreTituloSlice(t,f,ids); sl=Math.round(Number(sl)*100)/100;
+      if(t.competencia&&(inRange(t.competencia,ini,fim)||(Number(t.diluir)>1&&dreDiluidoParte(t,1,ini,fim)>0))){
+        var sl=dreTituloSlice(t,f,ids); sl=Math.round(Number(sl)*100)/100; if(Number(t.diluir)>1) sl=dreDiluidoParte(t,sl,ini,fim);
         if(sl>0.004) addItem(t.categoria,sl,{data:t.competencia,venc:t.vencimento,desc:t.descricao,origem:relcatOrigemTxt(t),valor:sl,rateio:relcatDetailPrincipal(t,f,ids),tid:t.id,luz:!!(t&&t.contaLuz)});
       }
       var bs=tituloBaixas(t);
@@ -12270,6 +12233,7 @@ function rTitulos(){
       +'<div id="titRateioBox" style="grid-column:1/-1"'+(titRateioMulti?"":" hidden")+'><div class="rateio-box"><div class="sub" style="margin-bottom:4px">Rateio entre centros <button type="button" class="hbtn" id="hRateioBtn" title="Ajuda: rateio" aria-label="Ajuda: rateio" aria-expanded="false">?</button><span id="titRateioTot" style="float:right"></span></div><div class="hhelp" id="hRateioBox" hidden></div><div id="titRateioLines"></div><div class="rateio-foot"><span id="titRateioSum">—</span><span style="flex:1"></span><button type="button" class="btn sm accent" id="titRateioAdd">+ Adicionar linha</button><button type="button" class="btn sm accent" id="titRateioSimple">Voltar ao simples</button></div><div class="tip">Informe valor OU percentual por linha — um calcula o outro. A sobra de centavo vai para a última linha. Nenhuma linha pode ficar zero ou negativa. A soma tem de fechar exatamente o valor do título.</div></div></div>'
       +'<div class="tit-short"><label class="f">Competência * (MM/AAAA)<input id="titComp" placeholder="ex: 11/2026" value="'+esc(editing?isoToComp(editing.competencia):mesAtual)+'"'+((_lkEd||_lkRec||_lkCorr)?" disabled":"")+'>'+((_lkEd||_lkRec||_lkCorr)?'<span class="tip">🔒 vem da origem — muda ao editar a data na tela de origem.</span>':'<span class="tip">ex: '+esc(mesAtual)+' — mês de competência; pode ser passado ou futuro.</span>')+'</label>'
       +'<label class="f" id="titVencWrap">Vencimento * (DD/MM/AAAA)<input id="titVenc" placeholder="ex: 20/12/2026" value="'+esc(editing?isoToBR(editing.vencimento):"")+'"><span class="tip">ex: 20/12/2026 — pode ser futuro: é o vencimento, não o movimento.</span></label></div>'
+      +((_rec||_lkEd||_lkRec||_lkCorr)?"":'<div style="grid-column:1/-1" id="titDiluirWrap"><label class="f" style="margin:0"><input type="checkbox" id="titDiluir" style="width:auto"'+(editing&&editing.diluir?" checked":"")+'> 📅 Despesa anual — diluir na DRE em 12 meses</label><div class="tip">Seguro, IPVA, licenciamento… O pagamento não muda (à vista ou parcelado); na DRE entra 1/12 por mês, a partir do mês da competência. Também entra na Reserva do Início.</div></div>')
       +(!editing?'<div style="grid-column:1/-1" id="serieBox"><div class="rateio-box"><div class="sub">🔁 Repetir — gerar série de títulos<button type="button" class="hbtn" id="hSerieBtn" title="Ajuda: séries" aria-label="Ajuda: séries" aria-expanded="false">?</button></div><div class="hhelp" id="hSerieBox" hidden></div><div class="seg" id="serieTipoSeg"><button type="button" data-st="nenhuma" class="'+(serieTipo==="nenhuma"?"on":"")+'">Único</button><button type="button" data-st="recorrente" class="'+(serieTipo==="recorrente"?"on":"")+'">Recorrente</button><button type="button" data-st="parcelado" class="'+(serieTipo==="parcelado"?"on":"")+'">Parcelado</button></div><div id="serieFields"'+(serieTipo==="nenhuma"?" hidden":"")+'><div class="serie-grid"><label class="f" id="seriePerWrap">Periodicidade<select id="seriePer"></select><span class="tip" id="seriePerTip"></span></label><label class="f">Dia do vencimento *<input id="serieDia" inputmode="numeric" placeholder="ex: 20" value="'+esc(serieDiaTxt)+'"><span class="tip">1 a 31. Dia que não existe no mês cai no último dia (31 em fevereiro → 28).</span></label><label class="f">Nº de ocorrências *<input id="serieN" inputmode="numeric" placeholder="ex: 12" value="'+esc(serieNTxt)+'"><span class="tip" id="serieNTip"></span></label></div><div class="tblwrap"><table class="tbl"><thead><tr><th>#</th><th>Vencimento</th><th>Competência</th><th>Valor</th></tr></thead><tbody id="seriePrevBody"></tbody></table></div><div class="serie-prev" id="seriePrevMsg"></div></div></div></div>':"")
       +(!editing?'<label class="f" id="titPagoWrap" style="grid-column:1/-1"'+(serieTipo==="nenhuma"?"":" hidden")+'><input type="checkbox" id="titPago" style="width:auto"> '+(_rec?"Já recebido":"Já pago")+' (cria o título e a baixa no mesmo ato)</label>':"")
       +(!editing?'<div id="titPagoBox" style="grid-column:1/-1" hidden><div class="f2"><label class="f">Conta da baixa *<select id="titConta">'+ctaOpts+'</select></label><label class="f">Data da baixa *<input id="titDataBx" value="'+esc(new Date().toLocaleDateString("pt-BR"))+'"><span class="tip">movimento de caixa: não aceita futuro.</span></label><label class="f">Juros (R$)<input id="titJuros" inputmode="decimal" value="0,00"></label><label class="f">Desconto (R$)<input id="titDesc2" inputmode="decimal" value="0,00"></label></div><label class="f">Observação da baixa<input id="titObsBx" maxlength="300" placeholder="opcional"></label></div>':"")
@@ -12308,7 +12272,7 @@ function rTitulos(){
   slice.forEach(function(t){
     var pg=tituloPago(t), ft=tituloFalta(t), vv=titVencido(t);
     var _sp=seriePosTxt(t);
-    html+='<tr><td class="l">'+(titLoteOn&&titLotePode(t)?'<input type="checkbox" class="tit-lote-chk" data-tlote="'+esc(t.id)+'"'+(titLoteSel[t.id]?" checked":"")+' aria-label="Selecionar para baixar"> ':"")+'<span class="tit-desc">'+esc(t.descricao)+'</span><button type="button" class="infoBtn tit-info" data-tip="'+esc(titInfoTip(t))+'" aria-label="Detalhes do título">'+esc(titInfoIcon(t))+'</button></td>'
+    html+='<tr><td class="l">'+(titLoteOn&&titLotePode(t)?'<input type="checkbox" class="tit-lote-chk" data-tlote="'+esc(t.id)+'"'+(titLoteSel[t.id]?" checked":"")+' aria-label="Selecionar para baixar"> ':"")+'<span class="tit-desc">'+esc(t.descricao)+'</span>'+(t.diluir?' <span class="tit-anual" title="Despesa anual: na DRE entra 1/12 por mês">📅 anual</span>':"")+'<button type="button" class="infoBtn tit-info" data-tip="'+esc(titInfoTip(t))+'" aria-label="Detalhes do título">'+esc(titInfoIcon(t))+'</button></td>'
       +'<td'+(vv?' style="color:#e0695c;font-weight:700"':"")+'>'+isoToBR(t.vencimento)+(vv?' <span style="font-size:12px">⚠️ '+titDiasAtraso(t)+'d em atraso</span>':"")+(titRecebivelCorrida(t)&&titAberto(t)?' <span style="font-size:12px;color:var(--muted)">corrida · vem no repasse</span>':"")+'</td>'
       +'<td class="mhide" style="white-space:nowrap">'+BRL(t.valor)+'</td><td style="white-space:nowrap">'+BRL(pg)+'</td><td style="white-space:nowrap"><b>'+BRL(ft)+'</b></td>'
       +'<td style="white-space:nowrap">'+titStatusLabel(t.status)+'</td>'
@@ -12553,6 +12517,7 @@ function rTitulos(){
     var desc=document.getElementById("titDesc").value.trim().slice(0,80);
     var val=parseBR(document.getElementById("titValor").value);
     var cat=document.getElementById("titCat").value;
+    var _dilEl=document.getElementById("titDiluir"), _dil=!!(_dilEl&&_dilEl.checked&&!titLuzOn);
     var cenEl=document.getElementById("titCen");
     var cen=cenEl?cenEl.value:"";
     var comp=compToISO(document.getElementById("titComp").value);
@@ -12666,7 +12631,7 @@ function rTitulos(){
       (DB.series=DB.series||[]);
       DB.series.push(_srec);
       var _added=[];
-      for(var _gi=0;_gi<_g.items.length;_gi++){ var _it=_g.items[_gi]; var _rr2=(serieTipo==="parcelado")?_pr[_gi]:serieCloneRateio(_rt); var _nt2={id:uid(),tipo:"pagar",descricao:desc,competencia:_it.competencia,vencimento:_it.vencimento,valor:_it.valor,categoria:String(cat||"").slice(0,64),rateio:_rr2,origem:"",vinculo:"",serie:{id:_sid,tipo:serieTipo,numero:_it.numero,total:_g.items.length},lote:"",contaLuz:null,status:"aberto",baixas:[]}; (DB.titulos=DB.titulos||[]).push(_nt2); _added.push(_nt2); }
+      for(var _gi=0;_gi<_g.items.length;_gi++){ var _it=_g.items[_gi]; var _rr2=(serieTipo==="parcelado")?_pr[_gi]:serieCloneRateio(_rt); var _nt2={id:uid(),tipo:"pagar",descricao:desc,competencia:_it.competencia,vencimento:_it.vencimento,valor:_it.valor,categoria:String(cat||"").slice(0,64),rateio:_rr2,origem:"",vinculo:"",serie:{id:_sid,tipo:serieTipo,numero:_it.numero,total:_g.items.length},lote:"",contaLuz:null,status:"aberto",baixas:[]}; if(_dil) _nt2.diluir=12; (DB.titulos=DB.titulos||[]).push(_nt2); _added.push(_nt2); }
       if(!save()){ for(var _ai=0;_ai<_added.length;_ai++){ var _k=DB.titulos.indexOf(_added[_ai]); if(_k>=0) DB.titulos.splice(_k,1); } var _ks=DB.series.indexOf(_srec); if(_ks>=0) DB.series.splice(_ks,1); msg.style.color="var(--red)"; msg.textContent=SAVE_FAIL_MSG; return; }
       serieTipo="nenhuma"; serieDiaTxt=""; serieNTxt="12"; titRateioMulti=false; titRateioLines=[]; titLuzOn=false; titLuzKwhTxt=""; titLuzDeTxt=""; titLuzAteTxt=""; titPage=1; titFiltro="aberto"; titNovoOpen=false; rTitulos();
       return;
@@ -12675,12 +12640,13 @@ function rTitulos(){
       if(!_lkSv){ editing.descricao=desc; editing.valor=Math.round(val*100)/100; editing.competencia=comp; }
       editing.categoria=String(cat||"").slice(0,64);
       editing.rateio=_rt; editing.vencimento=venc;
+      if(_dilEl){ if(_dil) editing.diluir=12; else delete editing.diluir; }
       tituloRecalc(editing);
       if(editing.serie&&editing.serie.id){
         var _ch=await openModal("Editar série","Este título é o "+editing.serie.numero+"/"+editing.serie.total+" da série ("+serieIcon(editing.serie.tipo)+" "+(editing.serie.tipo==="parcelado"?"parcelado":"recorrente")+"). Aplicar descrição, valor, categoria e centro de custo também nas ocorrências SEGUINTES ainda em aberto? (A baixada nunca é reescrita.)",[{label:"Só esta ocorrência",cls:"accent",val:"esta"},{label:"Aplicar nas seguintes em aberto",cls:"green",val:"serie"}]);
         if(_ch==="serie"){
           var _segs=serieTitulos(editing.serie.id), _px=0, _pp=0;
-          for(var _si=0;_si<_segs.length;_si++){ var _sg=_segs[_si]; if(_sg.id===editing.id) continue; if(!((_sg.serie&&_sg.serie.numero||0)>((editing.serie&&editing.serie.numero)||0))) continue; if(tituloTemBaixa(_sg)){ _pp++; continue; } if(isConciliado(_sg)){ _pp++; continue; } _sg.descricao=editing.descricao; _sg.valor=editing.valor; _sg.categoria=editing.categoria; _sg.rateio=serieCloneRateio(editing.rateio); tituloRecalc(_sg); _px++; }
+          for(var _si=0;_si<_segs.length;_si++){ var _sg=_segs[_si]; if(_sg.id===editing.id) continue; if(!((_sg.serie&&_sg.serie.numero||0)>((editing.serie&&editing.serie.numero)||0))) continue; if(tituloTemBaixa(_sg)){ _pp++; continue; } if(isConciliado(_sg)){ _pp++; continue; } _sg.descricao=editing.descricao; if(_dilEl){ if(_dil) _sg.diluir=12; else delete _sg.diluir; } _sg.valor=editing.valor; _sg.categoria=editing.categoria; _sg.rateio=serieCloneRateio(editing.rateio); tituloRecalc(_sg); _px++; }
           var _sr=serieById(editing.serie.id);
           if(_sr){ _sr.descricao=editing.descricao; _sr.categoria=editing.categoria; _sr.rateio=serieCloneRateio(editing.rateio); if(editing.serie.tipo==="recorrente"){ _sr.valor=editing.valor; } else { var _tot=0; for(var _sj=0;_sj<_segs.length;_sj++){ _tot=Math.round((_tot+Number(_segs[_sj].valor))*100)/100; } _sr.valor=Math.round(_tot*100)/100; } }
           msg.style.color="var(--green)"; msg.textContent="Série atualizada em "+_px+" ocorrência(s) seguinte(s)."+(_pp?" "+_pp+" já baixada(s)/conciliada(s) preservada(s).":"");
@@ -12691,6 +12657,7 @@ function rTitulos(){
       return;
     }
     var nt={id:uid(),tipo:_novoRec?"receber":"pagar",descricao:desc,competencia:comp,vencimento:venc,valor:Math.round(val*100)/100,categoria:String(cat||"").slice(0,64),rateio:_rt,origem:_novoRec?"manual":"",vinculo:"",serie:null,lote:"",contaLuz:null,status:"aberto",baixas:[]};
+    if(_dil&&!_novoRec) nt.diluir=12;
     var jp=document.getElementById("titPago");
     if(jp&&jp.checked){
       if(ativas.length<1){ err("Cadastre ao menos uma conta ativa em Contas para dar baixa."); return; }
@@ -12759,7 +12726,7 @@ function rTitulos(){
     titBaixaId=null; rTitulos();
   }; }
 }
-window.RM={isFuturo:isFuturo,processVehicleReset:processVehicleReset,latestResetRec:latestResetRec,parseBR:parseBR,brToISO:brToISO,validColor:validColor,heatmapFull:heatmapFull,efficiencyDetail:efficiencyDetail,computeDRE:computeDRE,computeDRECustom:computeDRECustom,monthRange:monthRange,workedStats:workedStats,maxOdo:maxOdo,rideMinutes:rideMinutes,curUnit:curUnit,maintVisible:maintVisible,parseCSV:parseCSV,parseCsvDate:parseCsvDate,parseCsvValue:parseCsvValue,openCsvMapper:openCsvMapper,dreGroupOf:dreGroupOf,owmToWmo:owmToWmo,wxGet:wxGet,wxSlot:wxSlot,computeReliability:computeReliability,wxRefresh:wxRefresh,wxComputeRel:wxComputeRel,wxIcon:wxIcon,wxDesc:wxDesc,wxIsRain:wxIsRain,kmMonthStats:kmMonthStats,custoKmStats:custoKmStats,rideTotal:rideTotal,isCashRide:isCashRide,cashFeeOf:cashFeeOf,repasseExpected:repasseExpected,shiftInterval:shiftInterval,shiftDurationMin:shiftDurationMin,shiftKmInfo:shiftKmInfo,openShift:openShift,rideInShift:rideInShift,shiftRides:shiftRides,shiftStats:shiftStats,shiftsInRange:shiftsInRange,shiftAgg:shiftAgg,shiftElapsedMin:shiftElapsedMin,fmtDur:fmtDur,guessField:guessField,csvCashTrue:csvCashTrue,repasseLinkedDre:repasseLinkedDre,sanitizeDB:sanitizeDB,getDB:function(){return DB;},saveNow:function(){ return save(); },pendingJSON:function(){ try{ return JSON.stringify(conflictPayload()); }catch(e){ return ""; } },revInfo:function(){ var _s={rev:0}; try{ _s=readStoredRev(); }catch(e){rmLogErr(e)} var _p=null; try{ if(DB_CONFLICT_PENDING) _p={rides:(DB_CONFLICT_PENDING.rides||[]).length,exp:(DB_CONFLICT_PENDING.expenses||[]).length,titulos:(DB_CONFLICT_PENDING.titulos||[]).length,rev:Number(DB_CONFLICT_PENDING._rev)}; }catch(e){rmLogErr(e)} return {mem:DB_MEM_REV,stored:_s.rev,pending:_p}; },setDB:function(d){DB=sanitizeDB(d);saveLivre();},show:show,exportBackup:exportBackup,sinceISO:sinceISO,statsToday:statsToday,statsPeriod:statsPeriod,expensesTotal:expensesTotal,goalVals:goalVals,todayISO:todayISO,suggestRepPeriod:suggestRepPeriod,repasseSum:repasseSum,repasseAdjSum:repasseAdjSum,repassePending:repassePending,repasseLastEnd:repasseLastEnd,fmtPerKm:fmtPerKm,maintCostPerKm:maintCostPerKm,annualMonthlyTotal:annualMonthlyTotal,annualProvNoPeriodo:annualProvNoPeriodo,reservaKmInfo:reservaKmInfo,meiSettings:meiSettings,meiLimiteAtual:meiLimiteAtual,meiFaturamentoAno:meiFaturamentoAno,meiProjInfo:meiProjInfo,meiCardHTML:meiCardHTML};
+window.RM={isFuturo:isFuturo,processVehicleReset:processVehicleReset,latestResetRec:latestResetRec,parseBR:parseBR,brToISO:brToISO,validColor:validColor,heatmapFull:heatmapFull,efficiencyDetail:efficiencyDetail,computeDRE:computeDRE,computeDRECustom:computeDRECustom,monthRange:monthRange,workedStats:workedStats,maxOdo:maxOdo,rideMinutes:rideMinutes,curUnit:curUnit,maintVisible:maintVisible,parseCSV:parseCSV,parseCsvDate:parseCsvDate,parseCsvValue:parseCsvValue,openCsvMapper:openCsvMapper,dreGroupOf:dreGroupOf,owmToWmo:owmToWmo,wxGet:wxGet,wxSlot:wxSlot,computeReliability:computeReliability,wxRefresh:wxRefresh,wxComputeRel:wxComputeRel,wxIcon:wxIcon,wxDesc:wxDesc,wxIsRain:wxIsRain,kmMonthStats:kmMonthStats,custoKmStats:custoKmStats,rideTotal:rideTotal,isCashRide:isCashRide,cashFeeOf:cashFeeOf,repasseExpected:repasseExpected,shiftInterval:shiftInterval,shiftDurationMin:shiftDurationMin,shiftKmInfo:shiftKmInfo,openShift:openShift,rideInShift:rideInShift,shiftRides:shiftRides,shiftStats:shiftStats,shiftsInRange:shiftsInRange,shiftAgg:shiftAgg,shiftElapsedMin:shiftElapsedMin,fmtDur:fmtDur,guessField:guessField,csvCashTrue:csvCashTrue,repasseLinkedDre:repasseLinkedDre,sanitizeDB:sanitizeDB,getDB:function(){return DB;},saveNow:function(){ return save(); },pendingJSON:function(){ try{ return JSON.stringify(conflictPayload()); }catch(e){ return ""; } },revInfo:function(){ var _s={rev:0}; try{ _s=readStoredRev(); }catch(e){rmLogErr(e)} var _p=null; try{ if(DB_CONFLICT_PENDING) _p={rides:(DB_CONFLICT_PENDING.rides||[]).length,exp:(DB_CONFLICT_PENDING.expenses||[]).length,titulos:(DB_CONFLICT_PENDING.titulos||[]).length,rev:Number(DB_CONFLICT_PENDING._rev)}; }catch(e){rmLogErr(e)} return {mem:DB_MEM_REV,stored:_s.rev,pending:_p}; },setDB:function(d){DB=sanitizeDB(d);saveLivre();},show:show,exportBackup:exportBackup,sinceISO:sinceISO,statsToday:statsToday,statsPeriod:statsPeriod,expensesTotal:expensesTotal,goalVals:goalVals,todayISO:todayISO,suggestRepPeriod:suggestRepPeriod,repasseSum:repasseSum,repasseAdjSum:repasseAdjSum,repassePending:repassePending,repasseLastEnd:repasseLastEnd,fmtPerKm:fmtPerKm,maintCostPerKm:maintCostPerKm,anuaisProvNoPeriodo:anuaisProvNoPeriodo,dreDiluidoParte:dreDiluidoParte,reservaKmInfo:reservaKmInfo,meiSettings:meiSettings,meiLimiteAtual:meiLimiteAtual,meiFaturamentoAno:meiFaturamentoAno,meiProjInfo:meiProjInfo,meiCardHTML:meiCardHTML};
 window.RM.repDifNorm=(typeof repDifNorm!=="undefined"?repDifNorm:function(v){ var n=Number(v)||0; return Math.abs(n)<0.005?0:n; });
 window.RM.repDifTxt=(typeof repDifTxt!=="undefined"?repDifTxt:function(v){ return BRL(v); });
 window.RM.droppedCounts=function(){ return droppedInvalid.counts; };
@@ -13897,7 +13864,7 @@ function cfgSecVeiculos(){
   } else {
     h+='<div class="sub">Ainda não há carros cadastrados: todo o histórico conta como um carro só. Dê um nome ao carro atual, ou use Trocar de carro no dia em que mudar.</div>';
   }
-  h+='<div class="sub">Lançou algo do carro antigo depois da troca? Use a data verdadeira: o app coloca no carro certo pela data. O custo do carro (depreciação/aluguel) do carro atual fica em Manutenção e gastos anuais.</div>';
+  h+='<div class="sub">Lançou algo do carro antigo depois da troca? Use a data verdadeira: o app coloca no carro certo pela data. O custo do carro (depreciação/aluguel) do carro atual fica em Manutenção e custo do carro.</div>';
   return h;
 }
 function veicSheet(html){
@@ -13915,7 +13882,7 @@ function veicAbrirTroca(){
   h+='<div class="qr-row"><label>Nome do carro novo<input id="vtNome" placeholder="ex.: BYD Dolphin"></label><label>Placa<input id="vtPlaca" placeholder="opcional"></label></div>';
   h+='<div class="qr-row"><label>Data da troca<input id="vtData" type="date" value="'+esc(todayISO())+'" max="'+esc(todayISO())+'"></label><label>Odômetro do carro novo<input id="vtOdo" inputmode="numeric" placeholder="km, opcional"></label></div>';
   h+='<div class="sub" style="margin-top:var(--s3)">Tipo de energia do carro novo</div><div class="seg" id="vtEn"><button type="button" data-en="eletrico" class="'+(veicEnergia(atual)!=="combustao"?"on":"")+'">Elétrico</button><button type="button" data-en="combustao" class="'+(veicEnergia(atual)==="combustao"?"on":"")+'">Combustão/GNV</button></div>';
-  h+='<div class="sub">A manutenção mantém os mesmos itens, sem a última vez feita — preencha depois. O custo do carro novo (próprio ou alugado) se configura em Manutenção e gastos anuais.</div><div class="msg-ok" id="vtMsg" style="color:#e0695c"></div>';
+  h+='<div class="sub">A manutenção mantém os mesmos itens, sem a última vez feita — preencha depois. O custo do carro novo (próprio ou alugado) se configura em Manutenção e custo do carro.</div><div class="msg-ok" id="vtMsg" style="color:#e0695c"></div>';
   h+='<div class="btnrow" style="margin-top:var(--s3)"><button type="button" class="btn green" id="vtOk">Trocar</button><button type="button" class="btn accent" id="veicCancel">Cancelar</button></div>';
   veicSheet(h);
   document.querySelectorAll("#vtEn button").forEach(function(b){ b.onclick=function(){ document.querySelectorAll("#vtEn button").forEach(function(x){ x.classList.toggle("on",x===b); }); }; });
@@ -13929,7 +13896,7 @@ function veicAbrirTroca(){
     var r=veicTrocar(o);
     if(!r.ok){ if(r.msg){ if(document.getElementById("vtMsg")&&!document.getElementById("crBk").hidden) msg.textContent=r.msg; else customAlert(r.msg,"Trocar de carro"); } return; }
     crFechar(); show("plataformas");
-    customAlert("Pronto: agora o carro atual é "+o.nome.trim()+". Configure o custo dele em Manutenção e gastos anuais"+(DB.settings.maint&&DB.settings.maint.length?" e marque a última manutenção de cada item":"")+".","Trocar de carro");
+    customAlert("Pronto: agora o carro atual é "+o.nome.trim()+". Configure o custo dele em Manutenção e custo do carro"+(DB.settings.maint&&DB.settings.maint.length?" e marque a última manutenção de cada item":"")+".","Trocar de carro");
   };
 }
 function veicAbrirRenomear(id){
@@ -16264,7 +16231,7 @@ function fechDigital(db,ate){
   Object.keys(FECH_CAMPOS).forEach(function(nome){ var c=FECH_CAMPOS[nome];
     (db[nome]||[]).forEach(function(r){ if(r&&dentro(r[c[1]])) out.push(c[0]+"|"+String(r[c[1]]).slice(0,10)+"|"+r.id+"|"+so(r,c[2])); }); });
   (db.titulos||[]).forEach(function(t){ if(!t) return;
-    if(dentro(t.competencia)) out.push("título|"+String(t.competencia).slice(0,10)+"|"+t.id+"|"+so(t,["competencia","valor","tipo","categoria","rateio"]));
+    if(dentro(t.competencia)) out.push("título|"+String(t.competencia).slice(0,10)+"|"+t.id+"|"+so(t,["competencia","valor","tipo","categoria","rateio","diluir"]));
     (t.baixas||[]).forEach(function(b){ if(b&&dentro(b.data)) out.push("baixa|"+String(b.data).slice(0,10)+"|"+t.id+"/"+b.id+"|"+so(b,["data","valor","conta","juros","desconto"])); }); });
   /* o líquido do provento vem da posição na data-com: mexer numa compra do mês aberto não pode mudar um provento de mês fechado */
   try{ if(typeof invProvValor==="function"){ var _db0=DB; DB=db; try{ (db.invProventos||[]).forEach(function(p){ if(p&&dentro(p.dataPag)) out.push("provento (valor)|"+String(p.dataPag).slice(0,10)+"|"+p.id+"|"+Math.round((Number(invProvValor(p))||0)*100)); }); } finally { DB=_db0; } } }catch(_eP){ rmLogErr(_eP,"fech-provento"); }
