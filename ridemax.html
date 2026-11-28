@@ -2152,6 +2152,8 @@ body:has(.tit-panel-bk) #qrFab{display:none!important}
 .fin-rotina .fr-seta{color:var(--muted);opacity:.6}
 .fin-rotina .fr-antigo{margin-left:auto;font-size:.8rem;opacity:.75}
 @media(max-width:860px){ .fin-rotina{border-radius:10px} .fin-rotina .fr-seta{display:none} .fin-rotina button{padding:8px 8px;font-size:.85rem} }
+/* busca dentro de quadros em coluna (ex.: Últimas transferências): não estica */
+.trf-side>.busca-in,.card>.busca-in{flex:0 0 auto;align-self:stretch;height:auto;min-height:40px;max-height:44px;margin:0 0 8px}
 </style>
 </head>
 <body>
@@ -8818,14 +8820,14 @@ function dreTurnoIdx(){ if(_dreShIdx&&_dreShRef===DB.shifts&&_dreShLen===DB.shif
 function dreDiaCorrida(x){ var e=(x&&x.turnoId)?dreTurnoIdx()[x.turnoId]:null; return e?e.w:x.date; }
 function dreAjustesAuditados(s){ var A=s.lajustes||[], ps=(s.aud&&s.aud.pastas)||{}, tem=Object.keys(ps).length>0; return A.filter(function(a){ var g=ps[a.pid]; if(!g) return !tem; return !Array.isArray(g.ajIds)||g.ajIds.indexOf(a.id)>=0; }); }
 function dreLotes(ini,fim,corte,caixa){
-  var o={byPlat:{},bruta:0,tip:0,km:0,n:0,ded:0,naoAud:0,naoAudN:0}, de=ini>corte?ini:corte, rideById=null;
+  var o={byPlat:{},bruta:0,tip:0,km:0,n:0,ded:0,naoAud:0,naoAudN:0,dedItens:{}}, de=ini>corte?ini:corte, rideById=null;
   var dist=function(id){ if(!rideById){ rideById={}; (DB.rides||[]).forEach(function(r){ rideById[r.id]=r; }); } var r=rideById[id]; return r?(Number(r.distance)||0):0; };
   (DB.shifts||[]).forEach(function(s){ if(!s||!s.fech) return; var w=shiftWorkday(s); if(w<corte) return; if(!caixa&&(w<de||w>fim)) return; if(caixa&&(w<somaDiasISO(ini,-1)||w>fim)) return; /* caixa: pela data da corrida (turno pode começar no dia anterior) */
     if(caixa){ ((s.fech.snap)||[]).forEach(function(c){ var dc=c.data||w; if(c.ini&&String(c.ini)<"04:00") dc=somaDiasISO(dc,1)||dc; /* a corrida guarda o dia de trabalho; de madrugada o dinheiro entrou no dia seguinte do calendário */ if(dc<ini||dc>fim) return; o.n++; o.km+=dist(c.id); o.tip=Math.round((o.tip+(Number(c.gor)||0))*100)/100; if(!c.din&&!c.gd) return; var v=c.din?Math.round(((Number(c.preco)||0)+(Number(c.gor)||0))*100)/100:Math.round((Number(c.gor)||0)*100)/100, n=platName(c.pid); o.byPlat[n]=Math.round(((o.byPlat[n]||0)+v)*100)/100; o.bruta=Math.round((o.bruta+v)*100)/100; }); return; }
     if(!s.aud) return;
     ((s.fech.snap)||[]).forEach(function(c){ var n=platName(c.pid), v=Number(c.v)||0; o.byPlat[n]=Math.round(((o.byPlat[n]||0)+v)*100)/100; o.bruta=Math.round((o.bruta+v)*100)/100; o.tip=Math.round((o.tip+(Number(c.gor)||0))*100)/100; o.km+=dist(c.id); o.n++; });
     dreAjustesAuditados(s).forEach(function(a){ var v=Number(a.valor)||0, n=platName(a.pid);
-      if(a.tipo==="estorno"||v<0){ o.ded=Math.round((o.ded+Math.abs(v))*100)/100; return; }
+      if(a.tipo==="estorno"||v<0){ o.ded=Math.round((o.ded+Math.abs(v))*100)/100; var _dk=n+" · "+(a.desc||"Estorno ou desconto"), _di=o.dedItens[_dk]||(o.dedItens[_dk]={desc:_dk,v:0,n:0}); _di.v=Math.round((_di.v+Math.abs(v))*100)/100; _di.n++; return; } /* detalhe para o demonstrativo */
       o.byPlat[n]=Math.round(((o.byPlat[n]||0)+v)*100)/100; o.bruta=Math.round((o.bruta+v)*100)/100; if(a.tipo==="gorjeta") o.tip=Math.round((o.tip+v)*100)/100; });
   });
   if(caixa){ o.dinNaoConf=0; (DB.rides||[]).forEach(function(x){ if(!x||!isCashRide(x)||x.date<ini||x.date>fim) return; var e=x.turnoId?dreTurnoIdx()[x.turnoId]:null; if(!e||e.w<corte||e.s.fech) return; o.dinNaoConf=Math.round((o.dinNaoConf+creditoDinheiroDe(x))*100)/100; }); }
@@ -9080,7 +9082,7 @@ function computeDRECustom(ini,fim,label,filtro,regime){
   varT=Math.round(varT*100)/100; fixT=Math.round(fixT*100)/100;
   liquida=Math.round(liquida*100)/100; margem=Math.round(margem*100)/100;
   oper=Math.round(oper*100)/100; liquido=Math.round(liquido*100)/100;
-  return {naoAuditado:_lot.naoAud,naoAuditadoN:_lot.naoAudN,dinNaoConferido:_lot.dinNaoConf||0,dreLoteDesde:_corte,range:r,regime:regime,nRides:nRides,byPlat:byPlat,bruta:bruta,tipT:tipT,receitasMan:receitasMan,recebMan:recebMan,recebItens:recebItens,brutaT:brutaT,ded:ded,liquida:liquida,energia:energia,kwh:kwh,liters:liters,man:man,expVar:expVar,vT:vT,varMan:varMan,varT:varT,margem:margem,expFix:expFix,fT:fT,fixMan:fixMan,das:dasM,fixT:fixT,oper:oper,ajustes:ajustes,liquido:liquido,km:km,ignored:ignored,emAberto:emAberto,jurosEnc:jurosEnc,descEnc:descEnc,titPrincipal:titPrincipal,filtro:f};
+  return {dedLoteItens:Object.keys(_lot.dedItens||{}).map(function(k){ return _lot.dedItens[k]; }),naoAuditado:_lot.naoAud,naoAuditadoN:_lot.naoAudN,dinNaoConferido:_lot.dinNaoConf||0,dreLoteDesde:_corte,range:r,regime:regime,nRides:nRides,byPlat:byPlat,bruta:bruta,tipT:tipT,receitasMan:receitasMan,recebMan:recebMan,recebItens:recebItens,brutaT:brutaT,ded:ded,liquida:liquida,energia:energia,kwh:kwh,liters:liters,man:man,expVar:expVar,vT:vT,varMan:varMan,varT:varT,margem:margem,expFix:expFix,fT:fT,fixMan:fixMan,das:dasM,fixT:fixT,oper:oper,ajustes:ajustes,liquido:liquido,km:km,ignored:ignored,emAberto:emAberto,jurosEnc:jurosEnc,descEnc:descEnc,titPrincipal:titPrincipal,filtro:f};
 }
 function dreNormRegime(x){ return x==="caixa"?"caixa":"competencia"; }
 function computeDRE(key,filtro,regime){
@@ -9201,7 +9203,9 @@ function rDre(){
   html+='</tbody>';
   html+=accH("ded","(−) DEDUÇÕES — taxas e comissões","− "+BRL(D.ded),"#e0695c");
   var deds=D.man.filter(function(x){return x.gid==="ded";});
-  if(!deds.length) html+=det(muted("Nenhuma (lance taxas da plataforma ao lado)"),"–");
+  var _dl=(D.dedLoteItens||[]);
+  _dl.forEach(function(x){ html+=det('⊖ '+esc(x.desc)+' <span style="color:var(--muted)">ajuste dos lotes auditados'+(x.n>1?' · '+x.n+' vezes':'')+'</span>','− '+BRL(x.v)); });
+  if(!deds.length&&!_dl.length) html+=det(muted("Nenhuma (lance taxas da plataforma ao lado)"),"–");
   deds.forEach(function(x){ var _v=dreManualSlice(Number(x.amount),x.rateio,fD,idsD); if(!(_v>0.004)) return; html+=det('⊖ '+esc(x.desc||"Taxa")+' <span style="color:var(--muted)">'+isoToBR(x.date)+'</span>','− '+BRL(_v)); });
   html+='</tbody>';
   html+=sub("(=) RECEITA LÍQUIDA",'<b>'+BRL(D.liquida)+'</b>');
