@@ -2142,6 +2142,16 @@ body:has(.tit-panel-bk) #qrFab{display:none!important}
 .rc-top{align-items:stretch}
 .rc-top>.card{min-height:100%}
 @media(min-width:861px) and (max-width:1180px){ #shBody .sh-num{display:none} } /* tela estreita com menu: o nº aparece no Conferir caixa e no lote */
+/* Rotina do financeiro: etapas na ordem do processo */
+.fin-rotina{display:flex;align-items:center;gap:4px;margin:0 0 12px;padding:4px;border:1px solid var(--border);border-radius:12px;background:var(--card);overflow-x:auto;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.fin-rotina button{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;border:0;background:none;color:var(--muted);padding:8px 10px;border-radius:8px;cursor:pointer;font:inherit;font-size:.9rem;min-height:40px}
+.fin-rotina button:hover{color:var(--text);background:color-mix(in srgb,var(--accent) 50%,transparent)}
+.fin-rotina button.on{background:var(--accent);color:var(--text);font-weight:600}
+.fin-rotina .fr-n{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;border:1px solid currentColor;font-size:.75rem}
+.fin-rotina .fr-p{min-width:18px;padding:0 5px;border-radius:999px;background:var(--yellow);color:#111;font-size:.72rem;font-weight:700;text-align:center}
+.fin-rotina .fr-seta{color:var(--muted);opacity:.6}
+.fin-rotina .fr-antigo{margin-left:auto;font-size:.8rem;opacity:.75}
+@media(max-width:860px){ .fin-rotina{border-radius:10px} .fin-rotina .fr-seta{display:none} .fin-rotina button{padding:8px 8px;font-size:.85rem} }
 </style>
 </head>
 <body>
@@ -4953,7 +4963,7 @@ function toqueRepetido(b){
 }
 try{ document.addEventListener("click",function(ev){
   var b=ev.target&&ev.target.closest?ev.target.closest("button"):null; if(!b||b.disabled) return;
-  if(b.closest(".pin-box,.seg,.toolbar.seg,#finTabs,#invTabs,#cfgTabs,#contaTabs,#histTabs,#navCtn,#mbar,.ms-grade,.f3-chips,.qr-chips")||b.hasAttribute("data-pg")||b.classList.contains("infoBtn")||b.classList.contains("hbtn")) return;
+  if(b.closest(".pin-box,.seg,.toolbar.seg,#finTabs,#finRotina,#invTabs,#cfgTabs,#contaTabs,#histTabs,#navCtn,#mbar,.ms-grade,.f3-chips,.qr-chips")||b.hasAttribute("data-pg")||b.classList.contains("infoBtn")||b.classList.contains("hbtn")) return;
   if(toqueRepetido(b)){ ev.stopImmediatePropagation(); ev.preventDefault(); }
 },true);
   /* mexeu em algum campo entre um toque e outro (corrigiu o valor e salvou de novo): não é toque duplo */
@@ -4965,7 +4975,7 @@ var SHOW_ULT=null;
    abria lá embaixo. Técnica padrão de SPA: history.scrollRestoration = "manual". */
 try{ if("scrollRestoration" in history) history.scrollRestoration="manual"; }catch(e){}
 function topoDaTela(){ try{ window.scrollTo(0,0); var vc=document.getElementById("viewCtn"); if(vc) vc.scrollTop=0; }catch(e){rmLogErr(e)} }
-try{ document.addEventListener("click",function(ev){ var b=ev.target&&ev.target.closest?ev.target.closest("#finTabs button,#invTabs button,#cfgTabs button,#contaTabs button,#histTabs button,[data-resir]"):null; if(!b) return; requestAnimationFrame(function(){ topoDaTela(); try{ updateNavActive(current); }catch(e){ rmLogErr(e,"nav-aba"); } }); }); }catch(e){}
+try{ document.addEventListener("click",function(ev){ var b=ev.target&&ev.target.closest?ev.target.closest("#finTabs button,#finRotina button,#invTabs button,#cfgTabs button,#contaTabs button,#histTabs button,[data-resir]"):null; if(!b) return; requestAnimationFrame(function(){ topoDaTela(); try{ updateNavActive(current); }catch(e){ rmLogErr(e,"nav-aba"); } }); }); }catch(e){}
 function show(v){
   if(v==="contas"||v==="centros"){ try{ cfgTab=v; }catch(e){rmLogErr(e)} v="plataformas"; }
   var _mudou=(v!==SHOW_ULT); SHOW_ULT=v;
@@ -6703,37 +6713,14 @@ function meiCardHTML(){
 function rFinHub(){
   var tab=Math.min(6,Math.max(0,Number(window.__finTab)||0));
   if(tab===4&&!(DB.lotes||[]).length) tab=5; if(tab===6&&!(DB.repasses||[]).length) tab=3; window.__finTab=tab;
-  /* Lotes é subaba de Repasses: __finTab 4 = Repasses › Lotes (a barra de cima marca Repasses) */
-  viewCtn.innerHTML='<div class="toolbar seg" id="finTabs" style="margin-bottom:10px"></div><div id="repSub"></div><div id="finBox"></div>';
+  /* acesso rápido = etapas da rotina do financeiro (50-rotina-financeiro.js). Análise (2) é acompanhamento do Motorista: sem a barra. */
+  var _rot={0:"fechar",1:"dre",3:"receb",5:"auditar",4:"antigos",6:"antigos"}[tab];
+  viewCtn.innerHTML=(tab===2?"":finRotinaBarHTML(_rot))+((tab===4||tab===6)?'<p class="tip rep-antigo">Modelo antigo, só para consulta (sai na Limpeza da base). O dinheiro que cai agora é lançado em <b>Recebimentos</b>.</p>':"")+'<div id="finBox"></div>';
+  finRotinaLigar();
   window.__finBox=document.getElementById("finBox");
-  var names=["Resumo","DRE","Análise","Repasses"];
+  try{ window.__finBox.classList.toggle("so-consulta",tab===4||tab===6); }catch(e){}
   var fns=[function(){ rFin(); try{ fechCardPintar(); }catch(e){ rmLogErr(e,"fech-card"); } },rDre,rAna,rRecebimentos,rLotes,rLotesTurno,rRep]; /* 3 = Recebimentos (etapa 4), 5 = Lotes dos turnos (etapa 3); 4 e 6 = modelo antigo, só consulta */
-  var _sub=function(t){ var el=document.getElementById("repSub"); if(!el) return; if(t<3){ el.innerHTML=""; return; }
-    var nL=0; try{ nL=(DB.lotes||[]).length; }catch(e){}
-    var nT=0; try{ nT=(DB.shifts||[]).filter(function(s){ return s&&s.fech&&!s.aud; }).length; }catch(e){}
-    var nR=0; try{ nR=(DB.repasses||[]).length; }catch(e){}
-    el.innerHTML='<div class="toolbar seg rep-sub" style="margin:0 0 10px"><button type="button" data-repsub="5"'+(t===5?' class="on"':"")+'>Lotes dos turnos'+(nT?' ('+nT+' a auditar)':'')+'</button><button type="button" data-repsub="3"'+(t===3?' class="on"':"")+'>Recebimentos</button>'+(nR?'<button type="button" data-repsub="6"'+(t===6?' class="on"':"")+' title="Modelo antigo: só consulta; sai na Limpeza da base">Repasses antigos ('+nR+')</button>':'')+(nL?'<button type="button" data-repsub="4"'+(t===4?' class="on"':"")+' title="Modelo antigo: só consulta; sai na Limpeza da base">Lotes de repasse ('+nL+')</button>':'')+'</div>'
-      +((t===4||t===6)?'<p class="tip rep-antigo">Modelo antigo, só para consulta (sai na Limpeza da base). O dinheiro que cai agora é lançado em <b>Recebimentos</b>.</p>':'');
-    try{ var _fb=document.getElementById("finBox"); if(_fb) _fb.classList.toggle("so-consulta",t===4||t===6); }catch(e){}
-    el.querySelectorAll("[data-repsub]").forEach(function(b){ b.onclick=function(){ try{ chartReg.length=0; }catch(e){} window.__finTab=Number(b.dataset.repsub); try{ updateNavActive("financeiro"); }catch(e){} rFinHub(); try{ atualizaAjuda(); }catch(e){} }; }); };
-  var bar=document.getElementById("finTabs");
-  names.forEach(function(n,i){
-    var b=document.createElement("button"); b.type="button"; b.textContent=n;
-    if(i===Math.min(tab,3)) b.classList.add("on"); /* 4 e 5 são subabas de Repasses */
-    b.onclick=function(){
-      try{ chartReg.length=0; }catch(e){rmLogErr(e)}
-      window.__finTab=i;
-      try{ document.body.classList.toggle("fit-lock",i===0||i===1||i===2||i===4); }catch(e){rmLogErr(e)}
-      bar.querySelectorAll("button").forEach(function(x,j){ x.classList.toggle("on",j===i); });
-      _sub(i);
-      fns[i]();
-      try{ atualizaAjuda(); }catch(e){rmLogErr(e)}
-      try{ qrFabSync(); }catch(e){rmLogErr(e)}
-    };
-    bar.appendChild(b);
-  });
   try{ document.body.classList.toggle("fit-lock",tab===0||tab===1||tab===2||tab===4); }catch(e){rmLogErr(e)}
-  _sub(tab);
   fns[tab]();
 }
 /* ---------- ANÁLISE ---------- */
@@ -8755,12 +8742,14 @@ function dreNormFiltro(f){
 function dreRateioMatch(centroId,f,ids){
   if(f==="__consolidado") return true;
   var cn="";
-  try{ var cc=centroById(centroId); cn=cc?normName(cc.nome||""):""; }catch(e){ cn=""; }
-  if(f==="__uber") return cn==="uber";
-  if(f==="__pessoal") return cn==="pessoal";
-  if(f==="__invest") return cn==="investimentos"||cn==="investimento";
+  var pp=null; try{ var cc=centroById(centroId); cn=cc?normName(cc.nome||""):""; pp=cc?cc.papel:null; }catch(e){ cn=""; }
+  /* papel fixo do centro vale mais que o nome (o centro do trabalho pode ser renomeado, ex.: Motorista) */
+  var _trab=pp==="trabalho"||(!pp&&cn==="uber"), _pes=pp==="pessoal"||(!pp&&cn==="pessoal"), _inv=pp==="invest"||(!pp&&(cn==="investimentos"||cn==="investimento"));
+  if(f==="__uber") return _trab;
+  if(f==="__pessoal") return _pes;
+  if(f==="__invest") return _inv;
   if(f==="__outros"){
-    if(cn==="uber"||cn==="pessoal"||cn==="investimentos"||cn==="investimento") return false;
+    if(_trab||_pes||_inv) return false;
     return true;
   }
   return String(centroId||"")===String(f||"");
@@ -11289,10 +11278,10 @@ function rConc(){
     +'<label class="f">Período até (DD/MM/AAAA)<input id="concAte" value="'+esc(concAteTxt)+'"></label>'
     +'<label class="f">Saldo do extrato (R$)<input id="concExt" inputmode="decimal" placeholder="ex: 1.000,00" value="'+esc(concExtTxt)+'"></label></div>';
   var _concHasAt=false; try{ _concHasAt=(DB.contas||[]).some(function(x){ return x&&x.ativa; }); }catch(e){rmLogErr(e)}
-  if(!_concHasAt){ html+='</div><div class="card"><div class="empty">Nenhuma conta ativa cadastrada.<br>É preciso cadastrar uma conta para ver a conciliação.</div><div class="btnrow"><button class="btn sm accent" data-concgo="contas">Ir para Contas</button></div></div></div>'; viewCtn.innerHTML=html; wireConcFiltros(); return; }
+  if(!_concHasAt){ html+='</div><div class="card"><div class="empty">Nenhuma conta ativa cadastrada.<br>É preciso cadastrar uma conta para ver a conciliação.</div><div class="btnrow"><button class="btn sm accent" data-concgo="contas">Ir para Contas</button></div></div></div>'; viewCtn.innerHTML=html; finRotinaPintar("conc"); wireConcFiltros(); return; }
   var c=concConta?contaById(concConta):null;
   var de=brToISO(concDeTxt), ate=brToISO(concAteTxt);
-  if(!de||!ate||ate<de){ html+='</div><div class="card warn"><h3>⚠️ Período inválido</h3><div class="sub">Use DD/MM/AAAA com dia real e fim depois do início.</div></div></div>'; viewCtn.innerHTML=html; wireConcFiltros(); return; }
+  if(!de||!ate||ate<de){ html+='</div><div class="card warn"><h3>⚠️ Período inválido</h3><div class="sub">Use DD/MM/AAAA com dia real e fim depois do início.</div></div></div>'; viewCtn.innerHTML=html; finRotinaPintar("conc"); wireConcFiltros(); return; }
   var sist=concSaldoAte(c,ate);
   var ext=concExtTxt.trim()===""?null:parseBR(concExtTxt); if(ext!=null&&!isFinite(ext)) ext=null;
   var dif=ext==null?null:Math.round((sist-ext)*100)/100;
@@ -11332,7 +11321,7 @@ function rConc(){
       +'<div class="msg-ok" id="concAjMsg"></div></div></div><div class="tit-panel-foot"><button class="btn yellow" id="concAjSave">Salvar ajuste</button><button class="btn sm accent" id="concAjVoltar">Voltar</button></div></div></div>';
   }
   html+='</div>';
-  viewCtn.innerHTML=html;
+  viewCtn.innerHTML=html; finRotinaPintar("conc");
   wireConcFiltros(); wireConcLista();
   var _ajNovo=document.getElementById("concAjNovoBtn");
   if(_ajNovo){ _ajNovo.onclick=function(){ concAjPanel=true; rConc(); try{ var _f=document.getElementById("concAjData"); if(_f) _f.focus(); }catch(e){rmLogErr(e)} }; }
@@ -12279,7 +12268,7 @@ function rTitulos(){
   html+='<tr class="tot"><td class="l" colspan="3">Descontos obtidos (filtro atual)</td><td colspan="4" style="text-align:right"><b id="titTotDesc">'+BRL(_td)+'</b></td></tr>';
   html+='</tbody></table></div><div id="titPager"></div></div></div>';
   if(titPanelHTML){ html+=titPanelHTML; }
-  viewCtn.innerHTML=html;
+  viewCtn.innerHTML=html; finRotinaPintar("pagar");
   document.getElementById("titPager").innerHTML=pagerHTML(titPage,pages,rows.length);
   wirePager(document.getElementById("titPager"),function(d){ titPage+=d; rTitulos(); });
   document.querySelectorAll("#titSeg button").forEach(function(b){ b.onclick=function(){ titFiltro=b.dataset.tf; titPage=1; rTitulos(); }; });
@@ -18363,7 +18352,7 @@ function rLotesTurno(){
   var box=window.__finBox||viewCtn;
   try{ loteTitulosGarantirTodos(); }catch(e){ rmLogErr(e,"lote-titulos-todos"); }
   var L=loteTurnoLista(), nPend=0;
-  var linhas=L.filter(function(s){ /* lista */ var sit=loteTurnoSit(s); if(sit!=="conciliado") nPend++; return loteTurnoFiltro==="todos"||(loteTurnoFiltro==="pendentes"?sit!=="conciliado":sit===loteTurnoFiltro); });
+  var linhas=L.filter(function(s){ /* lista */ var sit=loteTurnoSit(s); if(sit!=="conciliado") nPend++; return loteTurnoFiltro==="todos"||(loteTurnoFiltro==="pendentes"?sit!=="conciliado":(loteTurnoFiltro==="auditado"?(sit==="auditado"||sit==="conciliado"):sit===loteTurnoFiltro)); });
   var semConf=(DB.shifts||[]).filter(function(s){ return !s.fech; }).length;
   var h='<div class="lt-screen"><div class="toolbar lt-head"><h3>Lotes dos turnos</h3><span style="flex:1 1 auto"></span><div class="seg" id="ltFiltro">'
     +[["pendentes","Pendentes ("+nPend+")"],["fechado","A auditar"],["auditado","Auditados"],["todos","Todos ("+L.length+")"]].map(function(o){ return '<button type="button" data-ltf="'+o[0]+'"'+(loteTurnoFiltro===o[0]?' class="on"':'')+'>'+esc(o[1])+'</button>'; }).join("")+'</div></div>';
@@ -18744,6 +18733,45 @@ async function ajMesOferecer(texto,ctx,titulo){
   return v;
 }
 try{ window.RM.ajMesAbrir=ajMesAbrir; }catch(e){}
+/* ---------- ROTINA DO FINANCEIRO: barra de etapas (27/11/2026) ----------
+   O acesso rápido das telas do financeiro segue a ordem do processo (docs/REGRAS_FINANCEIRO.md):
+   ① Conferir caixa (Turnos) → ② Auditar lotes → ③ Recebimentos → ④ Pagar & Receber → ⑤ Conciliação →
+   ⑥ Fechar o mês (Resumo) → ⑦ DRE. Cada etapa mostra quantas pendências tem. Aparece no Financeiro
+   (menos em Análise, que é acompanhamento do Motorista), em Pagar & Receber e em Conciliação. */
+var FIN_ROTINA=[
+  {k:"caixa",n:"Conferir caixa",ir:function(){ window.__histTab=1; show("historico"); }},
+  {k:"auditar",n:"Auditar lotes",ir:function(){ window.__finTab=5; show("financeiro"); }},
+  {k:"receb",n:"Recebimentos",ir:function(){ window.__finTab=3; show("financeiro"); }},
+  {k:"pagar",n:"Pagar & Receber",ir:function(){ show("contaspagar"); }},
+  {k:"conc",n:"Conciliação",ir:function(){ show("conciliacao"); }},
+  {k:"fechar",n:"Fechar o mês",ir:function(){ window.__finTab=0; show("financeiro"); setTimeout(function(){ try{ var c=document.getElementById("fechCard"); if(c&&c.scrollIntoView) c.scrollIntoView({block:"start"}); }catch(e){} },150); }},
+  {k:"dre",n:"DRE",ir:function(){ window.__finTab=1; show("financeiro"); }}
+];
+function finRotinaPend(k){
+  try{
+    var corte=(typeof dreLoteDesde==="function")?dreLoteDesde():"2000-01-01";
+    if(k==="caixa") return (DB.shifts||[]).filter(function(s){ return s&&s.end_time&&!s.fech&&shiftWorkday(s)>=corte; }).length;
+    if(k==="auditar") return (DB.shifts||[]).filter(function(s){ return s&&s.fech&&!s.aud; }).length;
+    if(k==="receb") return (DB.titulos||[]).filter(function(t){ return t&&t.origem==="loteTurno"&&t.tipo==="receber"&&titAberto(t); }).length;
+    if(k==="pagar") return (DB.titulos||[]).filter(function(t){ return t&&t.tipo==="pagar"&&titVencido(t); }).length;
+    if(k==="fechar"){ var a=fechAte(), ym=todayISO().slice(0,7), prox=a?fechYmMais(a,1):fechYmMais(ym,-1); return prox<ym?1:0; }
+  }catch(e){ rmLogErr(e,"fin-rotina"); }
+  return 0;
+}
+function finRotinaBarHTML(atual){
+  var tem=(DB.lotes||[]).length||(DB.repasses||[]).length;
+  return '<nav class="fin-rotina" id="finRotina" aria-label="Rotina do financeiro">'+FIN_ROTINA.map(function(e,i){ var p=finRotinaPend(e.k);
+    return '<button type="button" data-rot="'+e.k+'"'+(e.k===atual?' class="on" aria-current="step"':'')+' title="'+esc((i+1)+". "+e.n+(p?" — "+p+" pendente(s)":""))+'"><span class="fr-n">'+(i+1)+'</span>'+esc(e.n)+(p?'<span class="fr-p">'+p+'</span>':'')+'</button>'; }).join('<span class="fr-seta" aria-hidden="true">›</span>')
+    +(tem?'<button type="button" data-rot="antigos" class="fr-antigo'+(atual==="antigos"?" on":"")+'" title="Repasses e lotes do modelo antigo (só consulta)">Antigos</button>':'')+'</nav>';
+}
+function finRotinaLigar(){
+  document.querySelectorAll("#finRotina [data-rot]").forEach(function(b){ b.onclick=function(){
+    var k=b.dataset.rot; if(k==="antigos"){ window.__finTab=(DB.repasses||[]).length?6:4; show("financeiro"); return; }
+    var e=FIN_ROTINA.filter(function(x){ return x.k===k; })[0]; if(e){ try{ chartReg.length=0; }catch(_){} e.ir(); } }; });
+}
+/* põe a barra no topo da tela (Pagar & Receber, Conciliação), se ainda não estiver */
+function finRotinaPintar(atual){ try{ if(document.getElementById("finRotina")) return; viewCtn.insertAdjacentHTML("afterbegin",finRotinaBarHTML(atual)); finRotinaLigar(); }catch(e){ rmLogErr(e,"fin-rotina"); } }
+try{ window.RM.finRotinaPend=finRotinaPend; }catch(e){}
 /* primeira tela: só depois de todos os módulos (antes, cartões que usam listas definidas mais abaixo falhavam na abertura) */
 try{ show(current||"dashboard"); }catch(e){ rmLogErr(e,"primeira-tela"); }
 
