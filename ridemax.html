@@ -104,7 +104,7 @@ table.tbl td.l,table.tbl td:first-child,table.tbl th.l{text-align:left}
 .btn.red:hover,.btn.danger:hover{background:color-mix(in srgb, var(--neg-solid) 82%, #fff)}
 .btn.yellow:hover,.btn.orange:hover{background:var(--accent);color:var(--text)}
 .seg button:not(.on):hover{background:var(--accent);color:var(--text)}
-table.tbl tbody tr:hover td{background:var(--accent)}
+@media(hover:hover) and (pointer:fine){table.tbl tbody tr:hover td{background:var(--accent)}}
 .btnrow{display:flex;gap:var(--s2);flex-wrap:wrap;margin:var(--s4) 0}
 label.f{display:block;font-size:var(--f-base);color:var(--muted);margin:var(--s2) 0}
 label.f input,label.f select{width:100%;margin-top:var(--s1);background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:var(--r);padding:var(--s2);font-size:var(--f-md)}
@@ -2187,6 +2187,7 @@ body[data-theme="light"] .fin-rotina button.on,body[data-sol="1"] .fin-rotina bu
 /* celular: toque longo/duplo num cartão de lista não seleciona o texto (fundo azul) */
 @media(max-width:860px){ .tbl tr,.tbl td,.card h3,.kv,.stat,#mbar,.navbtn,.seg button,.btn{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent} input,textarea,select{-webkit-user-select:text;user-select:text} }
 @media(max-width:860px){ body,body *{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent} body input,body textarea,body select,body [contenteditable]{-webkit-user-select:text;user-select:text} }
+table.f4-cartoes tbody tr:hover td,table.f4-cartoes tr:hover td{background:transparent!important}
 </style>
 </head>
 <body>
