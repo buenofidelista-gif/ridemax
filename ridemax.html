@@ -2154,6 +2154,13 @@ body:has(.tit-panel-bk) #qrFab{display:none!important}
 @media(max-width:860px){ .fin-rotina{border-radius:10px} .fin-rotina .fr-seta{display:none} .fin-rotina button{padding:8px 8px;font-size:.85rem} }
 /* busca dentro de quadros em coluna (ex.: Últimas transferências): não estica */
 .trf-side>.busca-in,.card>.busca-in{flex:0 0 auto;align-self:stretch;height:auto;min-height:40px;max-height:44px;margin:0 0 8px}
+
+/* Clima × ganhos (Início e Clima) */
+.clima-aviso{padding:10px 14px;margin-bottom:12px;border-left:4px solid #5a9fd4}
+.clima-aviso .cg-l1{font-weight:600}
+.clima-aviso .cg-l2{margin-top:4px}
+.clima-aviso .cg-l3{margin-top:4px;color:var(--muted);font-size:.9em}
+.clima-aviso .pos,.cg-tab .pos{color:var(--green)} .clima-aviso .neg,.cg-tab .neg{color:#e0695c}
 </style>
 </head>
 <body>
@@ -2891,7 +2898,7 @@ function sanitizeDB(d, rawBackup){
       for(_pfI=0;_pfI<_pfSrc.length;_pfI++){ var _pfX=_pfSrc[_pfI]; if(_pfX&&typeof _pfX.name==="string"&&_pfX.name.trim()){ _pfOk.push(_pfX); } else { noteDropped("platforms",_pfX); } }
       d.platforms=_pfOk.map(function(p){
         var _cr=null; try{ if(typeof p.contaRecebimento==="string"&&p.contaRecebimento.trim()) _cr=String(p.contaRecebimento).trim().slice(0,64); }catch(e){ _cr=null; }
-        return {id:String(p.id||uid()),name:String(p.name).slice(0,40),color:validColor(p.color,"#5a9fd4"),active:p.active?1:0,contaRecebimento:_cr,acertar:p.acertar==="aparte"?"aparte":"desconta"};
+        return {id:String(p.id||uid()),name:String(p.name).slice(0,40),color:validColor(p.color,"#5a9fd4"),active:p.active?1:0,contaRecebimento:_cr,acertar:p.acertar==="aparte"?"aparte":"desconta",tipo:(p.tipo==="particular"||(p.tipo==null&&/^particular/i.test(String(p.name||"").trim())))?"particular":"app"};
       });
     }
   }catch(e){
@@ -3103,6 +3110,8 @@ function sanitizeDB(d, rawBackup){
     if(!_wc.relReset){ _rel={}; }
     d.wx.rel=_rel;
     if(typeof d.wx.fcAt!=="string"||!validISO(d.wx.fcAt)) d.wx.fcAt=null;
+    /* clima de cada hora, permanente e enxuto (52-clima-ganhos.js): {dia:[24 × {c,t,r}|null]} */
+    try{ var _hr={}, _ho=(d.wx.hora&&typeof d.wx.hora==="object"&&!Array.isArray(d.wx.hora))?d.wx.hora:{}; Object.keys(_ho).filter(validISO).sort().slice(-1500).forEach(function(dt){ var L=_ho[dt]; if(!Array.isArray(L)) return; var o=new Array(24).fill(null), tem=0; for(var i=0;i<24;i++){ var x=L[i]; if(x&&(x.c==="chuva"||x.c==="nublado"||x.c==="limpo")){ o[i]={c:x.c,t:(x.t!=null&&isFinite(Number(x.t)))?Math.round(Number(x.t)*10)/10:null,r:Math.max(0,Math.round((Number(x.r)||0)*10)/10)}; tem++; } } if(tem) _hr[dt]=o; }); d.wx.hora=_hr; d.wx.horaAt=validISO(d.wx.horaAt)?d.wx.horaAt:null; }catch(_eHr){ d.wx.hora={}; d.wx.horaAt=null; }
   }catch(e){
     _fail("wx");
     try{ d.wx={cfg:{enabled:0,key:"",city:"Vitória da Conquista, BA",lat:"-14.8619",lon:"-40.8442"},fc:{},fcAt:null,act:{},rel:{}}; }catch(_){rmLogErr(_)}
@@ -5504,6 +5513,8 @@ function rDash(){
   html+=corruptBanner()+backupBanner()+bkpBannerPasta();
   try{ html+=fiscalAvisoHTML(); }catch(_eF){ rmLogErr(_eF,"fiscal-inicio"); }
   try{ html+=evAvisoHTML(); }catch(_eEv){ rmLogErr(_eEv,"ev-inicio"); }
+  try{ html+=cgCardHTML(); }catch(_eCg){ rmLogErr(_eCg,"clima-ganhos"); } /* clima de agora × ganhos aprendidos */
+  try{ if(DB.wx&&DB.wx.horaAt!==todayISO()) setTimeout(function(){ cgCompletarHistorico(false).then(function(r){ if(r&&r.ok&&/registradas/.test(r.msg||"")&&current==="dashboard"){ CG_MEMO.k=null; show("dashboard"); } }); },1500); }catch(_eCh){}
   html+='<div class="fit-screen dash-screen"><div class="dash-grid">';
   /* ============ BLOCO 1 — HOJE ============ */
   var contas=(DB.contas||[]).filter(function(c){ return c.ativa; }).sort(finSortNome);
@@ -6982,7 +6993,7 @@ function platCardHTML(){
 }
 function effFeeCardHTML(){
   var s=sinceISO(30), t0=todayISO(), tot=0, withF=0, sumE=0, sumF=0, per={}, neg=false;
-  DB.rides.forEach(function(r){
+  DB.rides.forEach(function(r){ if(!platEhApp(r.platform_id)) return; /* taxa de app: particular não tem */
     if(r.date>=s&&r.date<=t0){
       tot++;
       var f=Number(r.fare);
@@ -7550,6 +7561,7 @@ async function wxRefresh(){
   var row={t:isFinite(temp)?Math.round(temp*10)/10:null,p:pop,r:isFinite(rain)?Math.max(0,Math.round(rain*100)/100):0,w:isFinite(wh)?wh:null,c:wmo};
   if(!DB.wx.act[ds]||!Array.isArray(DB.wx.act[ds])) DB.wx.act[ds]=new Array(24).fill(null);
   DB.wx.act[ds][hh]={t:row.t,p:row.p,r:row.r,w:row.w,c:row.c};
+  try{ cgHoraGrava(ds,hh,{c:cgClasse(row.c,row.r),t:row.t,r:row.r}); }catch(_eCg){ rmLogErr(_eCg,"clima-hora"); } /* aprendizado clima × ganhos */
   if(DB.wx.fcAt!==ds){
     var fc;
     try{ fc=await (await fetch(base+"/forecast?"+q+"&cnt=40",{signal:wxTimeout(20000)})).json(); }
@@ -7804,9 +7816,11 @@ function rClima(){
   } else {
     html+='<div class="card"><div class="empty">🌦️ Clima desativado.<br>Ative em Configurações › Clima e localização para ver previsão, confiabilidade e ícones na Previsão IA.</div></div>';
   }
+  try{ html+=cgTabelaHTML(); }catch(_eCt){ rmLogErr(_eCt,"clima-ganhos"); }
   html+='<div class="card"><p class="tip">ℹ️ Previsão de 5 dias em blocos de 3h, interpolada por hora. A confiabilidade compara a previsão feita antes × o tempo observado nas horas em que o clima foi buscado (dado "real" só existe da hora atual de cada busca). Histórico reiniciado nesta versão. Dados: OpenWeatherMap.</p></div>';
   viewCtn.innerHTML=html;
   document.getElementById("wxCfgIr").onclick=function(){ navIrPara({view:"plataformas",cfg:"clima"}); };
+  try{ cgTabelaLigar(); }catch(_eCl){ rmLogErr(_eCl); }
   var _go=document.getElementById("wxGo");
   if(_go) _go.onclick=async function(){
     var m=document.getElementById("wxMsg"); m.style.color=""; m.textContent="⏳ Buscando...";
@@ -8270,7 +8284,7 @@ function renderCfgPlat(box){
   function refresh(){
     var hb=""; DB.platforms.forEach(function(p){
       var s30={n:0,e:0}; DB.rides.forEach(function(r){ if(r.platform_id===p.id&&r.date>=sinceISO(30)&&r.date<=todayISO()){ s30.n++; s30.e+=rideTotal(r); } });
-      hb+='<tr><td><span class="dot" style="background:'+validColor(p.color,"#5a9fd4")+'"></span></td><td class="l">'+esc(p.name)+'</td><td>'+(p.active?"✅ Ativo":"⏸ Inativo")+'</td><td style="white-space:nowrap">'+s30.n+' · '+BRL(s30.e)+'</td><td><select data-platconta="'+esc(p.id)+'" style="max-width:132px;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px">'+platContaOpts(plataformaContaId(p))+'</select><select data-platacert="'+esc(p.id)+'" title="Taxa das corridas em dinheiro" aria-label="Taxa das corridas em dinheiro" style="max-width:150px;margin-top:4px;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px"><option value="desconta"'+(p.acertar!=="aparte"?" selected":"")+'>Taxa em dinheiro: desconta do repasse</option><option value="aparte"'+(p.acertar==="aparte"?" selected":"")+'>Taxa em dinheiro: cobra à parte</option></select></td><td><button class="btn sm '+(p.active?"yellow":"green")+'" data-tog="'+esc(p.id)+'">'+(p.active?"Desativar":"Ativar")+'</button> <button class="btn sm rowdel" data-del="'+esc(p.id)+'">Excluir</button></td></tr>';
+      hb+='<tr><td><span class="dot" style="background:'+validColor(p.color,"#5a9fd4")+'"></span></td><td class="l">'+esc(p.name)+'</td><td>'+(p.active?"✅ Ativo":"⏸ Inativo")+'</td><td style="white-space:nowrap">'+s30.n+' · '+BRL(s30.e)+'</td><td><select data-platconta="'+esc(p.id)+'" style="max-width:132px;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px">'+platContaOpts(plataformaContaId(p))+'</select><select data-plattipo="'+esc(p.id)+'" aria-label="Tipo" title="Particular (fora dos apps) não entra nas comparações entre aplicativos" style="max-width:150px;margin-top:4px;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px"><option value="app"'+(p.tipo!=="particular"?" selected":"")+'>É aplicativo</option><option value="particular"'+(p.tipo==="particular"?" selected":"")+'>Particular (não é app)</option></select><select data-platacert="'+esc(p.id)+'" title="Taxa das corridas em dinheiro" aria-label="Taxa das corridas em dinheiro" style="max-width:150px;margin-top:4px;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px"><option value="desconta"'+(p.acertar!=="aparte"?" selected":"")+'>Taxa em dinheiro: desconta do repasse</option><option value="aparte"'+(p.acertar==="aparte"?" selected":"")+'>Taxa em dinheiro: cobra à parte</option></select></td><td><button class="btn sm '+(p.active?"yellow":"green")+'" data-tog="'+esc(p.id)+'">'+(p.active?"Desativar":"Ativar")+'</button> <button class="btn sm rowdel" data-del="'+esc(p.id)+'">Excluir</button></td></tr>';
     });
     document.getElementById("pBody").innerHTML=hb||'<tr><td colspan="6" style="color:var(--muted)">Nenhuma plataforma.</td></tr>';
     document.querySelectorAll("[data-tog]").forEach(function(b){ b.onclick=function(){ var p=DB.platforms.find(function(x){return x.id===b.dataset.tog;}); p.active=p.active?0:1; save(); refresh(); }; });
@@ -8282,6 +8296,7 @@ function renderCfgPlat(box){
       if(!ok) return;
       DB.platforms=DB.platforms.filter(function(x){return x.id!==p.id;}); save(); refresh();
     }; });
+    document.querySelectorAll("[data-plattipo]").forEach(function(s){ s.onchange=function(){ var pp=(DB.platforms||[]).filter(function(x){ return x.id===s.dataset.plattipo; })[0]; if(!pp) return; pp.tipo=s.value==="particular"?"particular":"app"; save(); }; });
     document.querySelectorAll("[data-platacert]").forEach(function(s){ s.onchange=function(){ var pp=(DB.platforms||[]).filter(function(x){ return x.id===s.dataset.platacert; })[0]; if(!pp) return; pp.acertar=s.value==="aparte"?"aparte":"desconta"; save(); }; });
     document.querySelectorAll("[data-platconta]").forEach(function(s){ s.onchange=function(){ var pp=null; for(var _i=0;_i<DB.platforms.length;_i++){ if(DB.platforms[_i].id===s.dataset.platconta){ pp=DB.platforms[_i]; break; } } if(!pp) return; pp.contaRecebimento=s.value||null; save(); refresh(); }; });
   }
@@ -11881,6 +11896,8 @@ function titBaixaCatTxt(b){ var _p=[]; try{ if((Number(b.juros)||0)>0){ _p.push(
 function isTituloUber(t){ return !!(t&&t.origem==="despesa-uber"); }
 function tituloDoDespesa(expId){ if(!expId) return null; var _l=DB.titulos||[]; for(var i=0;i<_l.length;i++){ if(_l[i].origem==="despesa-uber"&&String(_l[i].vinculo||"")===String(expId)) return _l[i]; } return null; }
 function despesaDoTitulo(t){ if(!t||!t.vinculo) return null; var _l=DB.expenses||[]; for(var i=0;i<_l.length;i++){ if(String(_l[i].id)===String(t.vinculo)) return _l[i]; } return null; }
+/* plataforma que é aplicativo (Uber, 99…) — corrida particular não entra nas comparações entre apps */
+function platEhApp(pid){ var p=(DB.platforms||[]).find(function(x){ return x&&x.id===pid; }); return !(p&&p.tipo==="particular"); }
 function uberCentroId(){ var _l=DB.centros||[], i; for(i=0;i<_l.length;i++){ if(_l[i]&&_l[i].papel==="trabalho") return _l[i].id; } /* centro do trabalho pelo papel fixo (o nome pode mudar) */ for(i=0;i<_l.length;i++){ try{ if(normName(_l[i].nome||"")==="uber") return _l[i].id; }catch(e){rmLogErr(e)} } for(i=0;i<_l.length;i++){ if(_l[i].ativo) return _l[i].id; } return null; }
 function tituloDescDeDespesa(e){ try{ var d=String((e&&e.description)||"").trim().slice(0,80); if(d) return d; var c=catById(e.category_id); if(c) return String((c.icon?c.icon+" ":"")+c.name).slice(0,80); }catch(_){rmLogErr(_)} return "Despesa Uber"; }
 function criarTituloDeDespesa(exp){
@@ -14484,7 +14501,7 @@ function f5Blocos(){
   var sub=(v==="financeiro")?String(window.__finTab||0):"";
   var cards=Array.prototype.filter.call(vc.querySelectorAll(".card"),function(c){
     if(c.parentElement&&c.parentElement.closest(".card")) return false;
-    if(c.classList.contains("dash-hero")||c.classList.contains("bkp-alert")||c.classList.contains("warn")||c.classList.contains("fiscal-aviso")||c.classList.contains("ev-aviso")) return false;
+    if(c.classList.contains("dash-hero")||c.classList.contains("bkp-alert")||c.classList.contains("warn")||c.classList.contains("fiscal-aviso")||c.classList.contains("ev-aviso")||c.classList.contains("clima-aviso")) return false;
     if(c.classList.contains("nova-form")||c.classList.contains("rec-form")||c.classList.contains("desp-form")||c.classList.contains("rc-form")||c.classList.contains("rc-dist")) return false; /* formulário principal da tela não recolhe */
     return !!c.querySelector(":scope > h3");
   });
@@ -17197,7 +17214,7 @@ function phCalc(dias){
   if(PH_MEMO.v[dias]) return PH_MEMO.v[dias];
   var ini=dias>0?isoAddDays(t0,-dias):"0000-00-00", cel={}, tot={}, nRides=0;
   (DB.rides||[]).forEach(function(r){
-    if(!r||!r.date||r.date>t0||r.date<ini||!r.platform_id) return;
+    if(!r||!r.date||r.date>t0||r.date<ini||!r.platform_id||!platEhApp(r.platform_id)) return; /* particular não é app */
     var sm=parseHM(r.start_time), em=r.end_time?parseHM(r.end_time):null; if(sm==null||em==null) return;
     var dur=(em-sm+1440)%1440; if(dur<3||dur>240) return;
     var wd=parseWeekday(r.date); if(wd==null) return;
@@ -18845,6 +18862,102 @@ document.addEventListener("focusout",function(e){
   if(n!==el.value){ el.value=n; try{ el.dispatchEvent(new Event("input",{bubbles:true})); }catch(_e){} }
 },true);
 try{ window.RM.dataMascara=dataMascara; window.RM.dataCompletar=dataCompletar; }catch(e){}
+/* ---------- CLIMA × GANHOS: o app aprende quanto o clima mexe no valor e na demanda (28/11/2026) ----------
+   1) Guarda o clima de cada hora (DB.wx.hora["AAAA-MM-DD"][0..23] = {c:"chuva"|"nublado"|"limpo", t:°C, r:mm}):
+      - ao buscar o clima (OpenWeather), a hora atual;
+      - os dias já trabalhados que faltam, pelo Open-Meteo (gratuito, sem chave; recebe só a latitude/longitude da
+        cidade, como o OpenWeather — decisão do dono, 28/11/2026). Histórico: archive-api; última semana: forecast
+        com past_days. No máximo uma busca por dia.
+   2) Aprende por faixa de horário × clima, com as horas TRABALHADAS (turno menos pausas) e as corridas que começaram
+      nelas: R$/hora (ganho ÷ horas) e demanda (corridas por hora). Compara chuva × sem chuva na mesma faixa.
+   3) Só afirma com base mínima (CG_MIN_H horas de chuva e o dobro sem chuva na faixa); antes disso mostra "aprendendo".
+   4) Cartão no Início: só a hora/clima de agora (e chuva prevista nas próximas 3 h). */
+var CG_FAIXAS=[[0,6,"madrugada"],[6,9,"manhã cedo"],[9,12,"manhã"],[12,15,"início da tarde"],[15,18,"fim da tarde"],[18,21,"noite"],[21,24,"noite tarde"]];
+var CG_MIN_H=8, CG_CHUVA_COD={51:1,53:1,55:1,56:1,57:1,61:1,63:1,65:1,66:1,67:1,80:1,81:1,82:1,95:1,96:1,99:1};
+function cgFaixa(h){ for(var i=0;i<CG_FAIXAS.length;i++){ if(h>=CG_FAIXAS[i][0]&&h<CG_FAIXAS[i][1]) return i; } return 0; }
+function cgClasse(cod,mm){ if((Number(mm)||0)>=0.3||CG_CHUVA_COD[cod]) return "chuva"; if(cod===2||cod===3||cod===45||cod===48) return "nublado"; return "limpo"; }
+function cgNomeClima(c){ return c==="chuva"?"🌧️ chuva":(c==="nublado"?"☁️ nublado":"☀️ céu limpo"); }
+function cgHoraGrava(dia,h,o){ if(!DB.wx.hora||typeof DB.wx.hora!=="object") DB.wx.hora={}; var L=DB.wx.hora[dia]; if(!Array.isArray(L)){ L=new Array(24).fill(null); DB.wx.hora[dia]=L; } L[h]=o; }
+function cgClimaDe(dia,h){ try{ var L=DB.wx.hora&&DB.wx.hora[dia]; if(L&&L[h]) return L[h]; var a=DB.wx.act&&DB.wx.act[dia]; if(a&&a[h]) return {c:cgClasse(a[h].c,a[h].r),t:a[h].t,r:a[h].r}; }catch(e){} return null; }
+/* ---- 1) completar o histórico pelo Open-Meteo ---- */
+var cgBuscando=false;
+async function cgCompletarHistorico(forcar){
+  if(cgBuscando) return {ok:false,msg:"já buscando"};
+  var cfg=DB.wx&&DB.wx.cfg||{}, lat=parseFloat(String(cfg.lat||"").replace(",",".")), lon=parseFloat(String(cfg.lon||"").replace(",","."));
+  if(!(lat>=-90&&lat<=90&&lon>=-180&&lon<=180)) return {ok:false,msg:"Sem a localização da cidade (Configurações › Clima e localização)."};
+  var hoje=todayISO(); if(!forcar&&DB.wx.horaAt===hoje) return {ok:true,msg:"já atualizado hoje"};
+  var dias={}; (DB.shifts||[]).forEach(function(s){ var w=shiftWorkday(s); if(w<=hoje){ dias[w]=1; var d2=somaDiasISO(w,1); if(d2<=hoje) dias[d2]=1; } });
+  var faltam=Object.keys(dias).filter(function(d){ var L=DB.wx.hora&&DB.wx.hora[d]; return !(Array.isArray(L)&&L.filter(Boolean).length>=20); }).sort();
+  if(!faltam.length){ DB.wx.horaAt=hoje; return {ok:true,msg:"nada faltando"}; }
+  cgBuscando=true; var n=0;
+  try{
+    var limiteArq=somaDiasISO(hoje,-6), q="latitude="+lat.toFixed(4)+"&longitude="+lon.toFixed(4)+"&hourly=temperature_2m,precipitation,weather_code&timezone=auto";
+    var grava=function(j){ var H=j&&j.hourly; if(!H||!Array.isArray(H.time)) return; for(var i=0;i<H.time.length;i++){ var tt=String(H.time[i]), d=tt.slice(0,10), h=Number(tt.slice(11,13)); if(!dias[d]) continue; cgHoraGrava(d,h,{c:cgClasse(Number(H.weather_code[i]),H.precipitation[i]),t:H.temperature_2m[i]!=null?Math.round(H.temperature_2m[i]*10)/10:null,r:Math.round((Number(H.precipitation[i])||0)*10)/10}); n++; } };
+    var antigos=faltam.filter(function(d){ return d<limiteArq; });
+    if(antigos.length){ var r1=await fetch("https://archive-api.open-meteo.com/v1/archive?"+q+"&start_date="+antigos[0]+"&end_date="+antigos[antigos.length-1],{signal:wxTimeout(25000)}); grava(await r1.json()); }
+    if(faltam.some(function(d){ return d>=limiteArq; })){ var r2=await fetch("https://api.open-meteo.com/v1/forecast?"+q+"&past_days=7&forecast_days=1",{signal:wxTimeout(20000)}); grava(await r2.json()); }
+    DB.wx.horaAt=hoje; save();
+    return {ok:true,msg:n+" hora(s) de clima registradas"};
+  }catch(e){ return {ok:false,msg:"Não foi possível buscar o histórico do clima agora (sem internet?)."}; }
+  finally{ cgBuscando=false; }
+}
+/* ---- 2) aprender ---- */
+var CG_MEMO={k:null,v:null};
+function cgAprender(){
+  var k=DB_MEM_REV+"|"+(DB.shifts||[]).length+"|"+Object.keys(DB.wx.hora||{}).length; if(CG_MEMO.k===k) return CG_MEMO.v;
+  var A={}; /* A[faixa][clima] = {h:horas, g:ganho, n:corridas} */
+  var add=function(f,c,h,g,n){ var x=(A[f]=A[f]||{}); var y=(x[c]=x[c]||{h:0,g:0,n:0}); y.h+=h; y.g+=g; y.n+=n; };
+  var minDe=function(hm){ return +hm.slice(0,2)*60+ +hm.slice(3); };
+  (DB.shifts||[]).forEach(function(s){ if(!s.end_time) return;
+    var a=minDe(s.start_time), b=minDe(s.end_time); if(b<=a) b+=1440;
+    var pz=(s.pausas||[]).filter(function(p){ return p.ini&&p.fim; }).map(function(p){ var x=minDe(p.ini), y=minDe(p.fim); if(x<a) x+=1440; if(y<x) y+=1440; return [x,y]; });
+    var rs=shiftRides(s).filter(function(r){ return platEhApp(r.platform_id); });
+    for(var m=a-(a%60); m<b; m+=60){ var ini=Math.max(m,a), fim=Math.min(m+60,b), trab=fim-ini; pz.forEach(function(p){ trab-=Math.max(0,Math.min(fim,p[1])-Math.max(ini,p[0])); }); if(trab<=5) continue;
+      var dia=m>=1440?somaDiasISO(s.date,1):s.date, h=Math.floor(m/60)%24, cl=cgClimaDe(dia,h); if(!cl) continue;
+      var g=0,n=0; rs.forEach(function(r){ var t=minDe(r.start_time); if(t<a) t+=1440; if(t>=m&&t<m+60){ g+=rideTotal(r); n++; } });
+      add(cgFaixa(h),cl.c,trab/60,g,n); }
+  });
+  CG_MEMO={k:k,v:A}; return A;
+}
+/* estimativa para uma faixa e um clima: compara com "sem chuva" (ou com o geral) na mesma faixa */
+function cgEstimativa(f,clima){
+  var A=cgAprender()[f]||{}, x=A[clima]||{h:0,g:0,n:0};
+  var base={h:0,g:0,n:0}; Object.keys(A).forEach(function(c){ if(clima==="chuva"?c!=="chuva":c!==clima){ base.h+=A[c].h; base.g+=A[c].g; base.n+=A[c].n; } });
+  var ok=x.h>=CG_MIN_H&&base.h>=CG_MIN_H*2, conf=x.h>=CG_MIN_H*4?"alta":(x.h>=CG_MIN_H*2?"média":"baixa");
+  var rh=x.h?x.g/x.h:null, rb=base.h?base.g/base.h:null, dh=x.h?x.n/x.h:null, db=base.h?base.n/base.h:null;
+  return {ok:ok,conf:conf,horas:Math.round(x.h*10)/10,rh:rh,rhBase:rb,dem:dh,demBase:db,valorPct:(rh!=null&&rb)?(rh/rb-1)*100:null,demPct:(dh!=null&&db)?(dh/db-1)*100:null};
+}
+/* ---- 3) cartão do Início: só a hora e o clima de agora ---- */
+function cgAgora(){ var d=todayISO(), h=new Date().getHours(), a=null; try{ var L=DB.wx.act&&DB.wx.act[d]; for(var k=h;k>=Math.max(0,h-2)&&!a;k--){ if(L&&L[k]) a=L[k]; } }catch(e){}
+  if(a) return {c:cgClasse(a.c,a.r),t:a.t,fonte:"agora"}; var f=null; try{ f=wxGet(d,h); }catch(e){} if(f) return {c:(f.p>=50||(f.r||0)>=0.3)?"chuva":cgClasse(f.c,0),t:f.t,fonte:"previsão"}; return null; }
+function cgChuvaProxima(){ var d=todayISO(), h=new Date().getHours(); for(var k=1;k<=3;k++){ var hh=h+k, dd=d; if(hh>=24){ hh-=24; dd=somaDiasISO(d,1); } var f=null; try{ f=wxGet(dd,hh); }catch(e){} if(f&&(f.p>=60||(f.r||0)>=0.5)) return {h:hh,p:f.p}; } return null; }
+function cgCardHTML(){
+  try{
+    var ag=cgAgora(); if(!ag) return "";
+    var h=new Date().getHours(), f=cgFaixa(h), fx=CG_FAIXAS[f], br=function(v){ return (v>=0?"+":"")+Math.round(v)+"%"; };
+    var e=cgEstimativa(f,ag.c), prox=ag.c!=="chuva"?cgChuvaProxima():null, eChuva=prox?cgEstimativa(cgFaixa(prox.h),"chuva"):null;
+    var t='<div class="card clima-aviso" role="note"><div class="cg-l1">'+esc(cgNomeClima(ag.c))+(ag.t!=null?' · '+esc(String(Math.round(ag.t)))+'°C':'')+' · '+esc(fx[2])+' ('+fx[0]+'h–'+fx[1]+'h)</div>';
+    var _pc=ag.c==="chuva"; /* sem chuva: mostra o normal do horário (sem %); o ganho extra da chuva vai na linha de baixo */
+    if(!_pc&&e.ok){ e.valorPct=null; e.demPct=null; }
+    if(e.ok&&e.rh!=null) t+='<div class="cg-l2">Nesse horário, com '+(ag.c==="chuva"?"chuva":(ag.c==="nublado"?"tempo nublado":"céu limpo"))+', você costuma ganhar <b>'+esc(BRL(e.rh))+'/h</b>'+(e.valorPct!=null&&Math.abs(e.valorPct)>=3?' (<b class="'+(e.valorPct>=0?"pos":"neg")+'">'+br(e.valorPct)+'</b> no valor)':'')+(e.dem!=null?' e fazer <b>'+String(e.dem.toFixed(1)).replace(".",",")+' corridas/h</b>'+(e.demPct!=null&&Math.abs(e.demPct)>=3?' (<b class="'+(e.demPct>=0?"pos":"neg")+'">'+br(e.demPct)+'</b> na demanda)':''):'')+'.</div><div class="cg-l3">Base: '+String(e.horas).replace(".",",")+' h trabalhadas nessas condições · confiança '+e.conf+'.</div>';
+    else t+='<div class="cg-l3">Aprendendo como '+(ag.c==="chuva"?"a chuva":"esse clima")+' mexe nos seus ganhos nesse horário: '+String(e.horas).replace(".",",")+' de '+CG_MIN_H+' h trabalhadas.</div>';
+    if(!_pc&&!prox){ var _ec=cgEstimativa(f,"chuva"); if(_ec.ok&&_ec.valorPct!=null) t+='<div class="cg-l3">Se chover nesse horário, costuma render <b class="'+(_ec.valorPct>=0?"pos":"neg")+'">'+br(_ec.valorPct)+'</b> no valor e '+br(_ec.demPct||0)+' na demanda.</div>'; }
+    if(prox) t+='<div class="cg-l3">🌧️ Chuva prevista por volta das '+prox.h+'h ('+prox.p+'%)'+(eChuva&&eChuva.ok&&eChuva.valorPct!=null?': costuma render <b class="'+(eChuva.valorPct>=0?"pos":"neg")+'">'+br(eChuva.valorPct)+'</b> no valor e '+br(eChuva.demPct||0)+' na demanda nesse horário.':'.')+'</div>';
+    return t+'</div>';
+  }catch(err){ rmLogErr(err,"clima-ganhos"); return ""; }
+}
+/* tabela completa (Previsão › Clima × ganhos) */
+function cgTabelaHTML(){
+  var A=cgAprender(), h='<div class="card cg-tab"><h3>Clima × ganhos — o que o app aprendeu<button type="button" class="infoBtn" data-tip="R$ por hora trabalhada e corridas por hora em cada faixa de horário, por clima. Compara com o mesmo horário sem chuva. Só mostra % quando há pelo menos '+CG_MIN_H+' h de chuva na faixa." aria-label="Sobre">i</button></h3>';
+  h+='<div class="tblwrap"><table class="tbl"><thead><tr><th class="l">Horário</th><th>☀️/☁️ sem chuva</th><th>🌧️ com chuva</th><th>Efeito da chuva</th></tr></thead><tbody>';
+  CG_FAIXAS.forEach(function(fx,i){ var x=A[i]||{}, s={h:0,g:0,n:0}; ["limpo","nublado"].forEach(function(c){ if(x[c]){ s.h+=x[c].h; s.g+=x[c].g; s.n+=x[c].n; } }); var c=x.chuva||{h:0,g:0,n:0}; if(s.h+c.h<3) return; /* faixa quase sem trabalho: não mostra */
+    var cel=function(o){ return o.h?esc(BRL(o.g/o.h))+'/h · '+String((o.n/o.h).toFixed(1)).replace(".",",")+' corr/h<br><span class="tip">'+String(Math.round(o.h))+' h</span>':'—'; };
+    var e=cgEstimativa(i,"chuva"); h+='<tr><td class="l">'+esc(fx[2])+'<br><span class="tip">'+fx[0]+'h–'+fx[1]+'h</span></td><td>'+cel(s)+'</td><td>'+cel(c)+'</td><td>'+(e.ok&&e.valorPct!=null?'valor '+(e.valorPct>=0?"+":"")+Math.round(e.valorPct)+'% · demanda '+(e.demPct>=0?"+":"")+Math.round(e.demPct||0)+'%<br><span class="tip">confiança '+e.conf+'</span>':'<span class="tip">aprendendo ('+String(Math.round(c.h))+'/'+CG_MIN_H+' h)</span>')+'</td></tr>'; });
+  h+='</tbody></table></div><div class="btnrow"><button type="button" class="btn sm accent" id="cgBuscar">Completar histórico do clima (Open-Meteo)</button><span class="tip" id="cgMsg"></span></div></div>';
+  return h;
+}
+function cgTabelaLigar(){ var b=document.getElementById("cgBuscar"); if(b) b.onclick=async function(){ var m=document.getElementById("cgMsg"); m.textContent="Buscando…"; var r=await cgCompletarHistorico(true); m.textContent=r.msg; if(r.ok){ CG_MEMO.k=null; show(current); } }; }
+try{ window.RM.cgAprender=cgAprender; window.RM.cgEstimativa=cgEstimativa; window.RM.cgCardHTML=cgCardHTML; window.RM.cgClasse=cgClasse; window.RM.cgCompletarHistorico=cgCompletarHistorico; }catch(e){}
 /* primeira tela: só depois de todos os módulos (antes, cartões que usam listas definidas mais abaixo falhavam na abertura) */
 try{ show(current||"dashboard"); }catch(e){ rmLogErr(e,"primeira-tela"); }
 
