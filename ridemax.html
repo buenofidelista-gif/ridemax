@@ -2161,6 +2161,28 @@ body:has(.tit-panel-bk) #qrFab{display:none!important}
 .clima-aviso .cg-l2{margin-top:4px}
 .clima-aviso .cg-l3{margin-top:4px;color:var(--muted);font-size:.9em}
 .clima-aviso .pos,.cg-tab .pos{color:var(--green)} .clima-aviso .neg,.cg-tab .neg{color:#e0695c}
+
+/* Clima × ganhos: tabela em blocos */
+.cg-tab .cg-intro{margin:0 0 8px}
+.cg-t th,.cg-t td{text-align:center;vertical-align:middle}
+.cg-t th.l,.cg-t td.l{text-align:left}
+.cg-t .cg-grp{border-bottom:1px solid var(--border);color:var(--text);font-weight:600}
+.cg-t td:nth-child(4),.cg-t th:nth-child(4){border-right:1px solid var(--border)}
+.cg-t tbody td:nth-child(7){border-right:1px solid var(--border)}
+.cg-selo{display:inline-block;min-width:58px;padding:2px 8px;border-radius:999px;font-weight:700;font-size:.85em;white-space:nowrap}
+.cg-selo.cg-up{background:color-mix(in srgb,var(--green) 22%,transparent);color:var(--green)}
+.cg-selo.cg-dn{background:color-mix(in srgb,#e0695c 22%,transparent);color:#e0695c}
+.cg-selo.cg-eq{background:var(--accent);color:var(--muted)}
+.cg-selo.cg-ap{background:none;color:var(--muted);font-weight:400}
+.cg-base{white-space:nowrap}
+.cg-conf{font-size:.85em}
+.cg-conf.cg-alta{color:var(--green)} .cg-conf.cg-média{color:var(--yellow)} .cg-conf.cg-baixa{color:#cf8a46} .cg-conf.cg-aprendendo{color:var(--muted)}
+.cg-rodape{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:10px}
+@media(min-width:861px){ .cg-t th,.cg-t td{padding-left:6px;padding-right:6px} .cg-t td.cg-base{white-space:nowrap} }
+
+/* Clima × ganhos no PC: largura toda abaixo das colunas; a tela rola inteira */
+@media(min-width:1100px){ .clima-main.com-cg{overflow-y:auto;grid-template-rows:auto auto;align-content:start} .clima-main.com-cg>.clima-left,.clima-main.com-cg>.clima-right{overflow:visible} .clima-main>.cg-tab{grid-column:1/-1;margin:0} .clima-main>.cg-tab .tblwrap{max-height:none} }
+.cg-t td.cg-base,.cg-t td.cg-base *,.cg-t td.l b{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -7844,9 +7866,11 @@ function rClima(){
       var right=document.createElement("div"); right.className="clima-right";
       left.appendChild(kids[0]);
       var tipCard=(kids.length>2)?kids[kids.length-1]:null;
-      for(var i=1;i<kids.length-(tipCard?1:0);i++){ right.appendChild(kids[i]); }
+      var cgTab=null; /* Clima × ganhos ocupa a largura toda, abaixo das duas colunas */
+      for(var i=1;i<kids.length-(tipCard?1:0);i++){ if(kids[i].classList&&kids[i].classList.contains("cg-tab")){ cgTab=kids[i]; continue; } right.appendChild(kids[i]); }
       if(tipCard) left.appendChild(tipCard);
       main.appendChild(left); main.appendChild(right);
+      if(cgTab){ main.classList.add("com-cg"); main.appendChild(cgTab); }
       outer.appendChild(main);
       viewCtn.innerHTML=""; viewCtn.appendChild(outer);
     }catch(e){rmLogErr(e)}
@@ -18948,14 +18972,23 @@ function cgCardHTML(){
 }
 /* tabela completa (Previsão › Clima × ganhos) */
 function cgTabelaHTML(){
-  var A=cgAprender(), h='<div class="card cg-tab"><h3>Clima × ganhos — o que o app aprendeu<button type="button" class="infoBtn" data-tip="R$ por hora trabalhada e corridas por hora em cada faixa de horário, por clima. Compara com o mesmo horário sem chuva. Só mostra % quando há pelo menos '+CG_MIN_H+' h de chuva na faixa." aria-label="Sobre">i</button></h3>';
-  h+='<div class="tblwrap"><table class="tbl"><thead><tr><th class="l">Horário</th><th>☀️/☁️ sem chuva</th><th>🌧️ com chuva</th><th>Efeito da chuva</th></tr></thead><tbody>';
-  CG_FAIXAS.forEach(function(fx,i){ var x=A[i]||{}, s={h:0,g:0,n:0}; ["limpo","nublado"].forEach(function(c){ if(x[c]){ s.h+=x[c].h; s.g+=x[c].g; s.n+=x[c].n; } }); var c=x.chuva||{h:0,g:0,n:0}; if(s.h+c.h<3) return; /* faixa quase sem trabalho: não mostra */
-    var cel=function(o){ return o.h?esc(BRL(o.g/o.h))+'/h · '+String((o.n/o.h).toFixed(1)).replace(".",",")+' corr/h<br><span class="tip">'+String(Math.round(o.h))+' h</span>':'—'; };
-    var e=cgEstimativa(i,"chuva"); h+='<tr><td class="l">'+esc(fx[2])+'<br><span class="tip">'+fx[0]+'h–'+fx[1]+'h</span></td><td>'+cel(s)+'</td><td>'+cel(c)+'</td><td>'+(e.ok&&e.valorPct!=null?'valor '+(e.valorPct>=0?"+":"")+Math.round(e.valorPct)+'% · demanda '+(e.demPct>=0?"+":"")+Math.round(e.demPct||0)+'%<br><span class="tip">confiança '+e.conf+'</span>':'<span class="tip">aprendendo ('+String(Math.round(c.h))+'/'+CG_MIN_H+' h)</span>')+'</td></tr>'; });
-  h+='</tbody></table></div><div class="btnrow"><button type="button" class="btn sm accent" id="cgBuscar">Completar histórico do clima (Open-Meteo)</button><span class="tip" id="cgMsg"></span></div></div>';
-  return h;
+  /* organizada em blocos: Valor por hora | Corridas por hora (sem chuva, com chuva, efeito) e a base de horas */
+  var A=cgAprender(), linhas=[];
+  CG_FAIXAS.forEach(function(fx,i){ var x=A[i]||{}, s={h:0,g:0,n:0}; ["limpo","nublado"].forEach(function(k){ if(x[k]){ s.h+=x[k].h; s.g+=x[k].g; s.n+=x[k].n; } }); var ch=x.chuva||{h:0,g:0,n:0}; if(s.h+ch.h<3) return; linhas.push({fx:fx,s:s,c:ch,e:cgEstimativa(i,"chuva")}); });
+  var rh=function(o){ return o.h>=1?esc(BRL(o.g/o.h)):'<span class="tip">—</span>'; }, dm=function(o){ return o.h>=1?String((o.n/o.h).toFixed(1)).replace(".",","):'<span class="tip">—</span>'; };
+  var selo=function(v,ok){ if(!ok||v==null) return '<span class="cg-selo cg-ap">aprendendo</span>'; var r=Math.round(v); return '<span class="cg-selo '+(r>0?"cg-up":(r<0?"cg-dn":"cg-eq"))+'">'+(r>0?"▲ +":(r<0?"▼ ":""))+r+'%</span>'; };
+  var h='<div class="card cg-tab"><h3>Clima × ganhos — o que o app aprendeu<button type="button" class="infoBtn" data-tip="Só horas trabalhadas (turno menos pausas) e corridas de aplicativo. Compara o mesmo horário com e sem chuva. O efeito só aparece com pelo menos '+CG_MIN_H+' h de chuva no horário; a confiança sobe com mais horas." aria-label="Sobre">i</button></h3>'
+    +'<p class="tip cg-intro">Quanto a chuva muda o seu ganho por hora e o número de corridas, em cada horário do dia.</p>';
+  if(!linhas.length) return h+'<div class="empty">Ainda sem horas trabalhadas com o clima registrado. Toque em <b>Completar histórico do clima</b> abaixo ou aguarde os próximos turnos.</div>'+cgRodapeHTML()+'</div>';
+  h+='<div class="tblwrap"><table class="tbl cg-t"><thead><tr><th class="l">Horário</th><th>💰 R$/h sem chuva</th><th>💰 R$/h com chuva</th><th>Efeito no valor</th><th>🚗 Corridas/h sem chuva</th><th>🚗 Corridas/h com chuva</th><th>Efeito na demanda</th><th title="Confiança e horas trabalhadas com chuva · sem chuva">Base <br><span class="tip">(h chuva · sem)</span></th></tr></thead><tbody>';
+  linhas.forEach(function(L){ var e=L.e;
+    h+='<tr><td class="l"><b>'+esc(L.fx[2].charAt(0).toUpperCase()+L.fx[2].slice(1))+'</b><br><span class="tip">'+L.fx[0]+'h–'+L.fx[1]+'h</span></td>'
+      +'<td>'+rh(L.s)+'</td><td>'+rh(L.c)+'</td><td>'+selo(e.valorPct,e.ok)+'</td>'
+      +'<td>'+dm(L.s)+'</td><td>'+dm(L.c)+'</td><td>'+selo(e.demPct,e.ok)+'</td>'
+      +'<td class="cg-base"><span class="cg-conf cg-'+(e.ok?e.conf:"aprendendo")+'" title="Confiança">'+(e.ok?"● "+e.conf:"○ "+Math.round(L.c.h)+" de "+CG_MIN_H+" h")+'</span><br><span class="tip" title="Horas trabalhadas com chuva · sem chuva nesse horário">'+Math.round(L.c.h)+' h · '+Math.round(L.s.h)+' h</span></td></tr>'; });
+  return h+'</tbody></table></div>'+cgRodapeHTML()+'</div>';
 }
+function cgRodapeHTML(){ var at=DB.wx&&DB.wx.horaAt; return '<div class="cg-rodape"><span class="tip" id="cgMsg">'+(at?"Histórico do clima completado em "+esc(isoToBR(at))+".":"Histórico do clima ainda não completado.")+' Fonte: OpenWeather (hora atual) e Open-Meteo (dias trabalhados).</span><button type="button" class="btn sm accent" id="cgBuscar">Completar histórico do clima</button></div>'; }
 function cgTabelaLigar(){ var b=document.getElementById("cgBuscar"); if(b) b.onclick=async function(){ var m=document.getElementById("cgMsg"); m.textContent="Buscando…"; var r=await cgCompletarHistorico(true); m.textContent=r.msg; if(r.ok){ CG_MEMO.k=null; show(current); } }; }
 try{ window.RM.cgAprender=cgAprender; window.RM.cgEstimativa=cgEstimativa; window.RM.cgCardHTML=cgCardHTML; window.RM.cgClasse=cgClasse; window.RM.cgCompletarHistorico=cgCompletarHistorico; }catch(e){}
 /* primeira tela: só depois de todos os módulos (antes, cartões que usam listas definidas mais abaixo falhavam na abertura) */
