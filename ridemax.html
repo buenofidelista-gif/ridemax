@@ -2791,7 +2791,7 @@ function seed(){
     expense_categories: _cats,
     expenses:[], recharges:[], repasses:[],
     contas:[{id:uid()+"carteira",nome:"Carteira",tipo:"carteira",saldoInicial:0,dataSaldoInicial:todayISO(),ativa:1,protegida:1,reserva:0}],
-    centros:[{id:uid()+"cc1",nome:"Uber",ativo:1},{id:uid()+"cc2",nome:"Pessoal",ativo:1},{id:uid()+"cc3",nome:"Investimentos",ativo:1}],
+    centros:[{id:uid()+"cc1",nome:"Motorista",ativo:1,papel:"trabalho"},{id:uid()+"cc2",nome:"Pessoal",ativo:1,papel:"pessoal"},{id:uid()+"cc3",nome:"Investimentos",ativo:1,papel:"invest"}],
     transferencias:[],
     invMovs:[],
     invCotacoes:null,
@@ -3116,8 +3116,12 @@ function sanitizeDB(d, rawBackup){
       var _ccSrc=d.centros.slice(), _ccOk=[], _ccI;
       for(_ccI=0;_ccI<_ccSrc.length;_ccI++){ var _ccX=_ccSrc[_ccI]; if(_ccX&&typeof _ccX.nome==="string"&&_ccX.nome.trim()){ _ccOk.push(_ccX); } else { noteDropped("centros",_ccX); } }
       d.centros=_ccOk.map(function(c){
-        return {id:String(c.id||uid()),nome:String(c.nome).slice(0,40),ativo:(c.ativo==null)?1:(c.ativo?1:0)};
+        return {id:String(c.id||uid()),nome:String(c.nome).slice(0,40),ativo:(c.ativo==null)?1:(c.ativo?1:0),papel:(c.papel==="trabalho"||c.papel==="pessoal"||c.papel==="invest")?c.papel:null};
       });
+      /* papel fixo de cada centro (27/11/2026): renomear o centro (ex.: Uber → Motorista) não muda o que ele é.
+         Base antiga sem papel: acha pelo nome; o do trabalho, se renomeado, pelo id de fábrica (cc1). */
+      var _pp=function(papel,nomes,suf){ if(d.centros.some(function(c){ return c.papel===papel; })) return; var a=d.centros.filter(function(c){ return !c.papel&&nomes.indexOf(normName(c.nome||""))>=0; })[0]||(suf?d.centros.filter(function(c){ return !c.papel&&String(c.id).slice(-3)===suf; })[0]:null); if(a) a.papel=papel; };
+      _pp("trabalho",["uber","motorista","trabalho","corridas"],"cc1"); _pp("pessoal",["pessoal"],"cc2"); _pp("invest",["investimentos","investimento"],"cc3");
     }
   }catch(e){
     _fail("centros");
@@ -4548,18 +4552,19 @@ var NAV_BY_ID={}; NAV.forEach(function(n){ NAV_BY_ID[n[0]]={icon:n[1],label:n[2]
    fin = aba do Financeiro, hist = aba do Histórico, inv = aba de Investimentos, cfg = aba de Configurações. */
 var NAV_GROUPS=[
   {id:"g-dash",icon:"",label:"Início",single:"dashboard"},
-  {id:"g-uber",icon:"",label:"Uber",tabs:[
-    {view:"nova"},{view:"historico",hist:0,label:"Corridas"},{view:"historico",hist:1,label:"Turnos"},
-    {view:"recarga"},{view:"metas"},{view:"previsao"},{view:"eventos"},{view:"clima"},
-    {view:"financeiro",fin:2,label:"Análise"},
-    {view:"financeiro",fin:3,label:"Repasses"},
-    {view:"despesas"}
+  /* ordem de uso (27/11/2026): no dia — turno, corrida, recarga, despesa; planejar — metas, previsão, eventos, clima;
+     acompanhar — análise. Financeiro: semana — lotes (auditar), recebimentos, pagar e receber, transferência,
+     conciliação, saldos; mês — resumo (fechamento), DRE, por categoria, fluxo. */
+  {id:"g-uber",icon:"",label:"Motorista",tabs:[
+    {view:"historico",hist:1,label:"Turnos"},{view:"nova"},{view:"historico",hist:0,label:"Corridas"},
+    {view:"recarga"},{view:"despesas"},
+    {view:"metas"},{view:"previsao"},{view:"eventos"},{view:"clima"},
+    {view:"financeiro",fin:2,label:"Análise"}
   ]},
   {id:"g-fin",icon:"",label:"Financeiro",tabs:[
-    {view:"financeiro",fin:0,label:"Resumo"},
-    {view:"transferencias"},{view:"saldos",label:"Saldos e extrato"},{view:"conciliacao"},
-    {view:"contaspagar"},
-    {view:"financeiro",fin:1,label:"DRE"},
+    {view:"financeiro",fin:5,label:"Lotes dos turnos"},{view:"financeiro",fin:3,label:"Recebimentos"},
+    {view:"contaspagar"},{view:"transferencias"},{view:"conciliacao"},{view:"saldos",label:"Saldos e extrato"},
+    {view:"financeiro",fin:0,label:"Resumo"},{view:"financeiro",fin:1,label:"DRE"},
     {view:"relcat"},{view:"fluxo"}
   ]},
   {id:"g-inv",icon:"",label:"Investimentos",tabs:[
@@ -4593,7 +4598,7 @@ function navTabSub(t){ return t.fin!=null?String(t.fin):t.hist!=null?String(t.hi
 /* qual aba está aberta agora na tela v */
 function navSubAtual(v){
   try{
-    if(v==="financeiro") return String(Math.min(3,Math.max(0,Number(window.__finTab)||0)));
+    if(v==="financeiro"){ var _ft=Number(window.__finTab)||0; return String(_ft===5?5:Math.min(3,Math.max(0,_ft))); } /* 5 = Lotes dos turnos tem item próprio; 4 e 6 (antigos) marcam Recebimentos */
     if(v==="historico") return Number(window.__histTab)===1?"1":"0";
     if(v==="investimentos") return String(typeof window.__invTab==="number"?window.__invTab:4);
     if(v==="plataformas") return cfgGrupo(cfgTab);
@@ -4964,6 +4969,7 @@ try{ document.addEventListener("click",function(ev){ var b=ev.target&&ev.target.
 function show(v){
   if(v==="contas"||v==="centros"){ try{ cfgTab=v; }catch(e){rmLogErr(e)} v="plataformas"; }
   var _mudou=(v!==SHOW_ULT); SHOW_ULT=v;
+  if(_mudou&&v==="historico"){ try{ if(!window.__histTurnoManual) window.__histTurno=null; window.__histTurnoManual=false; window.__histTurnoEscolhido=false; }catch(e){} } /* Corridas: ao chegar na tela, o turno volta para o aberto (ou o mais recente) */
   current=v;
   try{ if(typeof qrFabSync==="function") qrFabSync(); }catch(e){rmLogErr(e)}
   try{ if(typeof navFechar==="function") navFechar(); if(typeof mbarSync==="function") mbarSync(); }catch(e){rmLogErr(e)}
@@ -5903,11 +5909,21 @@ function rHist(){
 function renderRides(box){
   box.innerHTML='<div class="toolbar hist-bar"><span>Per\u00EDodo:</span><select id="hF"><option>7 dias</option><option selected>30 dias</option><option>90 dias</option><option>Todos</option></select>'+buscaCampo("hBusca",histBusca,"🔎 Buscar: valor, data, plataforma, observação")+'<span id="hTot" style="color:var(--muted)"></span><span style="flex:1"></span><button class="btn teal sm" id="hImp">\u2B06 Importar CSV</button><button class="btn accent sm" id="hCsv">\u2B07 Exportar CSV</button><button class="btn yellow sm" id="hEdit">\u270F\uFE0F Editar</button><button class="btn sm hist-del" id="hDel">Excluir</button></div><div class="card hist-list-card"><div id="hCards"></div><div class="tblwrap"><table class="tbl"><thead><tr><th class="l">Plataforma</th><th class="l">Data/Hora</th><th>Valor</th><th>Gorjeta</th><th>Taxa</th><th class="hist-c">Pagto</th><th class="hist-d">Dist.</th><th class="hist-c">Obs.</th></tr></thead><tbody id="hBody"></tbody></table></div><div id="hPager"></div></div>';
   var sel=document.getElementById("hF"); sel.value=histFilter;
+  /* turno: primeiro escolhe o turno, depois vê as corridas dele (padrão: o aberto ou o mais recente) */
+  try{ sel.insertAdjacentHTML("afterend",'<span>Turno:</span><select id="hTurno" aria-label="Turno"></select>'); }catch(_eT){}
+  var selT=document.getElementById("hTurno");
+  var montaTurnos=function(){ if(!selT) return; var L=(DB.shifts||[]).slice().sort(function(a,b){ var x=shiftWorkday(a)+a.start_time, y=shiftWorkday(b)+b.start_time; return x<y?1:(x>y?-1:0); }).slice(0,60);
+    var atual=window.__histTurno; var _op0=openShift(); if(_op0&&atual&&atual!==_op0.id&&!window.__histTurnoEscolhido) atual=null; /* abriu turno novo: passa a mostrar ele, a não ser que você tenha escolhido outro */ if(atual==null){ var op=openShift(); atual=op?op.id:(L[0]?L[0].id:""); window.__histTurno=atual; }
+    if(atual&&!L.some(function(s){ return s.id===atual; })){ var sx=turnoById(atual); if(sx) L.unshift(sx); else { atual=""; window.__histTurno=""; } }
+    selT.innerHTML='<option value="">Todos os turnos</option>'+L.map(function(s){ return '<option value="'+esc(s.id)+'"'+(s.id===atual?" selected":"")+'>nº '+esc(String(s.num||"?"))+' · '+esc(isoToBR(shiftWorkday(s)).slice(0,5))+' '+esc(s.start_time)+'–'+esc(s.end_time||"aberto")+'</option>'; }).join(""); selT.value=atual||""; };
+  montaTurnos();
+  if(selT) selT.onchange=function(){ window.__histTurno=selT.value; window.__histTurnoEscolhido=true; histPage=1; refresh(); };
   var selected=null;
   function refresh(){
     histFilter=sel.value;
     var days={"7 dias":7,"30 dias":30,"90 dias":90,"Todos":99999}[histFilter]||30;
     var rows=(days>=9999?DB.rides.slice():DB.rides.filter(function(r){return r.date>=sinceISO(days)&&r.date<=todayISO();})).sort(function(a,b){return (a.date+a.start_time)<(b.date+b.start_time)?1:-1;});
+    var _tSel=window.__histTurno||""; if(_tSel){ rows=DB.rides.filter(function(r){ return r.turnoId===_tSel; }).sort(function(a,b){return (a.date+a.start_time)<(b.date+b.start_time)?1:-1;}); } /* turno escolhido: todas as corridas dele, sem limite de período */
     var _bT=buscaTermos(histBusca); if(_bT.length){ rows=DB.rides.filter(function(r){ return buscaCasa(buscaRideTexto(r),_bT); }).sort(function(a,b){return (a.date+a.start_time)<(b.date+b.start_time)?1:-1;}); }
     var _hasObs=rows.some(function(r){return ((r.notes||"").trim()!=="");});
     var _hasTip=rows.some(function(r){return (Number(r.tip)||0)>0;});
@@ -7773,7 +7789,7 @@ function wxCfgLigar(){
   document.getElementById("wxGo").onclick=async function(){
     wxLerForm(cfg); save();
     var m=document.getElementById("wxMsg"); m.style.color=""; m.textContent="⏳ Buscando...";
-    try{ await wxRefresh(); m.textContent="Previsão atualizada. Veja em Uber › Clima."; }
+    try{ await wxRefresh(); m.textContent="Previsão atualizada. Veja em Motorista › Clima."; }
     catch(e){ m.textContent=wxErrMsg(e); m.style.color="var(--red)"; }
   };
 }
@@ -8714,6 +8730,7 @@ function dreCentroIds(){
     for(var i=0;i<(DB.centros||[]).length;i++){
       var c=DB.centros[i]; if(!c) continue;
       var n=normName(c.nome||"");
+      if(c.papel==="trabalho"){ out.uber=c.id; continue; } if(c.papel==="pessoal"){ out.pessoal=c.id; continue; } if(c.papel==="invest"){ out.invest=c.id; continue; } /* papel fixo vale mais que o nome */
       if(n==="uber"&&!out.uber) out.uber=c.id;
       else if(n==="pessoal"&&!out.pessoal) out.pessoal=c.id;
       else if((n==="investimentos"||n==="investimento")&&!out.invest) out.invest=c.id;
@@ -9149,7 +9166,7 @@ function rDre(){
   var html='<div class="fit-screen fin-dre"><div class="fin-dre-bar"><div class="toolbar fin-dre-tools">'+dreVisSegHTML()+'<span>Período:</span><select id="dreF"><option value="mes">Este mês</option><option value="mesant">Mês passado</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="todos">Todo o período</option></select>'+dreCentroRegimeHTML()
     +'<span style="color:var(--muted)">'+esc(D.range.label)+' · '+isoToBR(D.range.ini)+' a '+isoToBR(D.range.fim)+'</span><span style="flex:1 1 auto;min-width:8px"></span><button type="button" class="btn sm green" id="dreNovoBtn">Novo lançamento</button><button type="button" class="btn sm accent" id="crBtn">Comprovante de renda (PDF)</button><button type="button" class="btn sm accent" id="irBtn">Relatório IRPF (PDF)</button></div></div>';
   /* etapa 5: o que ainda não foi auditado fica fora do resultado e aparece à parte */
-  if(!isCaixa&&D.naoAuditado>0.004) html+='<div class="dre-naoaud" role="note">⏳ <b>'+esc(BRL(D.naoAuditado))+'</b> em '+D.naoAuditadoN+' corrida(s) de turnos ainda não auditados — fora do resultado até o lote ser auditado (Financeiro › Repasses › Lotes dos turnos).</div>';
+  if(!isCaixa&&D.naoAuditado>0.004) html+='<div class="dre-naoaud" role="note">⏳ <b>'+esc(BRL(D.naoAuditado))+'</b> em '+D.naoAuditadoN+' corrida(s) de turnos ainda não auditados — fora do resultado até o lote ser auditado (Financeiro › Lotes dos turnos).</div>';
   if(isCaixa) html+='<div class="dre-naoaud" role="note">Realizado: dinheiro em mãos dos turnos com caixa conferido e recebimentos das plataformas, na data em que entraram.'+(D.dinNaoConferido>0.004?' ⏳ <b>'+esc(BRL(D.dinNaoConferido))+'</b> em dinheiro de turnos ainda não conferidos (já no saldo da Carteira).':'')+'</div>';
   html+='<div class="fin-dre-top"><div class="cards c4 fin-dre-cards">'
     +statCard("💰",BRL(D.brutaT),"Receita bruta","#4caf7d",D.nRides+" corridas")
@@ -9369,7 +9386,7 @@ function rDre(){
     if(DB.dre_manual[ix].ajMes){ var _am=DB.dre_manual[ix]; if(!(await customConfirm("Excluir o ajuste de mês fechado '"+String(_am.desc||"").slice(0,50)+"' ("+BRL(_am.amount)+")? Sai da DRE e o ajuste ligado sai do saldo da Carteira.","Excluir ajuste","Excluir"))) return;
       var _antM=DB.dre_manual.slice(), _antA=(DB.concAjustes||[]).slice(); DB.dre_manual=DB.dre_manual.filter(function(x){ return x.ajMes!==_am.ajMes; }); DB.concAjustes=(DB.concAjustes||[]).filter(function(x){ return x.ajMes!==_am.ajMes; });
       if(!save()){ DB.dre_manual=_antM; DB.concAjustes=_antA; customAlert(SAVE_FAIL_MSG,"Excluir ajuste"); return; } rDre(); return; }
-    if(DB.dre_manual[ix].receb){ customAlert("Este lançamento é a diferença ou a tarifa de um recebimento. Para tirar, desfaça o recebimento (Financeiro › Repasses › Recebimentos).","Lançamento manual"); return; }
+    if(DB.dre_manual[ix].receb){ customAlert("Este lançamento é a diferença ou a tarifa de um recebimento. Para tirar, desfaça o recebimento (Financeiro › Recebimentos).","Lançamento manual"); return; }
     var _xM=DB.dre_manual[ix], _okM=false; try{ _okM=await customConfirm("Excluir o lançamento manual '"+String(_xM.desc||"").slice(0,50)+"' de "+BRL(_xM.amount)+" ("+isoToBR(_xM.date)+")? Vai para a Lixeira.","Excluir lançamento","Excluir"); }catch(_e){ _okM=false; } if(!_okM) return;
     ix=DB.dre_manual.findIndex(function(x){return x.id===_delId;});
     var trashId=null, _del=null, _trashIx=-1;
@@ -9387,7 +9404,7 @@ function rDre(){
   document.querySelectorAll("[data-me]").forEach(function(b){ b.onclick=function(){
     var x=DB.dre_manual.find(function(y){return y.id===b.dataset.me;}); if(!x) return;
     if(x.ajMes){ customAlert("Este é um ajuste de mês fechado ligado ao saldo da Carteira: não se edita. Exclua e lance de novo, se precisar.","Lançamento manual"); return; }
-    if(x.receb){ customAlert("Este lançamento é a diferença ou a tarifa de um recebimento. Para mudar, desfaça o recebimento e lance de novo (Financeiro › Repasses › Recebimentos).","Lançamento manual"); return; }
+    if(x.receb){ customAlert("Este lançamento é a diferença ou a tarifa de um recebimento. Para mudar, desfaça o recebimento e lance de novo (Financeiro › Recebimentos).","Lançamento manual"); return; }
     dreEditId=x.id; drePanelOpen=true; rDre();
   }; });
   if(dreEditId){
@@ -9577,7 +9594,7 @@ function rCentros(){
   html+='<div class="card cco-side"><h3>Centros ('+list.length+')</h3><div class="tblwrap cco-list"><table class="tbl"><thead><tr><th>Centro</th><th>Status</th><th>Ações</th></tr></thead><tbody>';
   if(!list.length) html+='<tr><td colspan="3" style="color:var(--muted)">Nenhum centro. Crie o primeiro acima.</td></tr>';
   list.forEach(function(c){
-    html+='<tr><td class="l">'+esc(c.nome)+'</td><td>'+(c.ativo?"✅ Ativo":"⏸ Inativo")+'</td>'
+    html+='<tr><td class="l">'+esc(c.nome)+(c.papel==="trabalho"?' <span class="tip" title="Corridas, turnos, lotes e recebimentos são deste centro. Pode renomear à vontade.">(trabalho)</span>':'')+'</td><td>'+(c.ativo?"✅ Ativo":"⏸ Inativo")+'</td>'
       +'<td style="white-space:nowrap"><button class="btn sm yellow" data-ccoedit="'+esc(c.id)+'">✏️</button> <button class="btn sm '+(c.ativo?"yellow":"green")+'" data-ccotog="'+esc(c.id)+'">'+(c.ativo?"Inativar":"Ativar")+'</button> <button class="btn sm rowdel" data-ccodel="'+esc(c.id)+'">🗑</button></td></tr>';
   });
   html+='</tbody></table></div><p class="tip">⚠️ Centro com movimento não pode ser excluído — inative-o.</p></div></div>'+(isCfg?"":'</div>');
@@ -11235,7 +11252,7 @@ function wireConcLista(){
     var kind=ch.dataset.kind, k=ch.dataset.k, v=ch.checked?1:0, ok=false;
     if(kind==="baixa"){ var p=String(k).split(":"); var t=tituloById(p[0]); if(t){ var _bb=tituloBaixas(t); for(var i=0;i<_bb.length;i++){ if(_bb[i].id===p[1]){ _bb[i].conciliado=v; ok=true; break; } } } }
     else if(kind==="transf"){ var _tr=DB.transferencias||[]; for(var j=0;j<_tr.length;j++){ if(_tr[j].id===k){ _tr[j].conciliado=v; ok=true; break; } } }
-    else if(kind==="ajuste"){ var _aj=DB.concAjustes||[]; for(var q=0;q<_aj.length;q++){ if(_aj[q].id===k){ if(_aj[q].ajMes){ ch.checked=true; customAlert("Este ajuste vem de uma correção de mês fechado (lançada em dinheiro). Para tirar, exclua o lançamento na DRE (Lançamentos manuais): os dois saem juntos.","Ajuste de conciliação"); return; } if(_aj[q].receb){ ch.checked=true; customAlert("Este ajuste é a diferença ou a tarifa de um recebimento. Para mudar, desfaça o recebimento (Financeiro › Repasses › Recebimentos).","Ajuste de conciliação"); return; } if(_aj[q].turnoId){ ch.checked=true; var _tA=turnoById(_aj[q].turnoId); customAlert("Este ajuste é a diferença de caixa do "+(_tA?turnoNome(_tA):"turno")+". Para mudar, desfaça o fechamento do turno (Histórico › Turnos › 🧾 Conferir caixa).","Ajuste de conciliação"); return; } _aj[q].conciliado=v; ok=true; break; } } }
+    else if(kind==="ajuste"){ var _aj=DB.concAjustes||[]; for(var q=0;q<_aj.length;q++){ if(_aj[q].id===k){ if(_aj[q].ajMes){ ch.checked=true; customAlert("Este ajuste vem de uma correção de mês fechado (lançada em dinheiro). Para tirar, exclua o lançamento na DRE (Lançamentos manuais): os dois saem juntos.","Ajuste de conciliação"); return; } if(_aj[q].receb){ ch.checked=true; customAlert("Este ajuste é a diferença ou a tarifa de um recebimento. Para mudar, desfaça o recebimento (Financeiro › Recebimentos).","Ajuste de conciliação"); return; } if(_aj[q].turnoId){ ch.checked=true; var _tA=turnoById(_aj[q].turnoId); customAlert("Este ajuste é a diferença de caixa do "+(_tA?turnoNome(_tA):"turno")+". Para mudar, desfaça o fechamento do turno (Histórico › Turnos › 🧾 Conferir caixa).","Ajuste de conciliação"); return; } _aj[q].conciliado=v; ok=true; break; } } }
     else if(kind==="invMov"){ var _ivm=DB.invMovs||[]; for(var _vix=0;_vix<_ivm.length;_vix++){ if(_ivm[_vix].id===k){ _ivm[_vix].conciliado=v; ok=true; break; } } }
     else if(kind==="invProv"){ var _pvm=DB.invProventos||[]; for(var _vpx=0;_vpx<_pvm.length;_vpx++){ if(_pvm[_vpx].id===k){ _pvm[_vpx].conciliado=v; ok=true; break; } } }
     if(ok){ if(!save()){ if(kind==="baixa"){ var p2=String(k).split(":"); var t2=tituloById(p2[0]); if(t2){ var _c2=tituloBaixas(t2); for(var i2=0;i2<_c2.length;i2++){ if(_c2[i2].id===p2[1]){ _c2[i2].conciliado=v?0:1; break; } } } } else if(kind==="transf"){ var _t2=DB.transferencias||[]; for(var j2=0;j2<_t2.length;j2++){ if(_t2[j2].id===k){ _t2[j2].conciliado=v?0:1; break; } } } else if(kind==="ajuste"){ var _a2=DB.concAjustes||[]; for(var q2=0;q2<_a2.length;q2++){ if(_a2[q2].id===k){ _a2[q2].conciliado=v?0:1; break; } } } else if(kind==="invMov"){ var _iv2=DB.invMovs||[]; for(var _vx2=0;_vx2<_iv2.length;_vx2++){ if(_iv2[_vx2].id===k){ _iv2[_vx2].conciliado=v?0:1; break; } } } else if(kind==="invProv"){ var _pv2=DB.invProventos||[]; for(var _vx3=0;_vx3<_pv2.length;_vx3++){ if(_pv2[_vx3].id===k){ _pv2[_vx3].conciliado=v?0:1; break; } } } ch.checked=!ch.checked; customAlert(SAVE_FAIL_MSG,"Conciliação"); return; } }
@@ -11246,7 +11263,7 @@ function wireConcLista(){
     if(ix<0) return;
     var rec=_aj[ix];
     if(rec.ajMes){ customAlert("Este ajuste vem de uma correção de mês fechado (lançada em dinheiro). Para tirar, exclua o lançamento na DRE (Lançamentos manuais): os dois saem juntos.","Ajuste de conciliação"); return; }
-    if(rec.receb){ customAlert("Este ajuste é a diferença ou a tarifa de um recebimento. Para tirar, desfaça o recebimento (Financeiro › Repasses › Recebimentos).","Ajuste de conciliação"); return; }
+    if(rec.receb){ customAlert("Este ajuste é a diferença ou a tarifa de um recebimento. Para tirar, desfaça o recebimento (Financeiro › Recebimentos).","Ajuste de conciliação"); return; }
     if(rec.turnoId){ var _tB=turnoById(rec.turnoId); customAlert("Este ajuste é a diferença de caixa do "+(_tB?turnoNome(_tB):"turno")+". Para tirar, desfaça o fechamento do turno (Histórico › Turnos › 🧾 Conferir caixa).","Ajuste de conciliação"); return; }
     if(isConciliado(rec)){ customAlert("Este registro já está conciliado. Desconcile antes de excluir.","Ajuste de conciliação"); return; }
     var ok=await customConfirm("Excluir o ajuste de "+BRL(rec.valor)+" ("+isoToBR(rec.data)+")? Vai para a lixeira.","Ajuste de conciliação","Excluir");
@@ -11863,7 +11880,7 @@ function titBaixaCatTxt(b){ var _p=[]; try{ if((Number(b.juros)||0)>0){ _p.push(
 function isTituloUber(t){ return !!(t&&t.origem==="despesa-uber"); }
 function tituloDoDespesa(expId){ if(!expId) return null; var _l=DB.titulos||[]; for(var i=0;i<_l.length;i++){ if(_l[i].origem==="despesa-uber"&&String(_l[i].vinculo||"")===String(expId)) return _l[i]; } return null; }
 function despesaDoTitulo(t){ if(!t||!t.vinculo) return null; var _l=DB.expenses||[]; for(var i=0;i<_l.length;i++){ if(String(_l[i].id)===String(t.vinculo)) return _l[i]; } return null; }
-function uberCentroId(){ var _l=DB.centros||[], i; for(i=0;i<_l.length;i++){ try{ if(normName(_l[i].nome||"")==="uber") return _l[i].id; }catch(e){rmLogErr(e)} } for(i=0;i<_l.length;i++){ if(_l[i].ativo) return _l[i].id; } return null; }
+function uberCentroId(){ var _l=DB.centros||[], i; for(i=0;i<_l.length;i++){ if(_l[i]&&_l[i].papel==="trabalho") return _l[i].id; } /* centro do trabalho pelo papel fixo (o nome pode mudar) */ for(i=0;i<_l.length;i++){ try{ if(normName(_l[i].nome||"")==="uber") return _l[i].id; }catch(e){rmLogErr(e)} } for(i=0;i<_l.length;i++){ if(_l[i].ativo) return _l[i].id; } return null; }
 function tituloDescDeDespesa(e){ try{ var d=String((e&&e.description)||"").trim().slice(0,80); if(d) return d; var c=catById(e.category_id); if(c) return String((c.icon?c.icon+" ":"")+c.name).slice(0,80); }catch(_){rmLogErr(_)} return "Despesa Uber"; }
 function criarTituloDeDespesa(exp){
   try{
@@ -12232,7 +12249,7 @@ function rTitulos(){
     +'<button type="button" data-tf="vencidos" class="'+(titFiltro==="vencidos"?"on":"")+'">Vencidos ('+nVe+')</button>'
     +'<button type="button" data-tf="baixados" class="'+(titFiltro==="baixados"?"on":"")+'">Baixados ('+nBx+')</button>'
     +'<button type="button" data-tf="todos" class="'+(titFiltro==="todos"?"on":"")+'">Todos ('+all.length+')</button>'
-    +'</div><span style="flex:1 1 auto;min-width:8px"></span><button type="button" class="btn sm accent" id="titAgingBtn">Aging</button> '+(titTipoF==="receber"?'<button type="button" class="btn sm accent" id="titPorLote" title="O a receber de cada turno, em Financeiro › Repasses › Lotes dos turnos">📦 Por lote (turno)</button> ':'')+(titTipoF!=="receber"?'<button type="button" class="btn sm '+(titLoteOn?"yellow":"accent")+'" id="titLoteBtn">'+(titLoteOn?"✕ Sair da seleção":"☑ Baixar várias")+'</button> ':"")+'<button type="button" class="btn sm green" id="titNovoBtn">Novo título</button></div><!--TITLOTE-->';
+    +'</div><span style="flex:1 1 auto;min-width:8px"></span><button type="button" class="btn sm accent" id="titAgingBtn">Aging</button> '+(titTipoF==="receber"?'<button type="button" class="btn sm accent" id="titPorLote" title="O a receber de cada turno, em Financeiro › Lotes dos turnos">📦 Por lote (turno)</button> ':'')+(titTipoF!=="receber"?'<button type="button" class="btn sm '+(titLoteOn?"yellow":"accent")+'" id="titLoteBtn">'+(titLoteOn?"✕ Sair da seleção":"☑ Baixar várias")+'</button> ':"")+'<button type="button" class="btn sm green" id="titNovoBtn">Novo título</button></div><!--TITLOTE-->';
   html+='<div class="tit-list-card"><div class="tblwrap"><table class="tbl"><thead><tr><th>Descrição</th><th>Vencimento</th><th class="mhide">Valor</th><th>Pago</th><th>Falta</th><th>Status</th><th>Ações</th></tr></thead><tbody>';
   var rows=all.filter(function(t){ if(titFiltro==="aberto") return titAberto(t); if(titFiltro==="vencidos") return titVencido(t); if(titFiltro==="baixados") return t.status==="baixado"; return true; });
   rows.sort(function(a,b){ if(a.vencimento!==b.vencimento) return a.vencimento<b.vencimento?-1:1; return String(a.id)<String(b.id)?-1:1; });
@@ -12414,10 +12431,10 @@ function rTitulos(){
   try{ var _hrb=document.getElementById("hRateioBtn"), _hrx=document.getElementById("hRateioBox"); if(_hrb&&_hrx){ _hrx.textContent=FIN_AJUDA.rateio; _hrx.hidden=true; try{ _hrb.setAttribute("aria-expanded","false"); }catch(e){rmLogErr(e)} _hrb.onclick=function(){ var _a=_hrx.hidden; _hrx.hidden=!_a; try{ _hrb.setAttribute("aria-expanded",_a?"true":"false"); }catch(e){rmLogErr(e)} }; } }catch(e){rmLogErr(e)}
   try{ var _hsb=document.getElementById("hSerieBtn"), _hsx=document.getElementById("hSerieBox"); if(_hsb&&_hsx){ _hsx.textContent=FIN_AJUDA.series; _hsx.hidden=true; try{ _hsb.setAttribute("aria-expanded","false"); }catch(e){rmLogErr(e)} _hsb.onclick=function(){ var _a=_hsx.hidden; _hsx.hidden=!_a; try{ _hsb.setAttribute("aria-expanded",_a?"true":"false"); }catch(e){rmLogErr(e)} }; } }catch(e){rmLogErr(e)}
   try{ var _hlb=document.getElementById("hLuzBtn"), _hlx=document.getElementById("hLuzBox"); if(_hlb&&_hlx){ _hlx.textContent=FIN_AJUDA.luz; _hlx.hidden=true; try{ _hlb.setAttribute("aria-expanded","false"); }catch(e){rmLogErr(e)} _hlb.onclick=function(){ var _a=_hlx.hidden; _hlx.hidden=!_a; try{ _hlb.setAttribute("aria-expanded",_a?"true":"false"); }catch(e){rmLogErr(e)} }; } }catch(e){rmLogErr(e)}
-  document.querySelectorAll("[data-titbx]").forEach(function(b){ b.onclick=function(){ var _tL=tituloById(b.dataset.titbx); if(_tL&&_tL.origem==="loteTurno"&&_tL.tipo==="receber"){ customAlert("Esta é a linha a receber do lote do turno: a baixa é feita em Financeiro › Repasses › Recebimentos (com a tarifa e a diferença, se houver).","Pagar & Receber"); return; } titBaixaId=b.dataset.titbx; titEditId=null; titNovoOpen=false; titAgingOpen=false; rTitulos(); try{ window.scrollTo(0,0); }catch(e){rmLogErr(e)} }; });
+  document.querySelectorAll("[data-titbx]").forEach(function(b){ b.onclick=function(){ var _tL=tituloById(b.dataset.titbx); if(_tL&&_tL.origem==="loteTurno"&&_tL.tipo==="receber"){ customAlert("Esta é a linha a receber do lote do turno: a baixa é feita em Financeiro › Recebimentos (com a tarifa e a diferença, se houver).","Pagar & Receber"); return; } titBaixaId=b.dataset.titbx; titEditId=null; titNovoOpen=false; titAgingOpen=false; rTitulos(); try{ window.scrollTo(0,0); }catch(e){rmLogErr(e)} }; });
   document.querySelectorAll("[data-titedit]").forEach(function(b){ b.onclick=function(){
     var t=tituloById(b.dataset.titedit); if(!t) return;
-    if(t.origem==="loteTurno"){ customAlert("Esta linha vem do lote do turno: o valor sai das pastas (pelo app + ajustes − taxa). Para mudar, ajuste o lote (Financeiro › Repasses › Lotes dos turnos).","Pagar & Receber"); return; }
+    if(t.origem==="loteTurno"){ customAlert("Esta linha vem do lote do turno: o valor sai das pastas (pelo app + ajustes − taxa). Para mudar, ajuste o lote (Financeiro › Lotes dos turnos).","Pagar & Receber"); return; }
     if(tituloTemBaixa(t)){ customAlert("Este título tem baixa(s) lançada(s). Desfaça as baixas antes de editar.","Pagar & Receber"); return; }
     titEditId=t.id; titBaixaId=null; titNovoOpen=false; titAgingOpen=false; rTitulos(); try{ var _pd=document.getElementById("titDesc"); if(_pd&&_pd.scrollIntoView) _pd.scrollIntoView({block:"start"}); }catch(e){rmLogErr(e)}
   }; });
@@ -12474,7 +12491,7 @@ function rTitulos(){
     var ix=tituloBaixas(t).findIndex(function(x){ return x.id===parts[1]; });
     if(ix<0) return;
     var rec=t.baixas[ix];
-    if(typeof recDaBaixa==="function"&&recDaBaixa(rec.id)){ customAlert("Esta baixa faz parte de um recebimento. Desfaça o recebimento inteiro em Financeiro › Repasses › Recebimentos (assim a tarifa e a diferença saem juntas).","Pagar & Receber"); return; }
+    if(typeof recDaBaixa==="function"&&recDaBaixa(rec.id)){ customAlert("Esta baixa faz parte de um recebimento. Desfaça o recebimento inteiro em Financeiro › Recebimentos (assim a tarifa e a diferença saem juntas).","Pagar & Receber"); return; }
     /* CAUSA 1 — baixa de título em lote conciliado: quem desfaz é o lote, pelo caminho do lote. */
     var _lcBx=loteConciliadoDoTitulo(t.id); if(_lcBx){ customAlert("Esta baixa faz parte do "+loteNome(_lcBx)+" (conciliado). Não desfaça a baixa isoladamente. Para desfazer, abra Financeiro > Lotes, abra o "+loteNome(_lcBx)+" e use Desfazer conciliação.","Pagar & Receber"); return; }
     if(rec.conciliado===1||rec.conciliado===true){ customAlert("Esta baixa já está conciliada. Desconcile antes de desfazer.","Pagar & Receber"); return; }
@@ -16266,7 +16283,7 @@ function fechCardPintar(){
     var a=fechAte(), prox=a?fechYmMais(a,1):fechYmMais(todayISO().slice(0,7),-1), pend=fechPendencias(prox);
     /* turno aberto ou sem conferir no mês: depois de fechado o mês ele ficaria preso (nem encerra, nem confere) */
     var _tp=(DB.shifts||[]).filter(function(s){ return s&&!(s.fech&&s.aud)&&shiftWorkday(s)<=fechFimISO(prox)&&shiftWorkday(s)>=dreLoteDesde(); }); /* antes do marco a DRE conta pela data da corrida */
-    if(_tp.length){ customAlert("Antes de fechar "+fechNome(prox)+", confira o caixa e audite o lote de "+(_tp.length===1?"1 turno":_tp.length+" turnos")+" (Histórico › Turnos › 🧾 Conferir caixa; Financeiro › Repasses › Lotes dos turnos). Sem isso o ganho deles ficaria fora da DRE: "+_tp.slice(0,6).map(function(s){ return turnoNome(s)+" de "+isoToBR(shiftWorkday(s)).slice(0,5)+(s.end_time?"":" (aberto)"); }).join(", ")+(_tp.length>6?"…":"")+".","Fechar o mês"); return; }
+    if(_tp.length){ customAlert("Antes de fechar "+fechNome(prox)+", confira o caixa e audite o lote de "+(_tp.length===1?"1 turno":_tp.length+" turnos")+" (Histórico › Turnos › 🧾 Conferir caixa; Financeiro › Lotes dos turnos). Sem isso o ganho deles ficaria fora da DRE: "+_tp.slice(0,6).map(function(s){ return turnoNome(s)+" de "+isoToBR(shiftWorkday(s)).slice(0,5)+(s.end_time?"":" (aberto)"); }).join(", ")+(_tp.length>6?"…":"")+".","Fechar o mês"); return; }
     var ok=false; try{ ok=await customConfirm("Fechar "+fechNome(prox)+"? Depois disso, nada com data em "+fechNome(prox)+(a?"":" ou antes")+" pode ser criado, alterado ou excluído até você reabrir."+(pend.length?"\n\nAinda há pendências: "+pend.join("; ")+".":""),"Fechar o mês","Fechar mês"); }catch(e){ ok=false; }
     if(!ok) return;
     var antes=DB.settings.mesFechadoAte; DB.settings.mesFechadoAte=prox;
@@ -17532,7 +17549,7 @@ function evAvisoHTML(){
   return '<div class="card ev-aviso"><h3>📅 Próximos eventos · 7 dias</h3>'+li+mais+'<div class="btnrow"><button type="button" class="btn sm accent" data-evir="1">Ver agenda</button></div></div>';
 }
 document.addEventListener("click",function(ev){ var b=ev.target&&ev.target.closest?ev.target.closest("[data-evir]"):null; if(!b) return; try{ show("eventos"); }catch(e){ rmLogErr(e,"ev-ir"); } });
-/* tela própria (menu Uber › Eventos e feriados) */
+/* tela própria (menu Motorista › Eventos e feriados) */
 function rEventos(){ viewCtn.innerHTML='<div class="ev-tela">'+evCardHTML()+'</div>'; evLigar(); }
 
 /* ---- Previsão: agenda, formulário e o que cada tipo rende ---- */
@@ -18277,8 +18294,8 @@ async function tfDesfazer(s){
   if(!mot){ customAlert("Escreva o motivo (ex.: corrida esquecida). Ele fica no histórico do turno.","Desfazer o fechamento"); return; }
   var dia=shiftWorkday(s);
   if(fechDataFechada(dia)){ await ajMesOferecer("O mês de "+fechNome(dia.slice(0,7))+" está fechado: o "+turnoNome(s)+" não pode ser reaberto. Reabra o mês, ou lance a correção como ajuste no mês atual (com a referência ao turno).",{turno:s,data:dia},"Desfazer o fechamento"); return; }
-  if(loteTemBaixa(s)){ customAlert("O lote deste turno já tem recebimento (baixa em Pagar & Receber). Desfaça o recebimento antes (Financeiro › Repasses › Recebimentos).","Desfazer o fechamento"); return; }
-  if(s.aud){ customAlert("O lote deste turno já foi auditado. Desfaça a auditoria do lote antes (Financeiro › Repasses › Lotes dos turnos).","Desfazer o fechamento"); return; }
+  if(loteTemBaixa(s)){ customAlert("O lote deste turno já tem recebimento (baixa em Pagar & Receber). Desfaça o recebimento antes (Financeiro › Recebimentos).","Desfazer o fechamento"); return; }
+  if(s.aud){ customAlert("O lote deste turno já foi auditado. Desfaça a auditoria do lote antes (Financeiro › Lotes dos turnos).","Desfazer o fechamento"); return; }
   if(!(await customConfirm("Desfazer o fechamento do "+turnoNome(s)+"? Ele volta para \"a conferir\""+(s.fech.ajusteId?" e o ajuste de diferença sai da Carteira":"")+".","Desfazer o fechamento","Desfazer"))) return;
   var antF=s.fech, antH=(s.hist||[]).slice(), aj=null, ajIx=-1;
   if(antF.ajusteId){ ajIx=(DB.concAjustes||[]).findIndex(function(a){ return a.id===antF.ajusteId; }); if(ajIx>=0){ aj=DB.concAjustes[ajIx]; DB.concAjustes.splice(ajIx,1); } }
@@ -18340,7 +18357,7 @@ function loteDivergente(s){
 function loteAudLimpar(d){ var n=0; (d&&d.shifts||[]).forEach(function(s){ if(s.aud&&(!s.fech||(s.aud.fechEm&&s.aud.fechEm!==s.fech.em))){ s.aud=null; n++; s.hist=(s.hist||[]).concat([{id:"audx-"+String(s.fech&&s.fech.em||""),em:new Date().toISOString(),acao:"auditoria anulada (era de outro fechamento)",motivo:"",total:null}]).slice(-50); } }); return n; }
 function loteTurnoLista(){ return (DB.shifts||[]).filter(function(s){ return !!s.fech; }).sort(function(a,b){ var x=shiftWorkday(a)+a.start_time, y=shiftWorkday(b)+b.start_time; return x<y?1:(x>y?-1:0); }); }
 
-/* ---------- tela: Financeiro › Repasses › Lotes dos turnos ---------- */
+/* ---------- tela: Financeiro › Lotes dos turnos ---------- */
 var loteTurnoFiltro="pendentes", loteTurnoAberto=null;
 function rLotesTurno(){
   var box=window.__finBox||viewCtn;
@@ -18421,7 +18438,7 @@ function loteTurnoAbrir(id){
     if(tipo==="estorno"&&v>0) v=-v;
     var ext={}; bk.querySelectorAll(".lt-ext").forEach(function(i){ ext[i.dataset.pid]=i.value; });
     var a={id:uid(),pid:pid,tipo:tipo,desc:desc,valor:tfR2(v)}; s.lajustes=(s.lajustes||[]).concat([a]); var _dT;
-    try{ _dT=loteTitulosSync(s); }catch(eB){ s.lajustes=s.lajustes.filter(function(x){ return x!==a; }); try{ loteTitulosSync(s); }catch(_){} msg.textContent="Com esse ajuste o lote ficaria menor que o que já foi recebido. Desfaça o recebimento antes (Financeiro › Repasses › Recebimentos)."; return; }
+    try{ _dT=loteTitulosSync(s); }catch(eB){ s.lajustes=s.lajustes.filter(function(x){ return x!==a; }); try{ loteTitulosSync(s); }catch(_){} msg.textContent="Com esse ajuste o lote ficaria menor que o que já foi recebido. Desfaça o recebimento antes (Financeiro › Recebimentos)."; return; }
     if(!save()){ _dT(); s.lajustes=s.lajustes.filter(function(x){ return x!==a; }); msg.textContent=SAVE_FAIL_MSG; return; }
     loteTurnoAbrir(id); Object.keys(ext).forEach(function(k){ var i=document.querySelector('#ltBk .lt-ext[data-pid="'+k+'"]'); if(i){ i.value=ext[k]; i.dispatchEvent(new Event("input",{bubbles:true})); } }); }; });
   bk.querySelectorAll("[data-ajdel]").forEach(function(b){ b.onclick=function(){ var ant=s.lajustes; s.lajustes=(s.lajustes||[]).filter(function(x){ return x.id!==b.dataset.ajdel; }); var _dT; try{ _dT=loteTitulosSync(s); }catch(eB){ s.lajustes=ant; try{ loteTitulosSync(s); }catch(_){} customAlert("Sem esse ajuste o lote ficaria menor que o que já foi recebido. Desfaça o recebimento antes.","Lote"); return; } if(!save()){ _dT(); s.lajustes=ant; customAlert(SAVE_FAIL_MSG,"Lote"); return; } loteTurnoAbrir(id); }; });
@@ -18545,7 +18562,7 @@ function recSugerir(pid,bruto,ate){
   return L;
 }
 
-/* ---------- tela: Financeiro › Repasses › Recebimentos ---------- */
+/* ---------- tela: Financeiro › Recebimentos ---------- */
 var recForm={pid:null,data:null,conta:null,valor:"",tarifa:"",ate:""}, recLinhas=null;
 function rRecebimentos(){
   var box=window.__finBox||viewCtn;
@@ -18651,7 +18668,7 @@ async function recDesfazer(id){
   if(!save()){ DB.titulos=JSON.parse(snapT); DB.concAjustes=snapA; DB.dre_manual=snapD; DB.recebimentos=snapR; customAlert(SAVE_FAIL_MSG,"Desfazer recebimento"); return; }
   rRecebimentos();
 }
-try{ window.RM.recSugerir=function(pid,b,ate){ return recSugerir(pid,b,ate).map(function(x){ return {titulo:x.t.id,turno:x.s.id,sinal:x.sinal,falta:x.falta,baixar:x.baixar}; }); }; window.RM.loteTurnoConciliado=function(id){ return loteTurnoConciliado(turnoById(id)); }; window.RM.rRecebimentos=rRecebimentos; window.RM.loteTitulosLimpar=function(){ return loteTitulosLimpar(RM.getDB()); }; }catch(e){}
+try{ window.RM.recSugerir=function(pid,b,ate){ return recSugerir(pid,b,ate).map(function(x){ return {titulo:x.t.id,turno:x.s.id,sinal:x.sinal,falta:x.falta,baixar:x.baixar}; }); }; window.RM.loteTurnoConciliado=function(id){ return loteTurnoConciliado(turnoById(id)); }; window.RM.rRecebimentos=rRecebimentos; window.RM.loteTitulosLimpar=function(){ return loteTitulosLimpar(RM.getDB()); }; window.RM.loteTitulosGarantirTodos=loteTitulosGarantirTodos; }catch(e){}
 /* ---------- CORRIGIR MÊS FECHADO = AJUSTE NO MÊS ATUAL (financeiro, etapa 6 — docs/REGRAS_FINANCEIRO.md, 6.2) ----------
    Mês fechado não reabre turno. Duas saídas: reabrir o mês (Financeiro › Resumo) ou lançar a correção como ajuste
    no mês atual, com referência ao turno/data original:
